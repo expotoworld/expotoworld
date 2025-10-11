@@ -1,0 +1,9 @@
+# Exclude only files that should not go into build context
+.git
+.gitignore
+README.md
+**/*.md
+.env
+*.log
+# Do NOT ignore Go source files
+
