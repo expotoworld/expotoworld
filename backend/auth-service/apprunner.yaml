@@ -1,0 +1,13 @@
+version: 1.0
+runtime: go1
+build:
+  commands:
+    build:
+      - go mod download
+      - go build -o server ./cmd/server
+run:
+  runtime-version: 1.22
+  command: ./server
+  network:
+    port: 8081
+
