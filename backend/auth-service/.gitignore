@@ -1,0 +1,6 @@
+server
+auth-service
+bin/
+build/
+.env
+*.log
