@@ -1,0 +1,114 @@
+name: user-service App Runner Deploy
+
+on:
+  workflow_run:
+    workflows: ["user-service ECR Build and Push"]
+    types: [completed]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: eu-central-1
+      SERVICE_NAME: expotoworld-user-service
+      ECR_REPOSITORY_URI: 834076182408.dkr.ecr.eu-central-1.amazonaws.com/expotoworld-user-service
+      INSTANCE_ROLE_ARN: arn:aws:iam::834076182408:role/apprunner-expotoworld-auth-instance-role
+      ECR_ACCESS_ROLE_ARN: arn:aws:iam::834076182408:role/AppRunnerECRAccessRole-expotoworld
+      APP_PORT: "8083"
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::834076182408:role/GitHubActionsECRPush-expotoworld
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Determine App Runner service ARN (if exists)
+        id: lookup
+        run: |
+          ARN=$(aws apprunner list-services \
+            --query "ServiceSummaryList[?ServiceName=='${{ env.SERVICE_NAME }}'].ServiceArn | [0]" \
+            --output text)
+          if [ "$ARN" = "None" ] || [ -z "$ARN" ]; then
+            echo "found=false" >> $GITHUB_OUTPUT
+          else
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "service_arn=$ARN" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create App Runner service (first-time)
+        if: steps.lookup.outputs.found == 'false'
+        env:
+          DATABASE_URL_SECRET_ARN: ${{ secrets.DATABASE_URL_SECRET_ARN }}
+          JWT_SECRET_ARN: ${{ secrets.JWT_SECRET_ARN }}
+        run: |
+          if [ -z "$DATABASE_URL_SECRET_ARN" ] || [ -z "$JWT_SECRET_ARN" ]; then
+            echo "DATABASE_URL_SECRET_ARN and JWT_SECRET_ARN must be set in repo secrets" >&2
+            exit 1
+          fi
+          aws apprunner create-service \
+            --service-name "$SERVICE_NAME" \
+            --source-configuration "{\
+              \"ImageRepository\":{\
+                \"ImageRepositoryType\":\"ECR\",\
+                \"ImageIdentifier\":\"$ECR_REPOSITORY_URI:latest\",\
+                \"ImageConfiguration\":{\
+                  \"Port\":\"$APP_PORT\",\
+                  \"RuntimeEnvironmentVariables\":[{\"Name\":\"GIN_MODE\",\"Value\":\"release\"}],\
+                  \"RuntimeEnvironmentSecrets\":[\
+                    {\"Name\":\"DATABASE_URL\",\"ValueFrom\":\"$DATABASE_URL_SECRET_ARN\"},\
+                    {\"Name\":\"JWT_SECRET\",\"ValueFrom\":\"$JWT_SECRET_ARN\"}\
+                  ]\
+                },\
+                \"ImageRepositoryCredentials\":{\
+                  \"AccessRoleArn\":\"$ECR_ACCESS_ROLE_ARN\"\
+                }\
+              },\
+              \"AutoDeploymentsEnabled\":true\
+            }" \
+            --instance-configuration "{\
+              \"InstanceRoleArn\":\"$INSTANCE_ROLE_ARN\"\
+            }" \
+            --health-check-configuration "{\
+              \"Protocol\":\"HTTP\",\
+              \"Path\":\"/live\",\
+              \"Interval\":10,\
+              \"Timeout\":5,\
+              \"HealthyThreshold\":1,\
+              \"UnhealthyThreshold\":5\
+            }"
+
+      - name: Update App Runner service (image + config)
+        if: steps.lookup.outputs.found == 'true'
+        env:
+          DATABASE_URL_SECRET_ARN: ${{ secrets.DATABASE_URL_SECRET_ARN }}
+          JWT_SECRET_ARN: ${{ secrets.JWT_SECRET_ARN }}
+        run: |
+          if [ -z "$DATABASE_URL_SECRET_ARN" ] || [ -z "$JWT_SECRET_ARN" ]; then
+            echo "DATABASE_URL_SECRET_ARN and JWT_SECRET_ARN must be set in repo secrets" >&2
+            exit 1
+          fi
+          aws apprunner update-service \
+            --service-arn "${{ steps.lookup.outputs.service_arn }}" \
+            --source-configuration "{\
+              \"ImageRepository\":{\
+                \"ImageRepositoryType\":\"ECR\",\
+                \"ImageIdentifier\":\"$ECR_REPOSITORY_URI:latest\",\
+                \"ImageConfiguration\":{\
+                  \"Port\":\"$APP_PORT\",\
+                  \"RuntimeEnvironmentVariables\":[{\"Name\":\"GIN_MODE\",\"Value\":\"release\"}],\
+                  \"RuntimeEnvironmentSecrets\":[\
+                    {\"Name\":\"DATABASE_URL\",\"ValueFrom\":\"$DATABASE_URL_SECRET_ARN\"},\
+                    {\"Name\":\"JWT_SECRET\",\"ValueFrom\":\"$JWT_SECRET_ARN\"}\
+                  ]\
+                },\
+                \"ImageRepositoryCredentials\":{\
+                  \"AccessRoleArn\":\"$ECR_ACCESS_ROLE_ARN\"\
+                }\
+              },\
+              \"AutoDeploymentsEnabled\":true\
+            }"
