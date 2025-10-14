@@ -77,3 +77,4 @@ func TestAuthMiddleware_ValidJWT(t *testing.T) {
 		t.Fatalf("expected 401 without token, got %d", w.Code)
 	}
 }
+

@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'expotoworld/backend/user-service/**'
+      - 'backend/user-service/**'
       - '.github/workflows/user-service-ecr.yml'
 
 permissions:
@@ -40,8 +40,8 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v5
         with:
-          context: ./expotoworld/backend/user-service
-          file: ./expotoworld/backend/user-service/Dockerfile
+          context: ./backend/user-service
+          file: ./backend/user-service/Dockerfile
           push: true
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.REPOSITORY }}:latest
