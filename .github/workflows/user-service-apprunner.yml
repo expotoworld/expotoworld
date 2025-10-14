@@ -58,17 +58,16 @@ jobs:
                 \"ImageIdentifier\":\"$ECR_REPOSITORY_URI:latest\",\
                 \"ImageConfiguration\":{\
                   \"Port\":\"$APP_PORT\",\
-                  \"RuntimeEnvironmentVariables\":[{\"Name\":\"GIN_MODE\",\"Value\":\"release\"}],\
-                  \"RuntimeEnvironmentSecrets\":[\
-                    {\"Name\":\"DATABASE_URL\",\"ValueFrom\":\"$DATABASE_URL_SECRET_ARN\"},\
-                    {\"Name\":\"JWT_SECRET\",\"ValueFrom\":\"$JWT_SECRET_ARN\"}\
-                  ]\
-                },\
-                \"ImageRepositoryCredentials\":{\
-                  \"AccessRoleArn\":\"$ECR_ACCESS_ROLE_ARN\"\
+                  \"RuntimeEnvironmentSecrets\":{\
+                    \"DATABASE_URL\":\"$DATABASE_URL_SECRET_ARN\",\
+                    \"JWT_SECRET\":\"$JWT_SECRET_ARN\"\
+                  }\
                 }\
               },\
-              \"AutoDeploymentsEnabled\":true\
+              \"AutoDeploymentsEnabled\":true,\
+              \"AuthenticationConfiguration\":{\
+                \"AccessRoleArn\":\"$ECR_ACCESS_ROLE_ARN\"\
+              }\
             }" \
             --instance-configuration "{\
               \"InstanceRoleArn\":\"$INSTANCE_ROLE_ARN\"\
@@ -100,15 +99,14 @@ jobs:
                 \"ImageIdentifier\":\"$ECR_REPOSITORY_URI:latest\",\
                 \"ImageConfiguration\":{\
                   \"Port\":\"$APP_PORT\",\
-                  \"RuntimeEnvironmentVariables\":[{\"Name\":\"GIN_MODE\",\"Value\":\"release\"}],\
-                  \"RuntimeEnvironmentSecrets\":[\
-                    {\"Name\":\"DATABASE_URL\",\"ValueFrom\":\"$DATABASE_URL_SECRET_ARN\"},\
-                    {\"Name\":\"JWT_SECRET\",\"ValueFrom\":\"$JWT_SECRET_ARN\"}\
-                  ]\
-                },\
-                \"ImageRepositoryCredentials\":{\
-                  \"AccessRoleArn\":\"$ECR_ACCESS_ROLE_ARN\"\
+                  \"RuntimeEnvironmentSecrets\":{\
+                    \"DATABASE_URL\":\"$DATABASE_URL_SECRET_ARN\",\
+                    \"JWT_SECRET\":\"$JWT_SECRET_ARN\"\
+                  }\
                 }\
               },\
-              \"AutoDeploymentsEnabled\":true\
+              \"AutoDeploymentsEnabled\":true,\
+              \"AuthenticationConfiguration\":{\
+                \"AccessRoleArn\":\"$ECR_ACCESS_ROLE_ARN\"\
+              }\
             }"
