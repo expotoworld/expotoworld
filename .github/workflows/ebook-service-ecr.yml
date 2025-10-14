@@ -1,0 +1,52 @@
+name: ebook-service ECR Build and Push
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/ebook-service/**'
+      - '.github/workflows/ebook-service-ecr.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      REPOSITORY: expotoworld-ebook-service
+      AWS_REGION: eu-central-1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::834076182408:role/GitHubActionsECRPush-expotoworld
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set build metadata
+        id: meta
+        run: |
+          echo "GIT_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
+          echo "BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/ebook-service
+          file: ./backend/ebook-service/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.REPOSITORY }}:latest
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.REPOSITORY }}:${{ github.sha }}
+          build-args: |
+            GIT_SHA=${{ env.GIT_SHA }}
+            BUILD_TIME=${{ env.BUILD_TIME }}
+
