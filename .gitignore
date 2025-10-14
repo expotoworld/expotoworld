@@ -1,1 +1,103 @@
+# =============================================================================
+# GENERAL SYSTEM FILES
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+
+# IDE and Editor Files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# =============================================================================
+# NODE.JS / REACT ADMIN PANEL
+# =============================================================================
+# Dependencies
+node_modules/
+
+# =============================================================================
+# FLUTTER APP: APP
+# =============================================================================
+# Dart/Flutter specific
+/APP/.dart_tool/
+/APP/.metadata
+/APP/.packages
+/APP/pubspec.lock
+/APP/build/
+
+# iOS specific
+/APP/ios/build/
+/APP/ios/Pods/
+/APP/ios/Runner.xcworkspace/
+/APP/ios/Runner.xcodeproj/project.xcworkspace/
+/APP/ios/Runner.xcodeproj/xcuserdata/
+/APP/ios/Flutter/Secrets.xcconfig
+/APP/ios/Flutter/flutter_export_environment.sh
+
+# Android specific
+/APP/android/app/debug/
+/APP/android/app/profile/
+/APP/android/app/release/
+/APP/android/.gradle/
+/APP/android/captures/
+/APP/android/gradlew
+/APP/android/gradlew.bat
+/APP/android/local.properties
+/APP/android/key.properties
+
+# Web specific
+/APP/web/
+
+# Windows specific
+/APP/windows/flutter/ephemeral/
+
+# macOS specific
+/APP/macos/Flutter/ephemeral/
+
+# Linux specific
+/APP/linux/flutter/ephemeral/
+
+# =============================================================================
+# ENVIRONMENT & SENSITIVE FILES
+# =============================================================================
+# Environment files (contain sensitive data like API keys, database passwords)
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+**/.env
+**/.env.*
+
+# Backend environment files
+/backend/catalog-service/.env
+/backend/catalog-service/.env.*
+
+# Database credentials and connection strings
+database.env
+db.env
+secrets.env
+values.md
+
+# API Keys and certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+api-keys.json
+service-account.json
+
+# AWS credentials
+.aws/
+aws-credentials.json
+
 /madeinworld
