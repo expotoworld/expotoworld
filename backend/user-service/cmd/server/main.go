@@ -22,6 +22,7 @@ func main() {
 	log.SetOutput(os.Stdout)
 
 	log.Printf("User Service starting (GIT_SHA=%s BUILD_TIME=%s)", os.Getenv("GIT_SHA"), os.Getenv("BUILD_TIME"))
+	log.Println("User Service initialized successfully")
 
 	// Initialize database connection (non-fatal; allow process to start for /live)
 	database, err := db.NewDatabase()
