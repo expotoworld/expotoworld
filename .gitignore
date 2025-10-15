@@ -100,4 +100,6 @@ service-account.json
 .aws/
 aws-credentials.json
 
+# LOGS
 /madeinworld
+logs.txt
