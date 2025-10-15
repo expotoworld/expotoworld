@@ -102,4 +102,6 @@ aws-credentials.json
 
 # LOGS
 /madeinworld
+/docs
+*.md
 logs.txt
