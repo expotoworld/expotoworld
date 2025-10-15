@@ -1,0 +1,14 @@
+# Build artifacts
+bootstrap
+function.zip
+*.zip
+
+# Binaries
+auth-cleanup-lambda
+
+# IAM policy files (temporary)
+iam-*.json
+
+# Test outputs
+/tmp/out-*.json
+
