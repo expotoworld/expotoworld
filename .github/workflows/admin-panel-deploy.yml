@@ -10,7 +10,7 @@ on:
 
 env:
   AWS_REGION: eu-central-1
-  S3_BUCKET: expotoworld-editor-site
+  S3_BUCKET: expotoworld-admin-website
   CLOUDFRONT_DISTRIBUTION_ID: E2JL3VLX19R2ZH
 
 permissions:

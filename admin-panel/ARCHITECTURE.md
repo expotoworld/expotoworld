@@ -10,14 +10,14 @@ The admin panel is a React-based Single Page Application (SPA) that provides a w
 
 **Purpose**: Hosts the admin panel React application (HTML, JS, CSS files)
 
-- **S3 Bucket**: `expotoworld-editor-site`
+- **S3 Bucket**: `expotoworld-admin-website`
 - **CloudFront Distribution**: `E2JL3VLX19R2ZH`
 - **Domain**: `https://admin.expotoworld.com`
 - **Region**: `eu-central-1`
 
 **Deployment Process**:
 1. GitHub Actions builds the React app (`npm run build`)
-2. Build artifacts are uploaded to S3 bucket `expotoworld-editor-site`
+2. Build artifacts are uploaded to S3 bucket `expotoworld-admin-website`
 3. CloudFront cache is invalidated to serve the latest version
 4. Users access the admin panel at `https://admin.expotoworld.com`
 
@@ -76,7 +76,7 @@ The admin panel is a React-based Single Page Application (SPA) that provides a w
                      │ Origin Request
                      ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  S3 Bucket: expotoworld-editor-site                         │
+│  S3 Bucket: expotoworld-admin-website                       │
 │  - index.html                                               │
 │  - static/js/*.js                                           │
 │  - static/css/*.css                                         │
@@ -172,8 +172,8 @@ REACT_APP_API_BASE_URL=http://127.0.0.1:8787
         "s3:PutObjectAcl"
       ],
       "Resource": [
-        "arn:aws:s3:::expotoworld-editor-site",
-        "arn:aws:s3:::expotoworld-editor-site/*"
+        "arn:aws:s3:::expotoworld-admin-website",
+        "arn:aws:s3:::expotoworld-admin-website/*"
       ]
     },
     {
