@@ -1,0 +1,18 @@
+# Wrangler
+.wrangler/
+wrangler.toml.bak
+
+# Node modules (if using npm packages in the future)
+node_modules/
+
+# Environment files
+.env
+.dev.vars
+
+# Build output
+dist/
+worker.bundle.js
+
+# Logs
+*.log
+

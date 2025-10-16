@@ -100,7 +100,7 @@ service-account.json
 .aws/
 aws-credentials.json
 
-# LOGS
+# Documentation
 /madeinworld
 /docs
 *.md

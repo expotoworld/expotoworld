@@ -1,0 +1,24 @@
+# Cloudflare Worker Configuration
+# This worker acts as an API gateway routing requests to backend microservices
+
+name = "device-api-gateway"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# Account configuration
+account_id = "3ffb93116c8d5ab05b5d0f5482296954"
+
+# Worker settings
+workers_dev = false
+
+# Route configuration
+# This worker is deployed at device-api.expotoworld.com
+routes = [
+  { pattern = "device-api.expotoworld.com/*", zone_name = "expotoworld.com" }
+]
+
+# Environment variables (if needed in the future)
+# [env.production]
+# [env.production.vars]
+# BACKEND_AUTH_URL = "https://ge6ik5nm6e.eu-central-1.awsapprunner.com"
+
