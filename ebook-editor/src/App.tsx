@@ -15,7 +15,7 @@ import TaskItem from '@tiptap/extension-task-item'
 
 import axios from 'axios'
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'https://device-api.expotoworld.com'
-import Login from './Login'
+import LoginNew from './LoginNew'
 import Toolbar from './Toolbar'
 import WordCount from './WordCount'
 import { ThemeProvider, useThemeMode } from './theme'
@@ -188,7 +188,7 @@ export default function App() {
   }, [token, editor])
 
   if (authBoot) return <div />
-  if (!token) return <Login onToken={setToken} />
+  if (!token) return <LoginNew onToken={setToken} />
 
   return (
     <ThemeProvider>
