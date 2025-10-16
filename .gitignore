@@ -105,3 +105,12 @@ aws-credentials.json
 /docs
 *.md
 logs.txt
+
+# Lambda build artifacts
+auth-cleanup-lambda/bootstrap
+auth-cleanup-lambda/function.zip
+auth-cleanup-lambda/*.zip
+
+# Backend service binaries
+backend/*/cmd/server/server
+backend/*/main
