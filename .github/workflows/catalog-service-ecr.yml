@@ -6,6 +6,7 @@ on:
     paths:
       - 'backend/catalog-service/**'
       - '.github/workflows/catalog-service-ecr.yml'
+  workflow_dispatch:
 
 permissions:
   id-token: write
