@@ -37,35 +37,45 @@ func NewDatabase() (*Database, error) {
 
 // NewDatabaseWithRetry creates a new database connection with configurable retry logic
 func NewDatabaseWithRetry(maxRetries int, initialDelay time.Duration) (*Database, error) {
-	config := getConfigFromEnv()
-
-	// Build connection string
-	var connStr string
-	if config.Password == "" {
-		connStr = fmt.Sprintf(
-			"host=%s port=%d user=%s dbname=%s sslmode=%s",
-			config.Host,
-			config.Port,
-			config.User,
-			config.DBName,
-			config.SSLMode,
-		)
+	// Prefer DATABASE_URL if provided (single DSN from Secrets Manager)
+	var poolConfig *pgxpool.Config
+	var err error
+	if dsn := os.Getenv("DATABASE_URL"); dsn != "" {
+		poolConfig, err = pgxpool.ParseConfig(dsn)
+		if err != nil {
+			return nil, fmt.Errorf("invalid DATABASE_URL: %w", err)
+		}
 	} else {
-		connStr = fmt.Sprintf(
-			"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-			config.Host,
-			config.Port,
-			config.User,
-			config.Password,
-			config.DBName,
-			config.SSLMode,
-		)
-	}
+		config := getConfigFromEnv()
 
-	// Configure connection pool
-	poolConfig, err := pgxpool.ParseConfig(connStr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse database config: %w", err)
+		// Build connection string
+		var connStr string
+		if config.Password == "" {
+			connStr = fmt.Sprintf(
+				"host=%s port=%d user=%s dbname=%s sslmode=%s",
+				config.Host,
+				config.Port,
+				config.User,
+				config.DBName,
+				config.SSLMode,
+			)
+		} else {
+			connStr = fmt.Sprintf(
+				"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+				config.Host,
+				config.Port,
+				config.User,
+				config.Password,
+				config.DBName,
+				config.SSLMode,
+			)
+		}
+
+		// Configure connection pool
+		poolConfig, err = pgxpool.ParseConfig(connStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse database config: %w", err)
+		}
 	}
 
 	// Set pool settings
@@ -109,7 +119,7 @@ func NewDatabaseWithRetry(maxRetries int, initialDelay time.Duration) (*Database
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		log.Printf("[CATALOG-DB] Connection attempt %d/%d to database %s@%s:%d",
-			attempt, maxRetries, config.User, config.Host, config.Port)
+			attempt, maxRetries, poolConfig.ConnConfig.User, poolConfig.ConnConfig.Host, poolConfig.ConnConfig.Port)
 
 		// Create connection pool
 		pool, err = pgxpool.NewWithConfig(context.Background(), poolConfig)
