@@ -1357,7 +1357,7 @@ func (h *Handler) uploadToS3(ctx context.Context, productID int, fileHeader *mul
 	// Construct the new CloudFront URL using the environment variable
 	cdnBase := os.Getenv("ASSETS_CDN_BASE_URL")
 	if cdnBase == "" {
-		cdnBase = "https://assets.expomadeinworld.com" // Fallback
+		cdnBase = "https://assets.expotoworld.com" // Fallback
 	}
 	imageURL := fmt.Sprintf("%s/%s", strings.TrimRight(cdnBase, "/"), objectKey)
 	return imageURL, nil
@@ -1399,7 +1399,7 @@ func (h *Handler) uploadGenericToS3(ctx context.Context, objectKey string, file 
 	// Build CloudFront URL using env var (same behavior as uploadToS3)
 	cdnBase := os.Getenv("ASSETS_CDN_BASE_URL")
 	if cdnBase == "" {
-		cdnBase = "https://assets.expomadeinworld.com"
+		cdnBase = "https://assets.expotoworld.com"
 	}
 	imageURL := fmt.Sprintf("%s/%s", strings.TrimRight(cdnBase, "/"), objectKey)
 	return imageURL, nil

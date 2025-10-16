@@ -200,7 +200,7 @@ func (e *EmailService) generateEmailHTML(data models.EmailVerificationData) stri
             📧 Email: %s<br>
             🌐 IP Address: %s<br>
             🔧 User Agent: %s<br>
-            📤 Sent from: no-reply@expomadeinworld.com
+            📤 Sent from: no-reply@expotoworld.com
         </div>
 
         <div class="footer">
@@ -213,8 +213,8 @@ func (e *EmailService) generateEmailHTML(data models.EmailVerificationData) stri
                 <strong>EXPO to World</strong><br>
                 Business Address: Frankfurt, Germany<br>
                 This email was sent to: %s<br>
-                <a href="mailto:unsubscribe@expomadeinworld.com" style="color: #999;">Unsubscribe</a> |
-                <a href="mailto:support@expomadeinworld.com" style="color: #999;">Support</a>
+                <a href="mailto:unsubscribe@expotoworld.com" style="color: #999;">Unsubscribe</a> |
+                <a href="mailto:support@expotoworld.com" style="color: #999;">Support</a>
             </p>
 
             <p style="color: #999; font-size: 12px;">
@@ -370,21 +370,21 @@ func (e *EmailService) generateUserEmailHTML(data models.EmailVerificationData) 
             📧 Email: %s<br>
             🌐 IP Address: %s<br>
             🔧 Device: %s<br>
-            📤 Sent from: no-reply@expomadeinworld.com
+            📤 Sent from: no-reply@expotoworld.com
         </div>
 
         <div class="footer">
             <p><strong>EXPO to World Mobile App</strong><br>
             This is an automated security message. Please do not reply to this email.</p>
 
-            <p>Need help? Contact our support team at <a href="mailto:support@expomadeinworld.com">support@expomadeinworld.com</a></p>
+            <p>Need help? Contact our support team at <a href="mailto:support@expotoworld.com">support@expotoworld.com</a></p>
 
             <p style="color: #999; font-size: 12px;">
                 <strong>EXPO to World</strong><br>
                 Business Address: Frankfurt, Germany<br>
                 This email was sent to: %s<br>
-                <a href="mailto:unsubscribe@expomadeinworld.com" style="color: #999;">Unsubscribe</a> |
-                <a href="mailto:support@expomadeinworld.com" style="color: #999;">Support</a>
+                <a href="mailto:unsubscribe@expotoworld.com" style="color: #999;">Unsubscribe</a> |
+                <a href="mailto:support@expotoworld.com" style="color: #999;">Support</a>
             </p>
 
             <p style="color: #999; font-size: 12px;">
