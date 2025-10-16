@@ -41,7 +41,7 @@ func NewEmailService(cfg aws.Config) *EmailService {
 
 // SendVerificationCode sends a verification code email for admin
 func (e *EmailService) SendVerificationCode(email string, data models.EmailVerificationData) error {
-	subject := "Made in World Admin - Verification Code"
+	subject := "EXPO to World Admin - Verification Code"
 	body := e.generateEmailHTML(data)
 
 	return e.sendEmail(email, subject, body)
@@ -49,7 +49,7 @@ func (e *EmailService) SendVerificationCode(email string, data models.EmailVerif
 
 // SendUserVerificationCode sends a verification code email for users
 func (e *EmailService) SendUserVerificationCode(email string, data models.EmailVerificationData) error {
-	subject := "Made in World - Login Verification Code"
+	subject := "EXPO to World - Login Verification Code"
 	body := e.generateUserEmailHTML(data)
 
 	return e.sendEmail(email, subject, body)
@@ -94,7 +94,7 @@ func (e *EmailService) generateEmailHTML(data models.EmailVerificationData) stri
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Made in World Admin - Verification Code</title>
+    <title>EXPO to World Admin - Verification Code</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -171,12 +171,12 @@ func (e *EmailService) generateEmailHTML(data models.EmailVerificationData) stri
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">Made in World</div>
+            <div class="logo">EXPO to World</div>
             <div class="subtitle">Admin Panel Authentication</div>
         </div>
 
         <h2>Your Verification Code</h2>
-        <p>Hello! You've requested access to the Made in World Admin Panel. Please use the verification code below to complete your login:</p>
+        <p>Hello! You've requested access to the EXPO to World Admin Panel. Please use the verification code below to complete your login:</p>
 
         <div class="code-container">
             <div>Your verification code is:</div>
@@ -204,13 +204,13 @@ func (e *EmailService) generateEmailHTML(data models.EmailVerificationData) stri
         </div>
 
         <div class="footer">
-            <p><strong>Made in World Admin Panel</strong><br>
+            <p><strong>EXPO to World Admin Panel</strong><br>
             This is an automated security message. Please do not reply to this email.</p>
 
             <p>If you're having trouble accessing the admin panel, please contact your system administrator.</p>
 
             <p style="color: #999; font-size: 12px;">
-                <strong>Made in World</strong><br>
+                <strong>EXPO to World</strong><br>
                 Business Address: Frankfurt, Germany<br>
                 This email was sent to: %s<br>
                 <a href="mailto:unsubscribe@expomadeinworld.com" style="color: #999;">Unsubscribe</a> |
@@ -218,7 +218,7 @@ func (e *EmailService) generateEmailHTML(data models.EmailVerificationData) stri
             </p>
 
             <p style="color: #999; font-size: 12px;">
-                © 2025 Made in World. All rights reserved.
+                © 2025 EXPO to World. All rights reserved.
             </p>
         </div>
     </div>
@@ -241,7 +241,7 @@ func (e *EmailService) generateUserEmailHTML(data models.EmailVerificationData) 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Made in World - Login Verification</title>
+    <title>EXPO to World - Login Verification</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -348,13 +348,13 @@ func (e *EmailService) generateUserEmailHTML(data models.EmailVerificationData) 
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">🌍 Made in World</div>
+            <div class="logo">🌍 EXPO to World</div>
             <div class="subtitle">Your Login Verification Code</div>
         </div>
 
         <p>Hello!</p>
 
-        <p>We received a request to sign in to your Made in World account. Use the verification code below to complete your login:</p>
+        <p>We received a request to sign in to your EXPO to World account. Use the verification code below to complete your login:</p>
 
         <div class="verification-code">%s</div>
 
@@ -374,13 +374,13 @@ func (e *EmailService) generateUserEmailHTML(data models.EmailVerificationData) 
         </div>
 
         <div class="footer">
-            <p><strong>Made in World Mobile App</strong><br>
+            <p><strong>EXPO to World Mobile App</strong><br>
             This is an automated security message. Please do not reply to this email.</p>
 
             <p>Need help? Contact our support team at <a href="mailto:support@expomadeinworld.com">support@expomadeinworld.com</a></p>
 
             <p style="color: #999; font-size: 12px;">
-                <strong>Made in World</strong><br>
+                <strong>EXPO to World</strong><br>
                 Business Address: Frankfurt, Germany<br>
                 This email was sent to: %s<br>
                 <a href="mailto:unsubscribe@expomadeinworld.com" style="color: #999;">Unsubscribe</a> |
@@ -388,7 +388,7 @@ func (e *EmailService) generateUserEmailHTML(data models.EmailVerificationData) 
             </p>
 
             <p style="color: #999; font-size: 12px;">
-                © 2025 Made in World. All rights reserved.
+                © 2025 EXPO to World. All rights reserved.
             </p>
         </div>
     </div>
