@@ -81,32 +81,15 @@ jobs:
               \"UnhealthyThreshold\":5\
             }"
 
-      - name: Update App Runner service (image + config)
+      - name: Service already exists (auto-deployment enabled)
         if: steps.lookup.outputs.found == 'true'
-        env:
-          DATABASE_URL_SECRET_ARN: ${{ secrets.DATABASE_URL_SECRET_ARN }}
-          JWT_SECRET_ARN: ${{ secrets.JWT_SECRET_ARN }}
         run: |
-          if [ -z "$DATABASE_URL_SECRET_ARN" ] || [ -z "$JWT_SECRET_ARN" ]; then
-            echo "DATABASE_URL_SECRET_ARN and JWT_SECRET_ARN must be set in repo secrets" >&2
-            exit 1
-          fi
-          aws apprunner update-service \
+          echo "✅ App Runner service already exists: ${{ steps.lookup.outputs.service_arn }}"
+          echo "✅ Auto-deployment is enabled - service will automatically deploy new ECR images"
+          echo "✅ No manual update needed - skipping to avoid race condition with auto-deployment"
+          echo ""
+          echo "📋 Service Status:"
+          aws apprunner describe-service \
             --service-arn "${{ steps.lookup.outputs.service_arn }}" \
-            --source-configuration "{\
-              \"ImageRepository\":{\
-                \"ImageRepositoryType\":\"ECR\",\
-                \"ImageIdentifier\":\"$ECR_REPOSITORY_URI:latest\",\
-                \"ImageConfiguration\":{\
-                  \"Port\":\"$APP_PORT\",\
-                  \"RuntimeEnvironmentSecrets\":{\
-                    \"DATABASE_URL\":\"$DATABASE_URL_SECRET_ARN\",\
-                    \"JWT_SECRET\":\"$JWT_SECRET_ARN\"\
-                  }\
-                }\
-              },\
-              \"AutoDeploymentsEnabled\":true,\
-              \"AuthenticationConfiguration\":{\
-                \"AccessRoleArn\":\"$ECR_ACCESS_ROLE_ARN\"\
-              }\
-            }"
+            --query 'Service.{Status:Status,SourceImage:SourceConfiguration.ImageRepository.ImageIdentifier,UpdatedAt:UpdatedAt}' \
+            --output table
