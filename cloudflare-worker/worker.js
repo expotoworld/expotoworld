@@ -57,6 +57,9 @@ export default {
       backendUrl = 'https://mttci22rgj.eu-central-1.awsapprunner.com';
     } else if (path.startsWith('/api/admin/users')) {
       backendUrl = 'https://yumaw38pdp.eu-central-1.awsapprunner.com';
+    } else if (path.startsWith('/api/admin/carts')) {
+      // Admin cart management - handled by order service
+      backendUrl = 'https://mttci22rgj.eu-central-1.awsapprunner.com';
     } else if (path.startsWith('/api/admin/orders')) {
       backendUrl = 'https://mttci22rgj.eu-central-1.awsapprunner.com';
     } else if (path.startsWith('/api/auth')) {
@@ -85,6 +88,7 @@ export default {
           available_routes: [
             '/api/auth/*',
             '/api/admin/users/*',
+            '/api/admin/carts/*',
             '/api/admin/orders/*',
             '/api/admin/manufacturer/*',
             '/api/ebooks/*',
