@@ -65,8 +65,8 @@ export default {
     } else if (path.startsWith('/api/auth')) {
       // Auth service - handles all authentication
       backendUrl = 'https://ge6ik5nm6e.eu-central-1.awsapprunner.com';
-    } else if (path.startsWith('/api/ebooks')) {
-      // Ebook service
+    } else if (path.startsWith('/api/ebook')) {
+      // Ebook service - handles both /api/ebook and /api/ebook/* routes
       backendUrl = 'https://brdmfppyst.eu-central-1.awsapprunner.com';
     } else if (path.startsWith('/api/cart')) {
       // Cart routes - handled by order service
@@ -91,7 +91,7 @@ export default {
             '/api/admin/carts/*',
             '/api/admin/orders/*',
             '/api/admin/manufacturer/*',
-            '/api/ebooks/*',
+            '/api/ebook/*',
             '/api/cart/*',
             '/api/orders/*',
             '/api/v1/*',

@@ -1342,7 +1342,7 @@ func (h *Handler) uploadToS3(ctx context.Context, productID int, fileHeader *mul
 	s3Client := s3.NewFromConfig(cfg)
 
 	// Upload to S3
-	bucketName := "madeinworld-product-images-admin"
+	bucketName := "expotoworld-product-images"
 	objectKey := fmt.Sprintf("products/%d/%d%s", productID, time.Now().UnixNano(), filepath.Ext(fileHeader.Filename))
 
 	_, err = s3Client.PutObject(ctx, &s3.PutObjectInput{
@@ -1386,7 +1386,7 @@ func (h *Handler) uploadGenericToS3(ctx context.Context, objectKey string, file 
 	}
 	s3Client := s3.NewFromConfig(cfg)
 
-	bucketName := "madeinworld-product-images-admin"
+	bucketName := "expotoworld-product-images"
 	_, err = s3Client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: &bucketName,
 		Key:    &objectKey,
@@ -2174,7 +2174,7 @@ func (h *Handler) AdminCleanupS3(c *gin.Context) {
 		return
 	}
 	s3Client := s3.NewFromConfig(cfg)
-	bucketName := "madeinworld-product-images-admin"
+	bucketName := "expotoworld-product-images"
 
 	deleted := 0
 	for _, p := range prefixes {
