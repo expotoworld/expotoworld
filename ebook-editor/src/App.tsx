@@ -21,7 +21,7 @@ import WordCount from './WordCount'
 import { ThemeProvider, useThemeMode } from './theme'
 import './i18n'
 import { useTranslation } from 'react-i18next'
-import { AUTH_BASE, getRefreshToken, setAccessToken, setRefreshToken } from './auth'
+import { AUTH_BASE, getRefreshToken, setAccessToken, setRefreshToken, clearTokens } from './auth'
 
 function UserMenu({ onLogout }: { onLogout: () => void }) {
   const { t } = useTranslation()
@@ -115,7 +115,11 @@ function Shell({ children, status, lastSavedAt, toolbar, actionsRight }: React.P
                 </svg>
               )}
             </button>
-            <UserMenu onLogout={() => { localStorage.removeItem('token'); setToken(null); }} />
+            <UserMenu onLogout={() => {
+              clearTokens(); // Clear both access and refresh tokens
+              localStorage.removeItem('token'); // Clear old token key if exists
+              setToken(null); // Reset token state to trigger redirect to login
+            }} />
           </div>
         </div>
       </div>

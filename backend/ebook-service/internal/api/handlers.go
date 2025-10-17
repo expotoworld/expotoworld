@@ -1,14 +1,22 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
+	"io"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/expomadeinworld/expotoworld/backend/ebook-service/internal/storage"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -221,5 +229,94 @@ func PostPublishHandler(db *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"status": "published"})
+	}
+}
+
+// UploadImageHandler handles POST /api/ebook/upload-image
+func UploadImageHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+		defer cancel()
+
+		// Get the uploaded file
+		file, header, err := c.Request.FormFile("image")
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "No image file provided"})
+			return
+		}
+		defer file.Close()
+
+		// Validate file type
+		contentType := header.Header.Get("Content-Type")
+		if !strings.HasPrefix(contentType, "image/") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type. Only images are allowed"})
+			return
+		}
+
+		// Read file content
+		fileContent, err := io.ReadAll(file)
+		if err != nil {
+			log.Printf("Failed to read file: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read file"})
+			return
+		}
+
+		// Get S3 bucket from environment
+		bucket := os.Getenv("EBOOK_S3_BUCKET")
+		if bucket == "" {
+			c.JSON(http.StatusFailedDependency, gin.H{"error": "S3 not configured"})
+			return
+		}
+
+		// Get AWS region
+		region := os.Getenv("AWS_REGION")
+		if region == "" {
+			region = os.Getenv("AWS_DEFAULT_REGION")
+		}
+		if region == "" {
+			region = "eu-central-1"
+		}
+
+		// Clear any existing credentials to use IAM role
+		_ = os.Unsetenv("AWS_ACCESS_KEY_ID")
+		_ = os.Unsetenv("AWS_SECRET_ACCESS_KEY")
+		_ = os.Unsetenv("AWS_SESSION_TOKEN")
+
+		// Load AWS config
+		cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+		if err != nil {
+			log.Printf("Failed to load AWS config: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to configure S3"})
+			return
+		}
+
+		s3Client := s3.NewFromConfig(cfg)
+
+		// Generate S3 object key
+		ext := filepath.Ext(header.Filename)
+		objectKey := fmt.Sprintf("ebook/images/%d%s", time.Now().UnixNano(), ext)
+
+		// Upload to S3
+		_, err = s3Client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket:      &bucket,
+			Key:         &objectKey,
+			Body:        bytes.NewReader(fileContent),
+			ContentType: &contentType,
+		})
+		if err != nil {
+			log.Printf("Failed to upload to S3: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image"})
+			return
+		}
+
+		// Build CloudFront URL
+		cdnBase := os.Getenv("ASSETS_CDN_BASE_URL")
+		if cdnBase == "" {
+			cdnBase = "https://assets.expotoworld.com"
+		}
+		imageURL := fmt.Sprintf("%s/%s", strings.TrimRight(cdnBase, "/"), objectKey)
+
+		log.Printf("Successfully uploaded image to S3: %s", objectKey)
+		c.JSON(http.StatusOK, gin.H{"url": imageURL})
 	}
 }

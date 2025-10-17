@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Editor } from '@tiptap/react';
 import { useTranslation } from 'react-i18next'
+import axios from 'axios'
+
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'https://device-api.expotoworld.com'
 
 
 function Btn({ active, onClick, title, children }: React.PropsWithChildren<{ active?: boolean; onClick: ()=>void; title?: string }>) {
@@ -338,11 +341,30 @@ export default function Toolbar({ editor, zoomLevel, onZoomChange }: { editor: E
       <LinkPicker editor={editor} />
 
       {/* Group 6 */}
-      <input id="_img_input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+      <input id="_img_input" type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
         const f = (e.target as HTMLInputElement).files?.[0];
         if (!f) return;
-        const url = URL.createObjectURL(f);
-        editor.chain().focus().setImage({ src: url }).run();
+
+        // Upload to S3 via ebook-service
+        try {
+          const formData = new FormData();
+          formData.append('image', f);
+
+          const token = localStorage.getItem('token');
+          const response = await axios.post(`${API_BASE}/api/ebook/upload-image`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          const imageUrl = response.data.url;
+          editor.chain().focus().setImage({ src: imageUrl }).run();
+        } catch (error) {
+          console.error('Failed to upload image:', error);
+          alert('Failed to upload image. Please try again.');
+        }
+
         (e.target as HTMLInputElement).value = '';
       }} />
       <Btn onClick={() => (document.getElementById('_img_input') as HTMLInputElement)?.click()} title={t('toolbar.image_add')} aria-label={t('toolbar.image_add')}>

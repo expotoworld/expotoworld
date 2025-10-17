@@ -2708,9 +2708,71 @@ func (h *Handler) updateImageDisplayOrder(ctx context.Context, productID, imageI
 	return h.db.UpdateImageDisplayOrder(ctx, productID, imageID, displayOrder)
 }
 
-// deleteProductImage deletes a product image
+// deleteProductImage deletes a product image from database and S3
 func (h *Handler) deleteProductImage(ctx context.Context, productID, imageID int) error {
-	return h.db.DeleteProductImage(ctx, productID, imageID)
+	// First, get the image URL before deleting from database
+	var imageURL string
+	query := `SELECT image_url FROM product_images WHERE product_id = $1 AND image_id = $2`
+	err := h.db.Pool.QueryRow(ctx, query, productID, imageID).Scan(&imageURL)
+	if err != nil {
+		return fmt.Errorf("failed to get image URL: %w", err)
+	}
+
+	// Delete from database first
+	if err := h.db.DeleteProductImage(ctx, productID, imageID); err != nil {
+		return err
+	}
+
+	// Extract S3 object key from CloudFront URL
+	// URL format: https://assets.expotoworld.com/products/{product_id}/{timestamp}_{filename}
+	// We need to extract: products/{product_id}/{timestamp}_{filename}
+	cdnBase := os.Getenv("ASSETS_CDN_BASE_URL")
+	if cdnBase == "" {
+		cdnBase = "https://assets.expotoworld.com"
+	}
+
+	objectKey := strings.TrimPrefix(imageURL, cdnBase+"/")
+	if objectKey == imageURL {
+		// URL doesn't match expected format, log warning but don't fail
+		log.Printf("Warning: Could not extract S3 key from URL: %s", imageURL)
+		return nil
+	}
+
+	// Delete from S3
+	region := os.Getenv("AWS_REGION")
+	if region == "" {
+		region = os.Getenv("AWS_DEFAULT_REGION")
+	}
+	if region == "" {
+		region = "eu-central-1"
+	}
+
+	// Clear any existing credentials to use IAM role
+	_ = os.Unsetenv("AWS_ACCESS_KEY_ID")
+	_ = os.Unsetenv("AWS_SECRET_ACCESS_KEY")
+	_ = os.Unsetenv("AWS_SESSION_TOKEN")
+
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+	if err != nil {
+		log.Printf("Warning: Failed to load AWS config for S3 deletion: %v", err)
+		return nil // Don't fail the request if S3 cleanup fails
+	}
+
+	s3Client := s3.NewFromConfig(cfg)
+	bucketName := "expotoworld-product-images"
+
+	_, err = s3Client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: &bucketName,
+		Key:    &objectKey,
+	})
+	if err != nil {
+		log.Printf("Warning: Failed to delete S3 object %s: %v", objectKey, err)
+		// Don't fail the request if S3 cleanup fails
+	} else {
+		log.Printf("Successfully deleted S3 object: %s", objectKey)
+	}
+
+	return nil
 }
 
 // setPrimaryImage sets an image as primary

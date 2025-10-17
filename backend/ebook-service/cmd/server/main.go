@@ -81,6 +81,7 @@ func main() {
 		author.PUT("/ebook", api.PutAutosaveEbookHandler(pool))
 		author.POST("/ebook/versions", api.PostManualVersionHandler(pool))
 		author.POST("/ebook/publish", api.PostPublishHandler(pool))
+		author.POST("/ebook/upload-image", api.UploadImageHandler())
 	}
 
 	log.Printf("ebook-service listening on :%s", port)

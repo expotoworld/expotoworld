@@ -198,6 +198,15 @@ const ProductForm = ({ open, onClose, onProductCreated, product = null, onProduc
     }
   }, [showError]);
 
+  // Auto-advance to Step 2 when productId is set (after product creation)
+  useEffect(() => {
+    if (productId && activeStep === 0 && !product) {
+      // Product was just created, advance to Step 2
+      console.log('Product created with ID:', productId, '- advancing to Step 2');
+      setActiveStep(1);
+    }
+  }, [productId, activeStep, product]);
+
   // Load existing product images when editing
   const loadProductImages = async (productId) => {
     try {
@@ -633,7 +642,10 @@ const ProductForm = ({ open, onClose, onProductCreated, product = null, onProduc
           console.warn('Assignments update failed (non-blocking):', e);
         }
         showSuccess('Product created successfully! Now add images.');
-        setActiveStep(1); // Move to Step 2 (Image Management)
+        // Use setTimeout to ensure state updates are processed
+        setTimeout(() => {
+          setActiveStep(1); // Move to Step 2 (Image Management)
+        }, 100);
       }
 
     } catch (err) {

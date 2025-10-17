@@ -170,6 +170,27 @@ body {
 .menu-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; }
 .menu-item:hover { background: rgba(0,0,0,0.04); }
 :root[data-theme="dark"] .menu-item:hover { background: rgba(255,255,255,0.06); }
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-size: 14px;
+  color: var(--color-text);
+  transition: background 0.15s ease;
+}
+.dropdown-item:hover {
+  background: rgba(0,0,0,0.04);
+}
+:root[data-theme="dark"] .dropdown-item:hover {
+  background: rgba(255,255,255,0.06);
+}
 .swatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--color-border); display: inline-block; }
 
 /* Icon sizing */
