@@ -54,5 +54,8 @@
   "word.box": "{{count}} 个字",
   "word.box_selected": "{{count}} 个字",
 
-  "placeholder.editor": "华商道"
+  "placeholder.editor": "华商道",
+
+  "user.menu_tooltip": "华商道",
+  "user.logout": "退出登录"
 }

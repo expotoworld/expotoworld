@@ -54,6 +54,9 @@
   "word.box": "{{count}} words",
   "word.box_selected": "{{count}} words",
 
-  "placeholder.editor": "EXPO Made in World"
+  "placeholder.editor": "EXPO Made in World",
+
+  "user.menu_tooltip": "Huashangdao",
+  "user.logout": "Logout"
 }
 

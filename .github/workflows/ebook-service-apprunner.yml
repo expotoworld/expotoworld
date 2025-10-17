@@ -58,6 +58,9 @@ jobs:
                 \"ImageIdentifier\":\"$ECR_REPOSITORY_URI:latest\",\
                 \"ImageConfiguration\":{\
                   \"Port\":\"$APP_PORT\",\
+                  \"RuntimeEnvironmentVariables\":{\
+                    \"EBOOK_S3_BUCKET\":\"expotoworld-ebook-versions\"\
+                  },\
                   \"RuntimeEnvironmentSecrets\":{\
                     \"DATABASE_URL\":\"$DATABASE_URL_SECRET_ARN\",\
                     \"JWT_SECRET\":\"$JWT_SECRET_ARN\"\

@@ -308,6 +308,13 @@ func (h *Handler) DeleteProduct(c *gin.Context) {
 	hardDelete := c.Query("hard") == "true"
 
 	if hardDelete {
+		// Delete S3 images first (before database deletion)
+		s3Prefix := fmt.Sprintf("products/%d/", productID)
+		if err := h.deleteS3Folder(ctx, s3Prefix); err != nil {
+			log.Printf("Warning: Failed to delete S3 images for product %d: %v", productID, err)
+			// Continue with database deletion even if S3 cleanup fails
+		}
+
 		// Perform hard delete (permanent removal)
 		if err := h.db.HardDeleteProduct(ctx, productID); err != nil {
 			log.Printf("Failed to hard delete product %d: %v", productID, err)
@@ -319,7 +326,7 @@ func (h *Handler) DeleteProduct(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
-			"message":    "Product permanently deleted",
+			"message":    "Product and images permanently deleted",
 			"product_id": productID,
 		})
 	} else {
@@ -1659,6 +1666,13 @@ func (h *Handler) DeleteSubcategory(c *gin.Context) {
 
 	subcategoryID := c.Param("id")
 
+	// Delete S3 images first (before database deletion)
+	s3Prefix := fmt.Sprintf("subcategories/%s/", subcategoryID)
+	if err := h.deleteS3Folder(ctx, s3Prefix); err != nil {
+		log.Printf("Warning: Failed to delete S3 images for subcategory %s: %v", subcategoryID, err)
+		// Continue with database deletion even if S3 cleanup fails
+	}
+
 	query := `DELETE FROM subcategories WHERE subcategory_id = $1`
 
 	result, err := h.db.Pool.Exec(ctx, query, subcategoryID)
@@ -1673,7 +1687,7 @@ func (h *Handler) DeleteSubcategory(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Subcategory deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Subcategory and images deleted successfully"})
 }
 
 // CreateCategory handles POST /categories
@@ -1871,6 +1885,13 @@ func (h *Handler) DeleteCategory(c *gin.Context) {
 	hardDelete := c.Query("hard") == "true"
 
 	if hardDelete {
+		// Delete S3 images first (before database deletion)
+		s3Prefix := fmt.Sprintf("categories/%s/", categoryID)
+		if err := h.deleteS3Folder(ctx, s3Prefix); err != nil {
+			log.Printf("Warning: Failed to delete S3 images for category %s: %v", categoryID, err)
+			// Continue with database deletion even if S3 cleanup fails
+		}
+
 		// Perform hard delete (completely remove from database)
 		query := `DELETE FROM product_categories WHERE category_id = $1`
 		_, err := h.db.Pool.Exec(ctx, query, categoryID)
@@ -1880,7 +1901,7 @@ func (h *Handler) DeleteCategory(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
-			"message":     "Category permanently deleted",
+			"message":     "Category and images permanently deleted",
 			"category_id": categoryID,
 		})
 	} else {
@@ -2101,6 +2122,13 @@ func (h *Handler) DeleteStore(c *gin.Context) {
 	hardDelete := c.Query("hard") == "true"
 
 	if hardDelete {
+		// Delete S3 images first (before database deletion)
+		s3Prefix := fmt.Sprintf("stores/%s/", storeID)
+		if err := h.deleteS3Folder(ctx, s3Prefix); err != nil {
+			log.Printf("Warning: Failed to delete S3 images for store %s: %v", storeID, err)
+			// Continue with database deletion even if S3 cleanup fails
+		}
+
 		// Perform hard delete (completely remove from database)
 		query := `DELETE FROM stores WHERE store_id = $1`
 		_, err := h.db.Pool.Exec(ctx, query, storeID)
@@ -2110,7 +2138,7 @@ func (h *Handler) DeleteStore(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
-			"message":  "Store permanently deleted",
+			"message":  "Store and images permanently deleted",
 			"store_id": storeID,
 		})
 	} else {
@@ -2138,6 +2166,73 @@ func (h *Handler) DeleteStore(c *gin.Context) {
 			"store_id": storeID,
 		})
 	}
+}
+
+// deleteS3Folder deletes all objects under the given S3 prefix (folder)
+func (h *Handler) deleteS3Folder(ctx context.Context, prefix string) error {
+	region := os.Getenv("AWS_REGION")
+	if region == "" {
+		region = os.Getenv("AWS_DEFAULT_REGION")
+	}
+	if region == "" {
+		region = "eu-central-1"
+	}
+
+	// Clear any existing credentials to use IAM role
+	_ = os.Unsetenv("AWS_ACCESS_KEY_ID")
+	_ = os.Unsetenv("AWS_SECRET_ACCESS_KEY")
+	_ = os.Unsetenv("AWS_SESSION_TOKEN")
+
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+	if err != nil {
+		return fmt.Errorf("failed to load AWS config: %w", err)
+	}
+
+	s3Client := s3.NewFromConfig(cfg)
+	bucketName := "expotoworld-product-images"
+
+	// List and delete all objects with the given prefix
+	var token *string
+	for {
+		out, err := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+			Bucket:            &bucketName,
+			Prefix:            &prefix,
+			ContinuationToken: token,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to list S3 objects: %w", err)
+		}
+
+		if len(out.Contents) == 0 {
+			break
+		}
+
+		// Batch delete up to 1000 objects
+		var objs []s3types.ObjectIdentifier
+		for _, o := range out.Contents {
+			key := *o.Key
+			objs = append(objs, s3types.ObjectIdentifier{Key: &key})
+		}
+
+		if len(objs) > 0 {
+			_, err = s3Client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+				Bucket: &bucketName,
+				Delete: &s3types.Delete{Objects: objs},
+			})
+			if err != nil {
+				return fmt.Errorf("failed to delete S3 objects: %w", err)
+			}
+			log.Printf("Deleted %d objects from S3 with prefix: %s", len(objs), prefix)
+		}
+
+		if out.NextContinuationToken != nil {
+			token = out.NextContinuationToken
+			continue
+		}
+		break
+	}
+
+	return nil
 }
 
 // AdminCleanupS3 deletes all objects under the given prefixes. Guarded by X-Maintenance-Token.

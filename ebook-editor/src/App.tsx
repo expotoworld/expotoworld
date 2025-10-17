@@ -15,7 +15,7 @@ import TaskItem from '@tiptap/extension-task-item'
 
 import axios from 'axios'
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'https://device-api.expotoworld.com'
-import LoginNew from './LoginNew'
+import Login from './Login'
 import Toolbar from './Toolbar'
 import WordCount from './WordCount'
 import { ThemeProvider, useThemeMode } from './theme'
@@ -23,6 +23,53 @@ import './i18n'
 import { useTranslation } from 'react-i18next'
 import { AUTH_BASE, getRefreshToken, setAccessToken, setRefreshToken } from './auth'
 
+function UserMenu({ onLogout }: { onLogout: () => void }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [open])
+
+  return (
+    <div className="dropdown" ref={menuRef} style={{ position: 'relative' }}>
+      <button
+        className="theme-toggle"
+        onClick={() => setOpen(v => !v)}
+        data-tooltip={t('user.menu_tooltip')}
+        aria-label={t('user.menu_tooltip')}
+        type="button"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+          <path d="M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM12.1597 16C10.1243 16 8.29182 16.8687 7.01276 18.2556C8.38039 19.3474 10.114 20 12 20C13.9695 20 15.7727 19.2883 17.1666 18.1081C15.8956 16.8074 14.1219 16 12.1597 16ZM12 4C7.58172 4 4 7.58172 4 12C4 13.8106 4.6015 15.4807 5.61557 16.8214C7.25639 15.0841 9.58144 14 12.1597 14C14.6441 14 16.8933 15.0066 18.5218 16.6342C19.4526 15.3267 20 13.7273 20 12C20 7.58172 16.4183 4 12 4ZM12 5C14.2091 5 16 6.79086 16 9C16 11.2091 14.2091 13 12 13C9.79086 13 8 11.2091 8 9C8 6.79086 9.79086 5 12 5ZM12 7C10.8954 7 10 7.89543 10 9C10 10.1046 10.8954 11 12 11C13.1046 11 14 10.1046 14 9C14 7.89543 13.1046 7 12 7Z"/>
+        </svg>
+      </button>
+      {open && (
+        <div className="dropdown-menu" role="menu" style={{ right: 0, left: 'auto', minWidth: '150px' }}>
+          <button
+            className="dropdown-item"
+            onClick={() => { onLogout(); setOpen(false); }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 12px' }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style={{ width: '18px', height: '18px' }}>
+              <path d="M4 18H6V20H18V4H6V6H4V3C4 2.44772 4.44772 2 5 2H19C19.5523 2 20 2.44772 20 3V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V18ZM6 11H13V13H6V16L1 12L6 8V11Z"/>
+            </svg>
+            {t('user.logout')}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function useSaving() {
   const [status, setStatus] = useState<'idle'|'saving'|'saved'|'error'>('idle')
@@ -68,6 +115,7 @@ function Shell({ children, status, lastSavedAt, toolbar, actionsRight }: React.P
                 </svg>
               )}
             </button>
+            <UserMenu onLogout={() => { localStorage.removeItem('token'); setToken(null); }} />
           </div>
         </div>
       </div>
@@ -188,7 +236,7 @@ export default function App() {
   }, [token, editor])
 
   if (authBoot) return <div />
-  if (!token) return <LoginNew onToken={setToken} />
+  if (!token) return <Login onToken={setToken} />
 
   return (
     <ThemeProvider>
