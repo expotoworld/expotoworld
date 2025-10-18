@@ -322,9 +322,9 @@ func (db *Database) InitSchema(ctx context.Context) error {
 func getConfigFromEnv() Config {
 	config := Config{
 		Host:     getEnv("DB_HOST", "localhost"),
-		User:     getEnv("DB_USER", "madeinworld_admin"),
+		User:     getEnv("DB_USER", "expotoworld_admin"),
 		Password: getEnv("DB_PASSWORD", ""),
-		DBName:   getEnv("DB_NAME", "madeinworld_db"),
+		DBName:   getEnv("DB_NAME", "expotoworld_db"),
 		SSLMode:  getEnv("DB_SSLMODE", "prefer"),
 	}
 

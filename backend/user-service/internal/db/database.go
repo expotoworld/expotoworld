@@ -71,7 +71,7 @@ func NewDatabaseWithRetry(maxRetries int, initialDelay time.Duration) (*Database
 
 		user = os.Getenv("DB_USER")
 		if user == "" {
-			user = "madeinworld_admin"
+			user = "expotoworld_admin"
 		}
 
 		password := os.Getenv("DB_PASSWORD")
@@ -79,7 +79,7 @@ func NewDatabaseWithRetry(maxRetries int, initialDelay time.Duration) (*Database
 
 		dbname = os.Getenv("DB_NAME")
 		if dbname == "" {
-			dbname = "madeinworld_db"
+			dbname = "expotoworld_db"
 		}
 
 		sslmode = os.Getenv("DB_SSLMODE")
