@@ -15,7 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 const LoginPage = () => {
   const { login, isAuthenticated, loading } = useAuth();
   const [formData, setFormData] = useState({
-    email: 'testadmin@madeinworld.com', // Pre-filled for temporary login
+    email: 'testadmin@expotoworld.com', // Pre-filled for temporary login
     password: 'testadmin123'
   });
   const [error, setError] = useState('');
