@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/expomadeinworld/expotoworld/backend/auth-service/internal/db"
-	"github.com/expomadeinworld/expotoworld/backend/auth-service/internal/models"
-	"github.com/expomadeinworld/expotoworld/backend/auth-service/internal/services"
+	"github.com/expotoworld/expotoworld/backend/auth-service/internal/db"
+	"github.com/expotoworld/expotoworld/backend/auth-service/internal/models"
+	"github.com/expotoworld/expotoworld/backend/auth-service/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"

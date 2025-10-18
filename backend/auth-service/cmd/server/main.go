@@ -8,10 +8,10 @@ import (
 	"syscall"
 
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/expomadeinworld/expotoworld/backend/auth-service/internal/api"
-	"github.com/expomadeinworld/expotoworld/backend/auth-service/internal/db"
-	"github.com/expomadeinworld/expotoworld/backend/auth-service/internal/logging"
-	"github.com/expomadeinworld/expotoworld/backend/auth-service/internal/services"
+	"github.com/expotoworld/expotoworld/backend/auth-service/internal/api"
+	"github.com/expotoworld/expotoworld/backend/auth-service/internal/db"
+	"github.com/expotoworld/expotoworld/backend/auth-service/internal/logging"
+	"github.com/expotoworld/expotoworld/backend/auth-service/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )

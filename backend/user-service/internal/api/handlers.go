@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/expomadeinworld/expotoworld/backend/user-service/internal/db"
-	"github.com/expomadeinworld/expotoworld/backend/user-service/internal/models"
+	"github.com/expotoworld/expotoworld/backend/user-service/internal/db"
+	"github.com/expotoworld/expotoworld/backend/user-service/internal/models"
 
 	"github.com/gin-gonic/gin"
 )

@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	api "github.com/expomadeinworld/expotoworld/backend/ebook-service/internal/api"
+	api "github.com/expotoworld/expotoworld/backend/ebook-service/internal/api"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"

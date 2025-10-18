@@ -1,4 +1,4 @@
-module github.com/expomadeinworld/expotoworld/backend/catalog-service
+module github.com/expotoworld/expotoworld/backend/catalog-service
 
 go 1.23
 

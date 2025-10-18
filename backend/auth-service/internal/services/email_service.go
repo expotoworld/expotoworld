@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	sesv2 "github.com/aws/aws-sdk-go-v2/service/sesv2"
 	sestypes "github.com/aws/aws-sdk-go-v2/service/sesv2/types"
-	"github.com/expomadeinworld/expotoworld/backend/auth-service/internal/models"
+	"github.com/expotoworld/expotoworld/backend/auth-service/internal/models"
 )
 
 // EmailService handles email sending via AWS SES (SESv2 API)

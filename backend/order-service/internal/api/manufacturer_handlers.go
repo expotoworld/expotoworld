@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/expomadeinworld/expotoworld/backend/order-service/internal/models"
+	"github.com/expotoworld/expotoworld/backend/order-service/internal/models"
 	"github.com/gin-gonic/gin"
 )
 

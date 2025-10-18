@@ -1,4 +1,4 @@
-module github.com/expomadeinworld/expotoworld/backend/user-service
+module github.com/expotoworld/expotoworld/backend/user-service
 
 go 1.23
 

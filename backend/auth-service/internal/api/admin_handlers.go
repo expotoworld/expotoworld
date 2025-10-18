@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/expomadeinworld/expotoworld/backend/auth-service/internal/models"
+	"github.com/expotoworld/expotoworld/backend/auth-service/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"

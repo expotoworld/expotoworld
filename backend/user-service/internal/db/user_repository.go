@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/expomadeinworld/expotoworld/backend/user-service/internal/models"
+	"github.com/expotoworld/expotoworld/backend/user-service/internal/models"
 )
 
 // UserRepository handles user database operations

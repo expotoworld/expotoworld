@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/expomadeinworld/expotoworld/backend/order-service/internal/logging"
-	"github.com/expomadeinworld/expotoworld/backend/order-service/internal/models"
+	"github.com/expotoworld/expotoworld/backend/order-service/internal/logging"
+	"github.com/expotoworld/expotoworld/backend/order-service/internal/models"
 )
 
 // getCartItems gets all cart items for a user and mini-app type

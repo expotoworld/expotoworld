@@ -17,7 +17,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/expomadeinworld/expotoworld/backend/ebook-service/internal/storage"
+	"github.com/expotoworld/expotoworld/backend/ebook-service/internal/storage"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 )

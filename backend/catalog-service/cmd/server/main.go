@@ -6,9 +6,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/expomadeinworld/expotoworld/backend/catalog-service/internal/api"
-	"github.com/expomadeinworld/expotoworld/backend/catalog-service/internal/db"
-	"github.com/expomadeinworld/expotoworld/backend/catalog-service/internal/logging"
+	"github.com/expotoworld/expotoworld/backend/catalog-service/internal/api"
+	"github.com/expotoworld/expotoworld/backend/catalog-service/internal/db"
+	"github.com/expotoworld/expotoworld/backend/catalog-service/internal/logging"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )

@@ -4,9 +4,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/expomadeinworld/expotoworld/backend/user-service/internal/api"
-	"github.com/expomadeinworld/expotoworld/backend/user-service/internal/db"
-	"github.com/expomadeinworld/expotoworld/backend/user-service/internal/logging"
+	"github.com/expotoworld/expotoworld/backend/user-service/internal/api"
+	"github.com/expotoworld/expotoworld/backend/user-service/internal/db"
+	"github.com/expotoworld/expotoworld/backend/user-service/internal/logging"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"

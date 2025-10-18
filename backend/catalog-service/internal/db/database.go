@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/expomadeinworld/expotoworld/backend/catalog-service/internal/models"
+	"github.com/expotoworld/expotoworld/backend/catalog-service/internal/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )

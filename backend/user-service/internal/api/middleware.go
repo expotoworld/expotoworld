@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/expomadeinworld/expotoworld/backend/user-service/internal/models"
+	"github.com/expotoworld/expotoworld/backend/user-service/internal/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"

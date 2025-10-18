@@ -1,4 +1,4 @@
-module github.com/expomadeinworld/expotoworld/backend/order-service
+module github.com/expotoworld/expotoworld/backend/order-service
 
 go 1.23
 

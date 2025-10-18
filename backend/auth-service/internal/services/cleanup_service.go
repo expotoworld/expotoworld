@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/expomadeinworld/expotoworld/backend/auth-service/internal/db"
+	"github.com/expotoworld/expotoworld/backend/auth-service/internal/db"
 )
 
 // CleanupService handles periodic cleanup of expired data

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/expomadeinworld/expotoworld/backend/order-service/internal/db"
-	"github.com/expomadeinworld/expotoworld/backend/order-service/internal/models"
+	"github.com/expotoworld/expotoworld/backend/order-service/internal/db"
+	"github.com/expotoworld/expotoworld/backend/order-service/internal/models"
 	"github.com/gin-gonic/gin"
 )
 

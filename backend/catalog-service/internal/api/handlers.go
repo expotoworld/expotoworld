@@ -19,8 +19,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/expomadeinworld/expotoworld/backend/catalog-service/internal/db"
-	"github.com/expomadeinworld/expotoworld/backend/catalog-service/internal/models"
+	"github.com/expotoworld/expotoworld/backend/catalog-service/internal/db"
+	"github.com/expotoworld/expotoworld/backend/catalog-service/internal/models"
 	"github.com/gin-gonic/gin"
 )
 

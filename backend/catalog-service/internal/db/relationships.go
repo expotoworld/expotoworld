@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 
-	"github.com/expomadeinworld/expotoworld/backend/catalog-service/internal/models"
+	"github.com/expotoworld/expotoworld/backend/catalog-service/internal/models"
 )
 
 // SetProductSourcing replaces sourcing mappings for a product atomically

@@ -1,4 +1,4 @@
-module github.com/expomadeinworld/expotoworld/backend/ebook-service
+module github.com/expotoworld/expotoworld/backend/ebook-service
 
 go 1.23.0
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/expomadeinworld/expotoworld/backend/order-service/internal/models"
+	"github.com/expotoworld/expotoworld/backend/order-service/internal/models"
 	"github.com/jackc/pgx/v5"
 )
 
