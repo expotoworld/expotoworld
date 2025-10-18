@@ -5,5 +5,5 @@ set -euo pipefail
 # API base URL points to production backend
 
 cd "$(dirname "$0")/../app"
-flutter run --flavor prod --dart-define=API_BASE=https://device-api.expomadeinworld.com "$@"
+flutter run --flavor prod --dart-define=API_BASE=https://device-api.expotoworld.com "$@"
 
