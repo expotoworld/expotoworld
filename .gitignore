@@ -101,7 +101,6 @@ service-account.json
 aws-credentials.json
 
 # Documentation
-/madeinworld
 /docs
 *.md
 logs.txt

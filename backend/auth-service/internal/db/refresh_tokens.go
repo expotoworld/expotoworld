@@ -18,7 +18,7 @@ func hashRefreshToken(plain string) string {
 // The plain token must NOT be stored in DB. Pass hash generated via hashRefreshToken().
 func (db *Database) CreateRefreshToken(ctx context.Context, userID string, tokenHash string, expiresAt time.Time, ip string, userAgent string) (string, error) {
 	query := `
-		INSERT INTO refresh_tokens (user_id, token_hash, expires_at, ip_address, user_agent)
+		INSERT INTO app_refresh_tokens (user_id, token_hash, expires_at, ip_address, user_agent)
 		VALUES ($1, $2, $3, NULLIF($4,''), NULLIF($5,''))
 		RETURNING id
 	`
@@ -33,7 +33,7 @@ func (db *Database) CreateRefreshToken(ctx context.Context, userID string, token
 func (db *Database) GetRefreshToken(ctx context.Context, tokenHash string) (id string, userID string, expiresAt time.Time, revoked bool, err error) {
 	query := `
 		SELECT id::text, user_id::text, expires_at, revoked
-		FROM refresh_tokens
+		FROM app_refresh_tokens
 		WHERE token_hash = $1
 	`
 	err = db.Pool.QueryRow(ctx, query, tokenHash).Scan(&id, &userID, &expiresAt, &revoked)
@@ -42,13 +42,12 @@ func (db *Database) GetRefreshToken(ctx context.Context, tokenHash string) (id s
 
 // RevokeRefreshToken marks a token as revoked.
 func (db *Database) RevokeRefreshToken(ctx context.Context, id string) error {
-	_, err := db.Pool.Exec(ctx, `UPDATE refresh_tokens SET revoked = true WHERE id = $1`, id)
+	_, err := db.Pool.Exec(ctx, `UPDATE app_refresh_tokens SET revoked = true WHERE id = $1`, id)
 	return err
 }
 
 // CleanupExpiredRefreshTokens removes permanently expired tokens (optional maintenance helper)
 func (db *Database) CleanupExpiredRefreshTokens(ctx context.Context) error {
-	_, err := db.Pool.Exec(ctx, `DELETE FROM refresh_tokens WHERE expires_at < now() - interval '7 days' OR (revoked = true AND expires_at < now())`)
+	_, err := db.Pool.Exec(ctx, `DELETE FROM app_refresh_tokens WHERE expires_at < now() - interval '7 days' OR (revoked = true AND expires_at < now())`)
 	return err
 }
-

@@ -13,10 +13,16 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	port := getEnv("PORT", "8080")
+	// Load environment variables from .env file if it exists
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using environment variables")
+	}
+
+	port := getEnv("PORT", "8084")
 	dbURL := getEnv("DATABASE_URL", "")
 	if dbURL == "" {
 		// Compose from discrete envs if provided (Terraform style)
@@ -82,6 +88,7 @@ func main() {
 		author.POST("/ebook/versions", api.PostManualVersionHandler(pool))
 		author.POST("/ebook/publish", api.PostPublishHandler(pool))
 		author.POST("/ebook/upload-image", api.UploadImageHandler())
+		author.DELETE("/ebook/delete-image", api.DeleteImageHandler())
 	}
 
 	log.Printf("ebook-service listening on :%s", port)

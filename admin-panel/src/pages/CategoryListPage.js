@@ -48,6 +48,7 @@ import {
   PhotoCamera as PhotoIcon,
 } from '@mui/icons-material';
 import { useToast } from '../contexts/ToastContext';
+import { CATALOG_BASE } from '../services/api';
 
 const CategoryListPage = () => {
   const [categories, setCategories] = useState([]);
@@ -91,11 +92,10 @@ const CategoryListPage = () => {
   ];
 
 
-  const API_BASE = process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com';
   const resolveImageUrl = (url) => {
     if (!url) return '';
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    return `${API_BASE}${url}`;
+    return `${CATALOG_BASE}${url}`;
   };
 
 
@@ -147,8 +147,7 @@ const CategoryListPage = () => {
     try {
       setLoading(true);
       const currentMiniApp = miniAppTabs[currentTab];
-      const API_BASE = process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com';
-      let url = `${API_BASE}/api/v1/categories?mini_app_type=${currentMiniApp.value}&include_subcategories=true&include_store_info=true`;
+      let url = `${CATALOG_BASE}/categories?mini_app_type=${currentMiniApp.value}&include_subcategories=true&include_store_info=true`;
 
       // Add store filter for location-based mini-apps
       if (currentMiniApp.requiresStore && selectedStore) {
@@ -181,8 +180,7 @@ const CategoryListPage = () => {
         return;
       }
 
-      const API_BASE = process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com';
-      const response = await fetch(`${API_BASE}/api/v1/stores?mini_app_type=${currentMiniApp.value}`);
+      const response = await fetch(`${CATALOG_BASE}/stores?mini_app_type=${currentMiniApp.value}`);
       if (response.ok) {
         const data = await response.json();
         // Ensure data is always an array
@@ -231,8 +229,7 @@ const CategoryListPage = () => {
         store_id: currentMiniApp.requiresStore ? selectedStore?.id : null,
       };
 
-      const API_BASE = process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com';
-      const response = await fetch(`${API_BASE}/api/v1/categories`, {
+      const response = await fetch(`${CATALOG_BASE}/categories`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -275,7 +272,7 @@ const CategoryListPage = () => {
         store_id: currentMiniApp.requiresStore ? selectedStore?.id : null,
       };
 
-      const response = await fetch(`${(process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com')}/api/v1/categories/${editingCategory.id}`, {
+      const response = await fetch(`${CATALOG_BASE}/categories/${editingCategory.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -320,7 +317,7 @@ const CategoryListPage = () => {
         subcategoryData.image_url = ''; // Will be set after image upload
       }
 
-      const response = await fetch(`${(process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com')}/api/v1/categories/${selectedCategoryForSubcategory.id}/subcategories`, {
+      const response = await fetch(`${CATALOG_BASE}/categories/${selectedCategoryForSubcategory.id}/subcategories`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -370,7 +367,7 @@ const CategoryListPage = () => {
 
       let subcategoryData = { ...subcategoryForm };
 
-      const response = await fetch(`${(process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com')}/api/v1/subcategories/${editingSubcategory.id}`, {
+      const response = await fetch(`${CATALOG_BASE}/subcategories/${editingSubcategory.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -407,7 +404,7 @@ const CategoryListPage = () => {
   const handleDeleteSubcategory = async (subcategoryId) => {
     if (window.confirm('Are you sure you want to delete this subcategory?')) {
       try {
-        const response = await fetch(`${(process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com')}/api/v1/subcategories/${subcategoryId}`, {
+        const response = await fetch(`${CATALOG_BASE}/subcategories/${subcategoryId}`, {
           method: 'DELETE',
         });
 
@@ -429,7 +426,7 @@ const CategoryListPage = () => {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await fetch(`${(process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com')}/api/v1/subcategories/${subcategoryId}/image`, {
+      const response = await fetch(`${CATALOG_BASE}/subcategories/${subcategoryId}/image`, {
         method: 'POST',
         body: formData,
       });
@@ -591,7 +588,7 @@ const CategoryListPage = () => {
                       <MenuItem key={store.id} value={store.id}>
                         <Box display="flex" alignItems="center" width="100%">
                           <Avatar
-                            src={store.image_url ? `${(process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com')}${store.image_url}` : ''}
+                            src={store.image_url || ''}
                             variant="rounded"
                             sx={{
                               width: 32,

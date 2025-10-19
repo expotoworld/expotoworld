@@ -3,6 +3,15 @@ import axios from 'axios';
 
 const AuthContext = createContext();
 
+// Helper function to get the correct AUTH_BASE URL
+const getAuthBase = () => {
+  const envApiBase = process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com';
+  if (envApiBase === 'local') {
+    return 'http://localhost:8081/api/auth';
+  }
+  return `${envApiBase}/api/auth`;
+};
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -37,9 +46,9 @@ export const AuthProvider = ({ children }) => {
           axios.defaults.headers.common['Authorization'] = `Bearer ${tokenData.token}`;
         } else if (refreshData?.refresh_token) {
           // Try silent refresh WITHOUT rotating the refresh token
-          const API_BASE = process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com';
+          const AUTH_BASE = getAuthBase();
           try {
-            const resp = await axios.post(`${API_BASE}/api/auth/token/refresh`, { refresh_token: refreshData.refresh_token, rotate: false });
+            const resp = await axios.post(`${AUTH_BASE}/token/refresh`, { refresh_token: refreshData.refresh_token, rotate: false });
             const newToken = resp.data?.token;
             const expiresAt = resp.data?.expires_at || new Date(Date.now() + 60 * 60 * 1000).toISOString();
             if (newToken) {
@@ -68,10 +77,10 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setLoading(true);
-      
-      // Call auth service login endpoint via Worker
-      const API_BASE = process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com';
-      const response = await axios.post(`${API_BASE}/api/auth/login`, {
+
+      // Call auth service login endpoint
+      const AUTH_BASE = getAuthBase();
+      const response = await axios.post(`${AUTH_BASE}/login`, {
         email,
         password
       });
@@ -126,12 +135,12 @@ export const AuthProvider = ({ children }) => {
 
   const refreshToken = useCallback(async () => {
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com';
+      const AUTH_BASE = getAuthBase();
       const refreshRaw = localStorage.getItem('admin_refresh_token');
       const refreshData = refreshRaw ? JSON.parse(refreshRaw) : null;
       const rt = refreshData?.refresh_token;
       if (!rt) throw new Error('No refresh token');
-      const response = await axios.post(`${API_BASE}/api/auth/token/refresh`, { refresh_token: rt, rotate: false });
+      const response = await axios.post(`${AUTH_BASE}/token/refresh`, { refresh_token: rt, rotate: false });
 
       const { token: newToken, expires_at } = response.data;
 

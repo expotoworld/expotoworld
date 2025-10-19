@@ -27,8 +27,8 @@ func (db *Database) GetOrganizations(ctx context.Context, orgType *models.OrgTyp
               o.contact_address,
               o.parent_org_id::text,
               p.name AS parent_org_name
-            FROM organizations o
-            LEFT JOIN organizations p ON p.org_id = o.parent_org_id
+            FROM admin_organizations o
+            LEFT JOIN admin_organizations p ON p.org_id = o.parent_org_id
             WHERE o.org_type = $1
             ORDER BY o.name
         `
@@ -44,8 +44,8 @@ func (db *Database) GetOrganizations(ctx context.Context, orgType *models.OrgTyp
               o.contact_address,
               o.parent_org_id::text,
               p.name AS parent_org_name
-            FROM organizations o
-            LEFT JOIN organizations p ON p.org_id = o.parent_org_id
+            FROM admin_organizations o
+            LEFT JOIN admin_organizations p ON p.org_id = o.parent_org_id
             ORDER BY o.name
         `
 		rows, err = db.Pool.Query(ctx, query)
@@ -78,7 +78,7 @@ func (db *Database) GetOrganizations(ctx context.Context, orgType *models.OrgTyp
 // CreateOrganization inserts a new organization and returns its ID (uuid as text)
 func (db *Database) CreateOrganization(ctx context.Context, org models.Organization) (string, error) {
 	query := `
-	    INSERT INTO organizations (org_type, name, contact_email, contact_phone, contact_address, parent_org_id)
+	    INSERT INTO admin_organizations (org_type, name, contact_email, contact_phone, contact_address, parent_org_id)
 	    VALUES ($1, $2, $3, $4, $5, $6)
 	    RETURNING org_id::text
 	`
@@ -95,7 +95,7 @@ func (db *Database) CreateOrganization(ctx context.Context, org models.Organizat
 // UpdateOrganization updates an existing organization
 func (db *Database) UpdateOrganization(ctx context.Context, id string, org models.Organization) error {
 	query := `
-	    UPDATE organizations
+	    UPDATE admin_organizations
 	    SET org_type = $2,
 	        name = $3,
 	        contact_email = $4,
@@ -119,7 +119,7 @@ func (db *Database) UpdateOrganization(ctx context.Context, id string, org model
 
 // DeleteOrganization deletes an organization by ID
 func (db *Database) DeleteOrganization(ctx context.Context, id string) error {
-	query := `DELETE FROM organizations WHERE org_id = $1`
+	query := `DELETE FROM admin_organizations WHERE org_id = $1`
 	cmd, err := db.Pool.Exec(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete organization: %w", err)
@@ -139,8 +139,8 @@ func (db *Database) GetOrganizationUsers(ctx context.Context, orgID string) ([]m
 		  u.email,
 		  u.role::text AS role,
 		  ou.org_role::text AS org_role
-		FROM organization_users ou
-		JOIN users u ON u.id = ou.user_id
+		FROM admin_admin_organization_users ou
+		JOIN app_users u ON u.id = ou.user_id
 		WHERE ou.org_id = $1
 		ORDER BY full_name
 	`
@@ -164,7 +164,7 @@ func (db *Database) GetOrganizationUsers(ctx context.Context, orgID string) ([]m
 func (db *Database) SetOrganizationUsers(ctx context.Context, orgID string, assignments []models.OrganizationUserAssignment) error {
 	// 1) Get org type
 	var orgType string
-	if err := db.Pool.QueryRow(ctx, `SELECT org_type::text FROM organizations WHERE org_id = $1`, orgID).Scan(&orgType); err != nil {
+	if err := db.Pool.QueryRow(ctx, `SELECT org_type::text FROM admin_organizations WHERE org_id = $1`, orgID).Scan(&orgType); err != nil {
 		return fmt.Errorf("organization not found: %w", err)
 	}
 	// 2) Brand cannot have users
@@ -198,7 +198,7 @@ func (db *Database) SetOrganizationUsers(ctx context.Context, orgID string, assi
 			args = append(args, id)
 			placeholders = append(placeholders, fmt.Sprintf("$%d", i+1))
 		}
-		q := fmt.Sprintf("SELECT id::text, role::text FROM users WHERE id IN (%s)", strings.Join(placeholders, ","))
+		q := fmt.Sprintf("SELECT id::text, role::text FROM app_users WHERE id IN (%s)", strings.Join(placeholders, ","))
 		rows, err := db.Pool.Query(ctx, q, args...)
 		if err != nil {
 			return err
@@ -228,7 +228,7 @@ func (db *Database) SetOrganizationUsers(ctx context.Context, orgID string, assi
 		return err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
-	if _, err := tx.Exec(ctx, `DELETE FROM organization_users WHERE org_id = $1`, orgID); err != nil {
+	if _, err := tx.Exec(ctx, `DELETE FROM admin_organization_users WHERE org_id = $1`, orgID); err != nil {
 		return err
 	}
 	allowed := map[string]bool{"Owner": true, "Manager": true, "Staff": true}
@@ -240,7 +240,7 @@ func (db *Database) SetOrganizationUsers(ctx context.Context, orgID string, assi
 		if !allowed[role] {
 			return fmt.Errorf("invalid org_role: %s", role)
 		}
-		if _, err := tx.Exec(ctx, `INSERT INTO organization_users (org_id, user_id, org_role, created_at, updated_at) VALUES ($1, $2, $3, now(), now())`, orgID, a.UserID, role); err != nil {
+		if _, err := tx.Exec(ctx, `INSERT INTO admin_organization_users (org_id, user_id, org_role, created_at, updated_at) VALUES ($1, $2, $3, now(), now())`, orgID, a.UserID, role); err != nil {
 			return err
 		}
 	}

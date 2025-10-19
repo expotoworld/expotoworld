@@ -88,12 +88,12 @@ func (r *UserRepository) GetUsers(ctx context.Context, params models.UserSearchP
 		       u.created_at, u.updated_at,
 		       COALESCE(order_stats.order_count, 0) as order_count,
 		       COALESCE(order_stats.total_spent, 0) as total_spent
-		FROM users u
+		FROM app_users u
 		LEFT JOIN (
 			SELECT user_id,
 			       COUNT(*) as order_count,
 			       COALESCE(SUM(total_amount), 0) as total_spent
-			FROM orders
+			FROM app_orders
 			GROUP BY user_id
 		) order_stats ON u.id = order_stats.user_id`
 
@@ -103,7 +103,7 @@ func (r *UserRepository) GetUsers(ctx context.Context, params models.UserSearchP
 		       u.created_at, u.updated_at,
 		       0 as order_count,
 		       0 as total_spent
-		FROM users u`
+		FROM app_users u`
 
 	buildQuery := func(withJoin bool) string {
 		base := selectNoJoin
@@ -206,7 +206,7 @@ func (r *UserRepository) GetUsers(ctx context.Context, params models.UserSearchP
 
 // getUserCount gets the total count of users matching the search criteria
 func (r *UserRepository) getUserCount(ctx context.Context, params models.UserSearchParams) (int, error) {
-	query := "SELECT COUNT(*) FROM users u"
+	query := "SELECT COUNT(*) FROM app_users u"
 
 	var whereConditions []string
 	var args []interface{}
@@ -261,12 +261,12 @@ func (r *UserRepository) GetUserByID(ctx context.Context, userID string) (*model
 		       u.created_at, u.updated_at,
 		       COALESCE(order_stats.order_count, 0) as order_count,
 		       COALESCE(order_stats.total_spent, 0) as total_spent
-		FROM users u
+		FROM app_users u
 		LEFT JOIN (
 			SELECT user_id,
 			       COUNT(*) as order_count,
 			       SUM(total_amount) as total_spent
-			FROM orders
+			FROM app_orders
 			WHERE user_id = $1
 			GROUP BY user_id
 		) order_stats ON u.id = order_stats.user_id
@@ -328,7 +328,7 @@ func (r *UserRepository) CreateUser(ctx context.Context, req models.UserCreateRe
 	// Insert user into database
 	var user models.User
 	query := `
-		INSERT INTO users (username, email, phone, first_name, middle_name, last_name, role, status)
+		INSERT INTO app_users (username, email, phone, first_name, middle_name, last_name, role, status)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, username, email, phone, first_name, middle_name, last_name, role, status, created_at, updated_at
 	`
@@ -446,7 +446,7 @@ func (r *UserRepository) UpdateUser(ctx context.Context, userID string, updates 
 	// Add user ID for WHERE clause
 	args = append(args, userID)
 
-	query := fmt.Sprintf("UPDATE users SET %s WHERE id = $%d", strings.Join(setParts, ", "), argIndex)
+	query := fmt.Sprintf("UPDATE app_users SET %s WHERE id = $%d", strings.Join(setParts, ", "), argIndex)
 
 	result, err := r.db.DB.ExecContext(ctx, query, args...)
 	if err != nil {
@@ -476,19 +476,19 @@ func (r *UserRepository) DeleteUser(ctx context.Context, userID string) error {
 
 	// Delete related data first (orders, carts, etc.)
 	// Delete user's carts
-	_, err = tx.ExecContext(ctx, "DELETE FROM carts WHERE user_id = $1", userID)
+	_, err = tx.ExecContext(ctx, "DELETE FROM app_carts WHERE user_id = $1", userID)
 	if err != nil {
 		return fmt.Errorf("failed to delete user carts: %w", err)
 	}
 
 	// Delete user's orders
-	_, err = tx.ExecContext(ctx, "DELETE FROM orders WHERE user_id = $1", userID)
+	_, err = tx.ExecContext(ctx, "DELETE FROM app_orders WHERE user_id = $1", userID)
 	if err != nil {
 		return fmt.Errorf("failed to delete user orders: %w", err)
 	}
 
 	// Finally delete the user
-	result, err := tx.ExecContext(ctx, "DELETE FROM users WHERE id = $1", userID)
+	result, err := tx.ExecContext(ctx, "DELETE FROM app_users WHERE id = $1", userID)
 	if err != nil {
 		return fmt.Errorf("failed to delete user: %w", err)
 	}
@@ -521,14 +521,14 @@ func (r *UserRepository) GetUserAnalytics(ctx context.Context) (*models.UserAnal
 	}
 
 	// Get total users
-	err := r.db.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM users").Scan(&analytics.TotalUsers)
+	err := r.db.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM app_users").Scan(&analytics.TotalUsers)
 	if err != nil {
 		log.Printf("[USER-DB] Analytics: total users query failed: %v", err)
 		return nil, fmt.Errorf("failed to get total users: %w", err)
 	}
 
 	// Get users by role
-	roleQuery := "SELECT role, COUNT(*) FROM users GROUP BY role"
+	roleQuery := "SELECT role, COUNT(*) FROM app_users GROUP BY role"
 	rows, err := r.db.DB.QueryContext(ctx, roleQuery)
 	if err != nil {
 		log.Printf("[USER-DB] Analytics: users by role query failed: %v; query=%s", err, roleQuery)
@@ -551,7 +551,7 @@ func (r *UserRepository) GetUserAnalytics(ctx context.Context) (*models.UserAnal
 	}
 
 	// Get new users today
-	todayQuery := "SELECT COUNT(*) FROM users WHERE DATE(created_at) = CURRENT_DATE"
+	todayQuery := "SELECT COUNT(*) FROM app_users WHERE DATE(created_at) = CURRENT_DATE"
 	err = r.db.DB.QueryRowContext(ctx, todayQuery).Scan(&analytics.NewUsersToday)
 	if err != nil {
 		log.Printf("[USER-DB] Analytics: new users today query failed: %v; query=%s", err, todayQuery)
@@ -559,7 +559,7 @@ func (r *UserRepository) GetUserAnalytics(ctx context.Context) (*models.UserAnal
 	}
 
 	// Get new users this week
-	weekQuery := "SELECT COUNT(*) FROM users WHERE created_at >= DATE_TRUNC('week', CURRENT_DATE)"
+	weekQuery := "SELECT COUNT(*) FROM app_users WHERE created_at >= DATE_TRUNC('week', CURRENT_DATE)"
 	err = r.db.DB.QueryRowContext(ctx, weekQuery).Scan(&analytics.NewUsersThisWeek)
 	if err != nil {
 		log.Printf("[USER-DB] Analytics: new users this week query failed: %v; query=%s", err, weekQuery)
@@ -567,7 +567,7 @@ func (r *UserRepository) GetUserAnalytics(ctx context.Context) (*models.UserAnal
 	}
 
 	// Get active users (logged in within last 30 days)
-	activeQuery := "SELECT COUNT(*) FROM users WHERE last_login >= NOW() - INTERVAL '30 days'"
+	activeQuery := "SELECT COUNT(*) FROM app_users WHERE last_login >= NOW() - INTERVAL '30 days'"
 	err = r.db.DB.QueryRowContext(ctx, activeQuery).Scan(&analytics.ActiveUsers)
 	if err != nil {
 		log.Printf("[USER-DB] Analytics: active users query failed: %v; query=%s", err, activeQuery)
@@ -577,7 +577,7 @@ func (r *UserRepository) GetUserAnalytics(ctx context.Context) (*models.UserAnal
 	// Get registration trend (last 7 days)
 	trendQuery := `
 		SELECT DATE(created_at) as date, COUNT(*) as count
-		FROM users
+		FROM app_users
 		WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
 		GROUP BY DATE(created_at)
 		ORDER BY date DESC
@@ -617,7 +617,7 @@ func (r *UserRepository) GetUserOrderStats(ctx context.Context, userID string) (
 			COALESCE(SUM(total_amount), 0) as total_spent,
 			COALESCE(AVG(total_amount), 0) as average_order,
 			MAX(created_at) as last_order_date
-		FROM orders
+		FROM app_orders
 		WHERE user_id = $1
 	`
 
@@ -656,7 +656,7 @@ func (r *UserRepository) BulkUpdateUsers(ctx context.Context, userIDs []string, 
 	switch operation {
 	case "role_update":
 		if role, ok := updates["role"]; ok {
-			query = fmt.Sprintf("UPDATE users SET role = $%d, updated_at = $%d WHERE id IN (%s)",
+			query = fmt.Sprintf("UPDATE app_users SET role = $%d, updated_at = $%d WHERE id IN (%s)",
 				len(args)+1, len(args)+2, strings.Join(placeholders, ","))
 			additionalArgs = append(additionalArgs, role, time.Now())
 		} else {

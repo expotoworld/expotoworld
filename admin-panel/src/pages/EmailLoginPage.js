@@ -22,6 +22,15 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 
+// Helper function to get the correct AUTH_BASE URL
+const getAuthBase = () => {
+  const envApiBase = process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com';
+  if (envApiBase === 'local') {
+    return 'http://localhost:8081/api/auth';
+  }
+  return `${envApiBase}/api/auth`;
+};
+
 const EmailLoginPage = () => {
   const { isAuthenticated, loading } = useAuth();
   const [step, setStep] = useState(0); // 0: email, 1: verification code
@@ -59,8 +68,8 @@ const EmailLoginPage = () => {
     setError('');
 
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com';
-      const response = await axios.post(`${API_BASE}/api/auth/admin/verify-code`, {
+      const AUTH_BASE = getAuthBase();
+      const response = await axios.post(`${AUTH_BASE}/admin/verify-code`, {
         email: email,
         code: code
       });
@@ -110,8 +119,8 @@ const EmailLoginPage = () => {
     setError('');
 
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com';
-      const response = await axios.post(`${API_BASE}/api/auth/admin/send-verification`, {
+      const AUTH_BASE = getAuthBase();
+      const response = await axios.post(`${AUTH_BASE}/admin/send-verification`, {
         email: email
       });
 

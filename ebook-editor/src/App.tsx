@@ -22,6 +22,7 @@ import { ThemeProvider, useThemeMode } from './theme'
 import './i18n'
 import { useTranslation } from 'react-i18next'
 import { AUTH_BASE, getRefreshToken, setAccessToken, setRefreshToken, clearTokens } from './auth'
+import { ImageDeletionExtension, deleteImageFromS3 } from './ImageDeletionExtension'
 
 function UserMenu({ onLogout }: { onLogout: () => void }) {
   const { t } = useTranslation()
@@ -118,7 +119,9 @@ function Shell({ children, status, lastSavedAt, toolbar, actionsRight }: React.P
             <UserMenu onLogout={() => {
               clearTokens(); // Clear both access and refresh tokens
               localStorage.removeItem('token'); // Clear old token key if exists
-              setToken(null); // Reset token state to trigger redirect to login
+              delete axios.defaults.headers.common['Authorization']; // Remove auth header
+              // Force immediate page reload to show login page
+              window.location.reload();
             }} />
           </div>
         </div>
@@ -201,6 +204,14 @@ export default function App() {
       TaskItem,
       Image,
       Link.configure({ openOnClick: false }),
+      ImageDeletionExtension.configure({
+        onImageDelete: (imageUrl: string) => {
+          // Only delete images from our CDN (not external images)
+          if (imageUrl.includes('assets.expotoworld.com/ebook/images/')) {
+            deleteImageFromS3(imageUrl)
+          }
+        },
+      }),
 
       // Placeholder.configure({ placeholder: 'Getting started\n\nType to begin  use the toolbar for formatting' }),
 

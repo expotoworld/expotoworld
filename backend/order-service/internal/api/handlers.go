@@ -156,7 +156,7 @@ func (h *Handler) AddToCart(c *gin.Context) {
 	// Get existing quantity in cart to validate final total against MOQ
 	var existingQuantity int
 	checkQuery := `
-		SELECT COALESCE(quantity, 0) FROM carts
+		SELECT COALESCE(quantity, 0) FROM app_carts
 		WHERE user_id = $1 AND mini_app_type = $2 AND product_id = $3
 	`
 	err = h.db.Pool.QueryRow(ctx, checkQuery, userID, string(miniAppType), req.ProductID).Scan(&existingQuantity)

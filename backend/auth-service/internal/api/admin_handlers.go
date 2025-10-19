@@ -187,12 +187,15 @@ func (h *Handler) AdminVerifyCode(c *gin.Context) {
 	userID, role, status, err := h.DB.GetUserRoleStatusByEmail(ctx, req.Email)
 	if err != nil {
 		if err == pgx.ErrNoRows {
+			fmt.Printf("[DEBUG] User not found for email: %s\n", req.Email)
 			c.JSON(http.StatusForbidden, models.ErrorResponse{Error: "Unauthorized email", Message: "This email is not authorized for admin access"})
 			return
 		}
+		fmt.Printf("[DEBUG] User lookup failed for email: %s, Error: %v\n", req.Email, err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "User lookup failed", Message: err.Error()})
 		return
 	}
+	fmt.Printf("[DEBUG] User found - ID: %s, Role: %s, Status: %s\n", userID, role, status)
 	allowed := map[string]bool{"Admin": true, "Manufacturer": true, "3PL": true, "Partner": true}
 	if !allowed[role] {
 		c.JSON(http.StatusForbidden, models.ErrorResponse{Error: "Access denied", Message: "Role not permitted for admin panel"})
@@ -242,6 +245,10 @@ func (h *Handler) AdminVerifyCode(c *gin.Context) {
 		return
 	}
 
+	// DEBUG: Log verification details
+	fmt.Printf("[DEBUG] Verification attempt - Email: %s, Code from request: %s, Code hash from DB: %s, Expires at: %v, Used: %v, Attempts: %d\n",
+		req.Email, req.Code, verificationCode.CodeHash, verificationCode.ExpiresAt, verificationCode.Used, verificationCode.Attempts)
+
 	// Verify the code
 	if err := bcrypt.CompareHashAndPassword([]byte(verificationCode.CodeHash), []byte(req.Code)); err != nil {
 		// Increment attempt count
@@ -250,8 +257,8 @@ func (h *Handler) AdminVerifyCode(c *gin.Context) {
 		}
 
 		// Security logging - failed attempt
-		fmt.Printf("[ADMIN_AUTH] FAILED verification attempt from IP: %s, Email: %s, Attempts: %d\n",
-			clientIP, req.Email, verificationCode.Attempts+1)
+		fmt.Printf("[ADMIN_AUTH] FAILED verification attempt from IP: %s, Email: %s, Attempts: %d, Error: %v\n",
+			clientIP, req.Email, verificationCode.Attempts+1, err)
 
 		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
 			Error:   "Invalid verification code",
@@ -261,28 +268,36 @@ func (h *Handler) AdminVerifyCode(c *gin.Context) {
 	}
 
 	// Mark code as used
+	fmt.Printf("[DEBUG] Marking code as used - ID: %s\n", verificationCode.ID)
 	if err := h.DB.MarkVerificationCodeUsed(ctx, verificationCode.ID); err != nil {
+		fmt.Printf("[DEBUG] Failed to mark code as used - Error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "Failed to mark code as used",
 			Message: err.Error(),
 		})
 		return
 	}
+	fmt.Printf("[DEBUG] Code marked as used successfully\n")
 
 	// Update last login timestamp for the user
+	fmt.Printf("[DEBUG] Updating last login for user: %s\n", userID)
 	if err := h.DB.UpdateLastLogin(ctx, userID); err != nil {
-		fmt.Printf("Failed to update last login for user %s: %v\n", userID, err)
+		fmt.Printf("[DEBUG] Failed to update last login for user %s: %v\n", userID, err)
 	}
+	fmt.Printf("[DEBUG] Last login updated successfully\n")
 
 	// Generate JWT token for admin with role claim
+	fmt.Printf("[DEBUG] Generating JWT token for user: %s, role: %s\n", userID, role)
 	token, err := h.generateJWTToken(userID, req.Email, role)
 	if err != nil {
+		fmt.Printf("[DEBUG] Failed to generate JWT token - Error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "Failed to generate token",
 			Message: err.Error(),
 		})
 		return
 	}
+	fmt.Printf("[DEBUG] JWT token generated successfully\n")
 
 	// Calculate token expiration (minutes preferred)
 	expirationMinutes := getEnvInt("JWT_EXPIRATION_MINUTES", 30)
@@ -293,14 +308,18 @@ func (h *Handler) AdminVerifyCode(c *gin.Context) {
 	tokenExpiresAt := time.Now().Add(time.Duration(expirationMinutes) * time.Minute)
 
 	// Generate and persist refresh token (role-agnostic)
+	fmt.Printf("[DEBUG] Generating refresh token\n")
 	plainRefresh, err := generateRefreshTokenString(32)
 	if err != nil {
+		fmt.Printf("[DEBUG] Failed to generate refresh token string - Error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to generate refresh token", Message: err.Error()})
 		return
 	}
 	refreshHash := hashRefreshTokenString(plainRefresh)
 	refreshExpiresAt := time.Now().Add(refreshTokenTTL())
+	fmt.Printf("[DEBUG] Creating refresh token in database\n")
 	if _, err := h.DB.CreateRefreshToken(ctx, userID, refreshHash, refreshExpiresAt, clientIP, userAgent); err != nil {
+		fmt.Printf("[DEBUG] Failed to create refresh token in database - Error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to persist refresh token", Message: err.Error()})
 		return
 	}

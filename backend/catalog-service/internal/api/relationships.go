@@ -81,8 +81,8 @@ func (h *Handler) GetProductSourcing(c *gin.Context) {
 
 	rows, err := h.db.Pool.Query(c.Request.Context(), `
         SELECT ps.manufacturer_org_id::text, ps.region_id, COALESCE(o.name, '')
-        FROM product_sourcing ps
-        LEFT JOIN organizations o ON o.org_id = ps.manufacturer_org_id
+        FROM admin_product_sourcing ps
+        LEFT JOIN admin_organizations o ON o.org_id = ps.manufacturer_org_id
         WHERE ps.product_id = $1
         ORDER BY o.name
     `, productID)
@@ -125,8 +125,8 @@ func (h *Handler) GetProductLogistics(c *gin.Context) {
 
 	rows, err := h.db.Pool.Query(c.Request.Context(), `
         SELECT pl.tpl_org_id::text, COALESCE(o.name, '')
-        FROM product_logistics pl
-        LEFT JOIN organizations o ON o.org_id = pl.tpl_org_id
+        FROM admin_product_logistics pl
+        LEFT JOIN admin_organizations o ON o.org_id = pl.tpl_org_id
         WHERE pl.product_id = $1
         ORDER BY o.name
     `, productID)
@@ -198,8 +198,8 @@ func (h *Handler) GetStorePartners(c *gin.Context) {
 
 	rows, err := h.db.Pool.Query(c.Request.Context(), `
         SELECT sp.partner_org_id::text, COALESCE(o.name, '')
-        FROM store_partners sp
-        LEFT JOIN organizations o ON o.org_id = sp.partner_org_id
+        FROM admin_store_partners sp
+        LEFT JOIN admin_organizations o ON o.org_id = sp.partner_org_id
         WHERE sp.store_id = $1
         ORDER BY o.name
     `, storeID)
@@ -266,8 +266,8 @@ func (h *Handler) GetStorePartnersBatch(c *gin.Context) {
 	}
 	sql := `
     SELECT sp.store_id, sp.partner_org_id::text, COALESCE(o.name, '')
-    FROM store_partners sp
-    LEFT JOIN organizations o ON o.org_id = sp.partner_org_id
+    FROM admin_store_partners sp
+    LEFT JOIN admin_organizations o ON o.org_id = sp.partner_org_id
     WHERE sp.store_id IN (` + strings.Join(placeholders, ",") + `)
     ORDER BY sp.store_id, o.name
   `

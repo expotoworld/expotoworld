@@ -225,7 +225,7 @@ func (db *Database) InitSchema(ctx context.Context) error {
 		return fmt.Errorf("failed to check carts.mini_app_type: %w", err)
 	}
 	if !hasMiniApp {
-		if _, err := db.Pool.Exec(ctx, `ALTER TABLE public.carts ADD COLUMN mini_app_type VARCHAR(50) NOT NULL DEFAULT 'RetailStore';`); err != nil {
+		if _, err := db.Pool.Exec(ctx, `ALTER TABLE app_carts ADD COLUMN mini_app_type VARCHAR(50) NOT NULL DEFAULT 'RetailStore';`); err != nil {
 			return fmt.Errorf("failed to add carts.mini_app_type: %w", err)
 		}
 		log.Println("[ORDER-DB] Added carts.mini_app_type column")
@@ -259,14 +259,14 @@ func (db *Database) InitSchema(ctx context.Context) error {
 		return fmt.Errorf("failed to check carts.store_id: %w", err)
 	}
 	if !hasStoreID {
-		if _, err := db.Pool.Exec(ctx, `ALTER TABLE public.carts ADD COLUMN store_id INTEGER NULL;`); err != nil {
+		if _, err := db.Pool.Exec(ctx, `ALTER TABLE app_carts ADD COLUMN store_id INTEGER NULL;`); err != nil {
 			return fmt.Errorf("failed to add carts.store_id: %w", err)
 		}
 		// Best-effort FK to stores (ignore error if stores not present or type mismatch)
 		if _, err := db.Pool.Exec(ctx, `
 			DO $$ BEGIN
-				ALTER TABLE public.carts ADD CONSTRAINT carts_store_id_fkey
-				FOREIGN KEY (store_id) REFERENCES public.stores(store_id) ON DELETE SET NULL;
+				ALTER TABLE app_carts ADD CONSTRAINT carts_store_id_fkey
+				FOREIGN KEY (store_id) REFERENCES admin_stores(store_id) ON DELETE SET NULL;
 			EXCEPTION WHEN others THEN
 				-- ignore
 			END $$;
@@ -281,9 +281,9 @@ func (db *Database) InitSchema(ctx context.Context) error {
 		DO $$ BEGIN
 			IF EXISTS (
 				SELECT 1 FROM pg_constraint
-				WHERE conrelid = 'public.carts'::regclass AND conname = 'carts_user_id_product_id_key'
+				WHERE conrelid = 'app_carts'::regclass AND conname = 'carts_user_id_product_id_key'
 			) THEN
-				ALTER TABLE public.carts DROP CONSTRAINT carts_user_id_product_id_key;
+				ALTER TABLE app_carts DROP CONSTRAINT carts_user_id_product_id_key;
 			END IF;
 		END $$;
 	`); err != nil {
@@ -293,24 +293,24 @@ func (db *Database) InitSchema(ctx context.Context) error {
 	// Create partial uniques to handle NULL store_id semantics and per-store carts
 	if _, err := db.Pool.Exec(ctx, `
 		CREATE UNIQUE INDEX IF NOT EXISTS ux_carts_non_location
-		ON public.carts(user_id, product_id, mini_app_type)
+		ON app_carts(user_id, product_id, mini_app_type)
 		WHERE store_id IS NULL;
 	`); err != nil {
 		return fmt.Errorf("failed to create ux_carts_non_location index: %w", err)
 	}
 	if _, err := db.Pool.Exec(ctx, `
 		CREATE UNIQUE INDEX IF NOT EXISTS ux_carts_location
-		ON public.carts(user_id, product_id, mini_app_type, store_id)
+		ON app_carts(user_id, product_id, mini_app_type, store_id)
 		WHERE store_id IS NOT NULL;
 	`); err != nil {
 		return fmt.Errorf("failed to create ux_carts_location index: %w", err)
 	}
 
 	// Helpful secondary indexes
-	if _, err := db.Pool.Exec(ctx, `CREATE INDEX IF NOT EXISTS idx_carts_user_mini_app ON public.carts(user_id, mini_app_type);`); err != nil {
+	if _, err := db.Pool.Exec(ctx, `CREATE INDEX IF NOT EXISTS idx_carts_user_mini_app ON app_carts(user_id, mini_app_type);`); err != nil {
 		return fmt.Errorf("failed to create idx_carts_user_mini_app: %w", err)
 	}
-	if _, err := db.Pool.Exec(ctx, `CREATE INDEX IF NOT EXISTS idx_carts_user_mini_app_store ON public.carts(user_id, mini_app_type, store_id);`); err != nil {
+	if _, err := db.Pool.Exec(ctx, `CREATE INDEX IF NOT EXISTS idx_carts_user_mini_app_store ON app_carts(user_id, mini_app_type, store_id);`); err != nil {
 		return fmt.Errorf("failed to create idx_carts_user_mini_app_store: %w", err)
 	}
 
