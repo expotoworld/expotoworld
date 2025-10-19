@@ -221,7 +221,7 @@ func (db *Database) CreateProduct(ctx context.Context, product models.Product) (
 
 	var productID int
 	query := `
-        INSERT INTO products
+        INSERT INTO admin_products
             (sku, title, description, store_type, mini_app_type, store_id, shelf_code, main_price, strikethrough_price, cost_price, weight, stock_left, minimum_order_quantity, is_active, is_featured, is_mini_app_recommendation)
         VALUES
             ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
@@ -259,7 +259,7 @@ func (db *Database) CreateProduct(ctx context.Context, product models.Product) (
 			}
 
 			_, err = tx.Exec(ctx,
-				"INSERT INTO product_category_mapping (product_id, category_id) VALUES ($1, $2)",
+				"INSERT INTO admin_product_category_mapping (product_id, category_id) VALUES ($1, $2)",
 				productID, categoryID)
 			if err != nil {
 				return 0, fmt.Errorf("failed to insert category mapping: %w", err)
@@ -279,7 +279,7 @@ func (db *Database) CreateProduct(ctx context.Context, product models.Product) (
 
 			log.Printf("🔍 DEBUG: Inserting subcategory mapping: product_id=%d, subcategory_id=%d", productID, subcategoryID)
 			_, err = tx.Exec(ctx,
-				"INSERT INTO product_subcategory_mapping (product_id, subcategory_id) VALUES ($1, $2)",
+				"INSERT INTO admin_product_subcategory_mapping (product_id, subcategory_id) VALUES ($1, $2)",
 				productID, subcategoryID)
 			if err != nil {
 				log.Printf("❌ DEBUG: Failed to insert subcategory mapping: %v", err)
@@ -299,13 +299,13 @@ func (db *Database) CreateProduct(ctx context.Context, product models.Product) (
 	return productID, nil
 }
 
-// AddImageURLToProduct links an S3 image URL to a product in the product_images table.
+// AddImageURLToProduct links an S3 image URL to a product in the admin_product_images table.
 func (db *Database) AddImageURLToProduct(ctx context.Context, productID int, imageURL string) error {
 	query := `
-        INSERT INTO product_images (product_id, image_url, display_order)
+        INSERT INTO admin_product_images (product_id, image_url, display_order)
         VALUES ($1, $2, (
             SELECT COALESCE(MAX(display_order), 0) + 1
-            FROM product_images
+            FROM admin_product_images
             WHERE product_id = $1
         ))
     `
@@ -327,14 +327,14 @@ func (db *Database) ReplaceProductImage(ctx context.Context, productID int, imag
 	defer tx.Rollback(ctx)
 
 	// Delete existing images for this product
-	_, err = tx.Exec(ctx, "DELETE FROM product_images WHERE product_id = $1", productID)
+	_, err = tx.Exec(ctx, "DELETE FROM admin_product_images WHERE product_id = $1", productID)
 	if err != nil {
 		return fmt.Errorf("failed to delete existing images: %w", err)
 	}
 
 	// Insert the new image as the primary image (display_order = 1)
 	_, err = tx.Exec(ctx,
-		"INSERT INTO product_images (product_id, image_url, display_order) VALUES ($1, $2, 1)",
+		"INSERT INTO admin_product_images (product_id, image_url, display_order) VALUES ($1, $2, 1)",
 		productID, imageURL)
 	if err != nil {
 		return fmt.Errorf("failed to insert new image: %w", err)
@@ -389,7 +389,7 @@ func (db *Database) UpdateProduct(ctx context.Context, productID int, product mo
 		productID, product.SKU, product.MiniAppType, storeTypeParam, product.StoreID, shelfCodeParam, stockLeftParam,
 	)
 	query := `
-        UPDATE products
+        UPDATE admin_products
         SET
             sku = $2,
             title = $3,
@@ -442,7 +442,7 @@ func (db *Database) UpdateProduct(ctx context.Context, productID int, product mo
 
 	// Update category mappings
 	// Delete existing category mappings
-	_, err = tx.Exec(ctx, "DELETE FROM product_category_mapping WHERE product_id = $1", productID)
+	_, err = tx.Exec(ctx, "DELETE FROM admin_product_category_mapping WHERE product_id = $1", productID)
 	if err != nil {
 		return fmt.Errorf("failed to delete existing category mappings: %w", err)
 	}
@@ -456,7 +456,7 @@ func (db *Database) UpdateProduct(ctx context.Context, productID int, product mo
 			}
 
 			_, err = tx.Exec(ctx,
-				"INSERT INTO product_category_mapping (product_id, category_id) VALUES ($1, $2)",
+				"INSERT INTO admin_product_category_mapping (product_id, category_id) VALUES ($1, $2)",
 				productID, categoryID)
 			if err != nil {
 				return fmt.Errorf("failed to insert category mapping: %w", err)
@@ -466,7 +466,7 @@ func (db *Database) UpdateProduct(ctx context.Context, productID int, product mo
 
 	// Update subcategory mappings
 	// Delete existing subcategory mappings
-	_, err = tx.Exec(ctx, "DELETE FROM product_subcategory_mapping WHERE product_id = $1", productID)
+	_, err = tx.Exec(ctx, "DELETE FROM admin_product_subcategory_mapping WHERE product_id = $1", productID)
 	if err != nil {
 		return fmt.Errorf("failed to delete existing subcategory mappings: %w", err)
 	}
@@ -480,7 +480,7 @@ func (db *Database) UpdateProduct(ctx context.Context, productID int, product mo
 			}
 
 			_, err = tx.Exec(ctx,
-				"INSERT INTO product_subcategory_mapping (product_id, subcategory_id) VALUES ($1, $2)",
+				"INSERT INTO admin_product_subcategory_mapping (product_id, subcategory_id) VALUES ($1, $2)",
 				productID, subcategoryID)
 			if err != nil {
 				return fmt.Errorf("failed to insert subcategory mapping: %w", err)
@@ -499,7 +499,7 @@ func (db *Database) UpdateProduct(ctx context.Context, productID int, product mo
 // DeleteProduct soft deletes a product by setting is_active to false
 func (db *Database) DeleteProduct(ctx context.Context, productID int) error {
 	query := `
-        UPDATE products
+        UPDATE admin_products
         SET
             is_active = false,
             updated_at = CURRENT_TIMESTAMP
@@ -530,19 +530,37 @@ func (db *Database) HardDeleteProduct(ctx context.Context, productID int) error 
 	defer tx.Rollback(ctx)
 
 	// Delete product images first (foreign key constraint)
-	_, err = tx.Exec(ctx, "DELETE FROM product_images WHERE product_id = $1", productID)
+	_, err = tx.Exec(ctx, "DELETE FROM admin_product_images WHERE product_id = $1", productID)
 	if err != nil {
 		return fmt.Errorf("failed to delete product images: %w", err)
 	}
 
 	// Delete product category mappings
-	_, err = tx.Exec(ctx, "DELETE FROM product_category_mapping WHERE product_id = $1", productID)
+	_, err = tx.Exec(ctx, "DELETE FROM admin_product_category_mapping WHERE product_id = $1", productID)
 	if err != nil {
 		return fmt.Errorf("failed to delete product category mappings: %w", err)
 	}
 
+	// Delete product subcategory mappings
+	_, err = tx.Exec(ctx, "DELETE FROM admin_product_subcategory_mapping WHERE product_id = $1", productID)
+	if err != nil {
+		return fmt.Errorf("failed to delete product subcategory mappings: %w", err)
+	}
+
+	// Delete product sourcing relationships
+	_, err = tx.Exec(ctx, "DELETE FROM admin_product_sourcing WHERE product_id = $1", productID)
+	if err != nil {
+		return fmt.Errorf("failed to delete product sourcing: %w", err)
+	}
+
+	// Delete product logistics relationships
+	_, err = tx.Exec(ctx, "DELETE FROM admin_product_logistics WHERE product_id = $1", productID)
+	if err != nil {
+		return fmt.Errorf("failed to delete product logistics: %w", err)
+	}
+
 	// Finally delete the product
-	result, err := tx.Exec(ctx, "DELETE FROM products WHERE product_id = $1", productID)
+	result, err := tx.Exec(ctx, "DELETE FROM admin_products WHERE product_id = $1", productID)
 	if err != nil {
 		return fmt.Errorf("failed to delete product: %w", err)
 	}
@@ -564,7 +582,7 @@ func (db *Database) HardDeleteProduct(ctx context.Context, productID int) error 
 func (db *Database) AddProductImage(ctx context.Context, productID int, imageURL string, displayOrder int, isPrimary bool) (int, error) {
 	var imageID int
 	query := `
-        INSERT INTO product_images (product_id, image_url, display_order, is_primary)
+        INSERT INTO admin_product_images (product_id, image_url, display_order, is_primary)
         VALUES ($1, $2, $3, $4)
         RETURNING image_id
     `
@@ -579,7 +597,7 @@ func (db *Database) AddProductImage(ctx context.Context, productID int, imageURL
 func (db *Database) GetProductImages(ctx context.Context, productID int) ([]models.ProductImage, error) {
 	query := `
         SELECT image_id, product_id, image_url, display_order, is_primary, created_at
-        FROM product_images
+        FROM admin_product_images
         WHERE product_id = $1
         ORDER BY display_order, image_id
     `
@@ -617,7 +635,7 @@ func (db *Database) GetProductImages(ctx context.Context, productID int) ([]mode
 // UpdateImageDisplayOrder updates the display order of a product image
 func (db *Database) UpdateImageDisplayOrder(ctx context.Context, productID, imageID, displayOrder int) error {
 	query := `
-        UPDATE product_images
+        UPDATE admin_product_images
         SET display_order = $3
         WHERE product_id = $1 AND image_id = $2
     `
@@ -637,7 +655,7 @@ func (db *Database) UpdateImageDisplayOrder(ctx context.Context, productID, imag
 // DeleteProductImage deletes a product image
 func (db *Database) DeleteProductImage(ctx context.Context, productID, imageID int) error {
 	query := `
-        DELETE FROM product_images
+        DELETE FROM admin_product_images
         WHERE product_id = $1 AND image_id = $2
     `
 	result, err := db.Pool.Exec(ctx, query, productID, imageID)
@@ -664,7 +682,7 @@ func (db *Database) SetPrimaryImage(ctx context.Context, productID, imageID int)
 
 	// Unset all primary flags for this product
 	_, err = tx.Exec(ctx, `
-        UPDATE product_images
+        UPDATE admin_product_images
         SET is_primary = FALSE
         WHERE product_id = $1
     `, productID)
@@ -674,7 +692,7 @@ func (db *Database) SetPrimaryImage(ctx context.Context, productID, imageID int)
 
 	// Set the specified image as primary
 	result, err := tx.Exec(ctx, `
-        UPDATE product_images
+        UPDATE admin_product_images
         SET is_primary = TRUE
         WHERE product_id = $1 AND image_id = $2
     `, productID, imageID)

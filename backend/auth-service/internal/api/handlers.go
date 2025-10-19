@@ -292,7 +292,7 @@ func (h *Handler) RefreshWithRefreshToken(c *gin.Context) {
 		// Also revoke any other active tokens for same user and IP to prevent accumulation
 		clientIP := getClientIP(c)
 		if h.DB != nil && h.DB.Pool != nil && clientIP != "" {
-			_, _ = h.DB.Pool.Exec(ctx, `UPDATE refresh_tokens SET revoked = true WHERE user_id = $1 AND ip_address = $2 AND revoked = false AND id::text <> $3`, userID, clientIP, id)
+			_, _ = h.DB.Pool.Exec(ctx, `UPDATE app_refresh_tokens SET revoked = true WHERE user_id = $1 AND ip_address = $2 AND revoked = false AND id::text <> $3`, userID, clientIP, id)
 		}
 	}
 	// Fetch user email and role for claims (best effort)
@@ -300,7 +300,7 @@ func (h *Handler) RefreshWithRefreshToken(c *gin.Context) {
 	var roleStr string
 	if h.DB != nil && h.DB.Pool != nil {
 		var emailNS, roleNS sql.NullString
-		if err := h.DB.Pool.QueryRow(ctx, "SELECT email, role FROM users WHERE id = $1", userID).Scan(&emailNS, &roleNS); err == nil {
+		if err := h.DB.Pool.QueryRow(ctx, "SELECT email, role FROM app_users WHERE id = $1", userID).Scan(&emailNS, &roleNS); err == nil {
 			if emailNS.Valid {
 				emailStr = emailNS.String
 			}
@@ -765,7 +765,7 @@ func (h *Handler) UserVerifyCode(c *gin.Context) {
 	// Revoke all other active refresh tokens for the same user and user agent
 	if h.DB != nil && h.DB.Pool != nil {
 		_, _ = h.DB.Pool.Exec(ctx,
-			`UPDATE refresh_tokens
+			`UPDATE app_refresh_tokens
 		 SET revoked = true
 		 WHERE user_id = $1
 		   AND COALESCE(user_agent,'') = COALESCE($2,'')
@@ -1001,7 +1001,7 @@ func (h *Handler) UserVerifyPhoneCode(c *gin.Context) {
 	// Revoke all other active refresh tokens for the same user and user agent
 	if h.DB != nil && h.DB.Pool != nil {
 		_, _ = h.DB.Pool.Exec(ctx,
-			`UPDATE refresh_tokens
+			`UPDATE app_refresh_tokens
 		 SET revoked = true
 		 WHERE user_id = $1
 		   AND COALESCE(user_agent,'') = COALESCE($2,'')

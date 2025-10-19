@@ -261,12 +261,9 @@ func UploadImageHandler() gin.HandlerFunc {
 			return
 		}
 
-		// Get S3 bucket from environment
-		bucket := os.Getenv("EBOOK_S3_BUCKET")
-		if bucket == "" {
-			c.JSON(http.StatusFailedDependency, gin.H{"error": "S3 not configured"})
-			return
-		}
+		// Use the media bucket (same as catalog service) for ebook images
+		// This ensures CloudFront can serve the images via assets.expotoworld.com
+		bucket := "expotoworld-media"
 
 		// Get AWS region
 		region := os.Getenv("AWS_REGION")
@@ -294,7 +291,7 @@ func UploadImageHandler() gin.HandlerFunc {
 
 		// Generate S3 object key
 		ext := filepath.Ext(header.Filename)
-		objectKey := fmt.Sprintf("ebook/images/%d%s", time.Now().UnixNano(), ext)
+		objectKey := fmt.Sprintf("ebooks/huashangdao/images/%d%s", time.Now().UnixNano(), ext)
 
 		// Upload to S3
 		_, err = s3Client.PutObject(ctx, &s3.PutObjectInput{
@@ -318,5 +315,77 @@ func UploadImageHandler() gin.HandlerFunc {
 
 		log.Printf("Successfully uploaded image to S3: %s", objectKey)
 		c.JSON(http.StatusOK, gin.H{"url": imageURL})
+	}
+}
+
+// DeleteImageHandler handles DELETE /api/ebook/delete-image
+func DeleteImageHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+		defer cancel()
+
+		// Get image URL from request body
+		var req struct {
+			ImageURL string `json:"image_url" binding:"required"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		// Extract S3 object key from CloudFront URL
+		// URL format: https://assets.expotoworld.com/ebooks/huashangdao/images/1760817307880226000.jpeg
+		// Extract: ebooks/huashangdao/images/1760817307880226000.jpeg
+		cdnBase := os.Getenv("ASSETS_CDN_BASE_URL")
+		if cdnBase == "" {
+			cdnBase = "https://assets.expotoworld.com"
+		}
+
+		if !strings.HasPrefix(req.ImageURL, cdnBase) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid image URL"})
+			return
+		}
+
+		objectKey := strings.TrimPrefix(req.ImageURL, cdnBase+"/")
+
+		// Only allow deletion of ebook images
+		if !strings.HasPrefix(objectKey, "ebooks/huashangdao/images/") {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Can only delete ebook images"})
+			return
+		}
+
+		// Get AWS region
+		region := os.Getenv("AWS_REGION")
+		if region == "" {
+			region = os.Getenv("AWS_DEFAULT_REGION")
+		}
+		if region == "" {
+			region = "eu-central-1"
+		}
+
+		// Load AWS config
+		cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+		if err != nil {
+			log.Printf("Failed to load AWS config: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to configure AWS"})
+			return
+		}
+
+		s3Client := s3.NewFromConfig(cfg)
+		bucket := "expotoworld-media"
+
+		// Delete from S3
+		_, err = s3Client.DeleteObject(ctx, &s3.DeleteObjectInput{
+			Bucket: &bucket,
+			Key:    &objectKey,
+		})
+		if err != nil {
+			log.Printf("Failed to delete from S3: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete image"})
+			return
+		}
+
+		log.Printf("Successfully deleted image from S3: %s", objectKey)
+		c.JSON(http.StatusOK, gin.H{"status": "deleted", "key": objectKey})
 	}
 }

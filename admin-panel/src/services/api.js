@@ -1,12 +1,31 @@
 import axios from 'axios';
 
-// Single base URL via Cloudflare Worker
-const API_BASE = process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com';
-export const AUTH_BASE = `${API_BASE}/api/auth`;
-export const ADMIN_BASE = `${API_BASE}/api/admin`;
-export const CATALOG_BASE = `${API_BASE}/api/v1`;
-// Route manufacturer endpoints through the same gateway mount as admin -> order-service
-export const MANUFACTURER_BASE = `${API_BASE}/api/admin/manufacturer`;
+// Determine if we're in local development mode
+const envApiBase = process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com';
+const isLocalDev = envApiBase === 'local';
+
+// Local development: direct connection to backend services
+// Production: via Cloudflare Worker gateway
+let AUTH_BASE, ADMIN_BASE, CATALOG_BASE, MANUFACTURER_BASE, USER_BASE;
+
+if (isLocalDev) {
+  // Local development - connect directly to backend services
+  AUTH_BASE = 'http://localhost:8081/api/auth';
+  ADMIN_BASE = 'http://localhost:8082/api/admin';  // Order service handles admin routes
+  CATALOG_BASE = 'http://localhost:8080/api/v1';   // Catalog service
+  MANUFACTURER_BASE = 'http://localhost:8082/api/admin/manufacturer';  // Order service
+  USER_BASE = 'http://localhost:8083/api/admin';   // User service handles user management
+} else {
+  // Production - via Cloudflare Worker
+  const API_BASE = envApiBase;
+  AUTH_BASE = `${API_BASE}/api/auth`;
+  ADMIN_BASE = `${API_BASE}/api/admin`;
+  CATALOG_BASE = `${API_BASE}/api/v1`;
+  MANUFACTURER_BASE = `${API_BASE}/api/admin/manufacturer`;
+  USER_BASE = `${API_BASE}/api/admin`;  // Cloudflare Worker routes to user service
+}
+
+export { AUTH_BASE, ADMIN_BASE, CATALOG_BASE, MANUFACTURER_BASE, USER_BASE };
 
 // Token storage helpers
 const TOKEN_KEY = 'admin_token';
@@ -197,7 +216,7 @@ api.interceptors.response.use(
 export const userService = {
   // Get all users with pagination and filtering
   getUsers: async (params = {}) => {
-    const response = await axios.get(`${ADMIN_BASE}/users`, {
+    const response = await axios.get(`${USER_BASE}/users`, {
       params,
       headers: getAuthHeaders()
     });
@@ -206,7 +225,7 @@ export const userService = {
 
   // Get single user by ID
   getUser: async (userId) => {
-    const response = await axios.get(`${ADMIN_BASE}/users/${userId}`, {
+    const response = await axios.get(`${USER_BASE}/users/${userId}`, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -214,7 +233,7 @@ export const userService = {
 
   // Create new user
   createUser: async (userData) => {
-    const response = await axios.post(`${ADMIN_BASE}/users`, userData, {
+    const response = await axios.post(`${USER_BASE}/users`, userData, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -222,7 +241,7 @@ export const userService = {
 
   // Update user
   updateUser: async (userId, userData) => {
-    const response = await axios.put(`${ADMIN_BASE}/users/${userId}`, userData, {
+    const response = await axios.put(`${USER_BASE}/users/${userId}`, userData, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -230,7 +249,7 @@ export const userService = {
 
   // Delete user
   deleteUser: async (userId) => {
-    const response = await axios.delete(`${ADMIN_BASE}/users/${userId}`, {
+    const response = await axios.delete(`${USER_BASE}/users/${userId}`, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -238,7 +257,7 @@ export const userService = {
 
   // Update user status
   updateUserStatus: async (userId, statusData) => {
-    const response = await axios.post(`${ADMIN_BASE}/users/${userId}/status`, statusData, {
+    const response = await axios.post(`${USER_BASE}/users/${userId}/status`, statusData, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -246,7 +265,7 @@ export const userService = {
 
   // Get user analytics
   getUserAnalytics: async () => {
-    const response = await axios.get(`${ADMIN_BASE}/users/analytics`, {
+    const response = await axios.get(`${USER_BASE}/users/analytics`, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -254,7 +273,7 @@ export const userService = {
 
   // Bulk update users
   bulkUpdateUsers: async (bulkData) => {
-    const response = await axios.post(`${ADMIN_BASE}/users/bulk-update`, bulkData, {
+    const response = await axios.post(`${USER_BASE}/users/bulk-update`, bulkData, {
       headers: getAuthHeaders()
     });
     return response.data;

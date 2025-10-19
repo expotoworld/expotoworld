@@ -26,8 +26,8 @@ func (h *Handler) getCartItemsWithStore(ctx context.Context, userID string, mini
 				c.id, c.user_id, c.product_id, c.quantity, c.mini_app_type, c.created_at, c.updated_at,
 				p.product_uuid, p.sku, p.title, p.main_price, p.stock_left,
 				p.minimum_order_quantity, p.is_active
-			FROM carts c
-			JOIN products p ON c.product_id = p.product_uuid
+			FROM app_carts c
+			JOIN admin_products p ON c.product_id = p.product_uuid
 			WHERE c.user_id = $1 AND c.mini_app_type = $2 AND (c.store_id = $3 OR c.store_id IS NULL)
 			ORDER BY c.created_at DESC
 		`
@@ -39,8 +39,8 @@ func (h *Handler) getCartItemsWithStore(ctx context.Context, userID string, mini
 				c.id, c.user_id, c.product_id, c.quantity, c.mini_app_type, c.created_at, c.updated_at,
 				p.product_uuid, p.sku, p.title, p.main_price, p.stock_left,
 				p.minimum_order_quantity, p.is_active
-			FROM carts c
-			JOIN products p ON c.product_id = p.product_uuid
+			FROM app_carts c
+			JOIN admin_products p ON c.product_id = p.product_uuid
 			WHERE c.user_id = $1 AND c.mini_app_type = $2
 			ORDER BY c.created_at DESC
 		`
@@ -99,7 +99,7 @@ func (h *Handler) updateProductStock(ctx context.Context, orderItems []models.Ca
 	// Update stock for each product in the order
 	for _, item := range orderItems {
 		updateQuery := `
-			UPDATE products
+			UPDATE admin_products
 			SET stock_left = stock_left - $1, updated_at = CURRENT_TIMESTAMP
 			WHERE product_uuid = $2 AND stock_left >= $1
 		`
@@ -125,7 +125,7 @@ func (h *Handler) getProduct(ctx context.Context, productID string) (*models.Pro
 	var product models.Product
 	query := `
 		SELECT product_uuid, sku, title, main_price, stock_left, minimum_order_quantity, is_active
-		FROM products
+		FROM admin_products
 		WHERE product_uuid = $1
 	`
 
@@ -154,40 +154,40 @@ func (h *Handler) addItemToCart(ctx context.Context, userID string, miniAppType 
 	if storeID != nil && miniAppType.RequiresStore() {
 		// For location-based mini-apps, include store_id in all operations
 		checkQuery = `
-			SELECT quantity FROM carts
+			SELECT quantity FROM app_carts
 			WHERE user_id = $1 AND mini_app_type = $2 AND product_id = $3 AND store_id = $4
 		`
 		checkArgs = []interface{}{userID, string(miniAppType), productID, *storeID}
 
 		updateQuery = `
-			UPDATE carts
+			UPDATE app_carts
 			SET quantity = quantity + $1, updated_at = CURRENT_TIMESTAMP
 			WHERE user_id = $2 AND mini_app_type = $3 AND product_id = $4 AND store_id = $5
 		`
 		updateArgs = []interface{}{quantity, userID, string(miniAppType), productID, *storeID}
 
 		insertQuery = `
-			INSERT INTO carts (user_id, mini_app_type, product_id, quantity, store_id)
+			INSERT INTO app_carts (user_id, mini_app_type, product_id, quantity, store_id)
 			VALUES ($1, $2, $3, $4, $5)
 		`
 		insertArgs = []interface{}{userID, string(miniAppType), productID, quantity, *storeID}
 	} else {
 		// For non-location mini-apps, don't include store_id
 		checkQuery = `
-			SELECT quantity FROM carts
+			SELECT quantity FROM app_carts
 			WHERE user_id = $1 AND mini_app_type = $2 AND product_id = $3
 		`
 		checkArgs = []interface{}{userID, string(miniAppType), productID}
 
 		updateQuery = `
-			UPDATE carts
+			UPDATE app_carts
 			SET quantity = quantity + $1, updated_at = CURRENT_TIMESTAMP
 			WHERE user_id = $2 AND mini_app_type = $3 AND product_id = $4
 		`
 		updateArgs = []interface{}{quantity, userID, string(miniAppType), productID}
 
 		insertQuery = `
-			INSERT INTO carts (user_id, mini_app_type, product_id, quantity)
+			INSERT INTO app_carts (user_id, mini_app_type, product_id, quantity)
 			VALUES ($1, $2, $3, $4)
 		`
 		insertArgs = []interface{}{userID, string(miniAppType), productID, quantity}
@@ -217,7 +217,7 @@ func (h *Handler) addItemToCart(ctx context.Context, userID string, miniAppType 
 // updateCartItemQuantity updates the quantity of an existing cart item
 func (h *Handler) updateCartItemQuantity(ctx context.Context, userID string, miniAppType models.MiniAppType, productID string, quantity int) error {
 	updateQuery := `
-		UPDATE carts
+		UPDATE app_carts
 		SET quantity = $1, updated_at = CURRENT_TIMESTAMP
 		WHERE user_id = $2 AND mini_app_type = $3 AND product_id = $4
 	`
@@ -237,7 +237,7 @@ func (h *Handler) updateCartItemQuantity(ctx context.Context, userID string, min
 // removeItemFromCart removes an item from the cart
 func (h *Handler) removeItemFromCart(ctx context.Context, userID string, miniAppType models.MiniAppType, productID string) error {
 	deleteQuery := `
-		DELETE FROM carts
+		DELETE FROM app_carts
 		WHERE user_id = $1 AND mini_app_type = $2 AND product_id = $3
 	`
 
@@ -258,7 +258,7 @@ func (h *Handler) validateStockForCartAddition(ctx context.Context, userID strin
 	// Get current quantity in cart for this product
 	var currentQuantity int
 	checkQuery := `
-		SELECT COALESCE(quantity, 0) FROM carts
+		SELECT COALESCE(quantity, 0) FROM app_carts
 		WHERE user_id = $1 AND mini_app_type = $2 AND product_id = $3
 	`
 
@@ -304,11 +304,11 @@ func (h *Handler) clearCartWithStore(ctx context.Context, userID string, miniApp
 	if storeID != nil && miniAppType.RequiresStore() {
 		// For location-based mini-apps with store filter
 		// Clear items with matching store_id OR NULL store_id (for backward compatibility)
-		deleteQuery = `DELETE FROM carts WHERE user_id = $1 AND mini_app_type = $2 AND (store_id = $3 OR store_id IS NULL)`
+		deleteQuery = `DELETE FROM app_carts WHERE user_id = $1 AND mini_app_type = $2 AND (store_id = $3 OR store_id IS NULL)`
 		args = []interface{}{userID, string(miniAppType), *storeID}
 	} else {
 		// For non-location mini-apps or when no store filter needed
-		deleteQuery = `DELETE FROM carts WHERE user_id = $1 AND mini_app_type = $2`
+		deleteQuery = `DELETE FROM app_carts WHERE user_id = $1 AND mini_app_type = $2`
 		args = []interface{}{userID, string(miniAppType)}
 	}
 
@@ -358,7 +358,7 @@ func (h *Handler) createOrder(ctx context.Context, userID string, miniAppType mo
 	// Create order
 	var order models.Order
 	orderQuery := `
-		INSERT INTO orders (user_id, mini_app_type, total_amount, status)
+		INSERT INTO app_orders (user_id, mini_app_type, total_amount, status)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id, user_id, mini_app_type, total_amount, status, created_at, updated_at
 	`
@@ -387,7 +387,7 @@ func (h *Handler) createOrder(ctx context.Context, userID string, miniAppType mo
 
 		var orderItem models.OrderItem
 		itemQuery := `
-			INSERT INTO order_items (order_id, product_id, quantity, price)
+			INSERT INTO app_order_items (order_id, product_id, quantity, price)
 			VALUES ($1, $2, $3, $4)
 			RETURNING id, order_id, product_id, quantity, price
 		`
@@ -415,7 +415,7 @@ func (h *Handler) createOrder(ctx context.Context, userID string, miniAppType mo
 
 		// Persist resolution
 		_, _ = tx.Exec(ctx, `
-			INSERT INTO order_item_org_links (order_item_id, product_id, manufacturer_org_id, tpl_org_ids, partner_org_ids)
+			INSERT INTO app_order_item_org_links (order_item_id, product_id, manufacturer_org_id, tpl_org_ids, partner_org_ids)
 			VALUES ($1, $2, $3, $4, $5)
 			ON CONFLICT (order_item_id) DO UPDATE SET
 				manufacturer_org_id = EXCLUDED.manufacturer_org_id,
@@ -450,7 +450,7 @@ func (h *Handler) createOrder(ctx context.Context, userID string, miniAppType mo
 		row := h.db.Pool.QueryRow(ctx, `
 			SELECT manufacturer_org_id::text, COALESCE(ARRAY(SELECT x::text FROM UNNEST(tpl_org_ids) x), ARRAY[]::text[]),
 			       COALESCE(ARRAY(SELECT x::text FROM UNNEST(partner_org_ids) x), ARRAY[]::text[])
-			FROM order_item_org_links WHERE order_item_id = $1
+			FROM app_order_item_org_links WHERE order_item_id = $1
 		`, it.ID)
 		_ = row.Scan(&manufacturerID, &tplIDs, &partnerIDs)
 		logging.LogKV("event", "OrderItemOrgResolved", map[string]interface{}{
@@ -470,7 +470,7 @@ func (h *Handler) createOrder(ctx context.Context, userID string, miniAppType mo
 func (h *Handler) getUserOrders(ctx context.Context, userID string, miniAppType models.MiniAppType) ([]models.Order, error) {
 	query := `
 		SELECT id, user_id, mini_app_type, total_amount, status, created_at, updated_at
-		FROM orders
+		FROM app_orders
 		WHERE user_id = $1 AND mini_app_type = $2
 		ORDER BY created_at DESC
 	`
@@ -519,7 +519,7 @@ func (h *Handler) getOrderByID(ctx context.Context, orderID string, userID strin
 	var order models.Order
 	query := `
 		SELECT id, user_id, mini_app_type, total_amount, status, created_at, updated_at
-		FROM orders
+		FROM app_orders
 		WHERE id = $1 AND user_id = $2
 	`
 
@@ -553,8 +553,8 @@ func (h *Handler) getOrderItems(ctx context.Context, orderID string) ([]models.O
 			oi.id, oi.order_id, oi.product_id, oi.quantity, oi.price,
 			p.product_uuid, p.sku, p.title, p.main_price, p.stock_left,
 			p.minimum_order_quantity, p.is_active
-		FROM order_items oi
-		JOIN products p ON oi.product_id = p.product_uuid
+		FROM app_order_items oi
+		JOIN admin_products p ON oi.product_id = p.product_uuid
 		WHERE oi.order_id = $1
 		ORDER BY oi.id
 	`

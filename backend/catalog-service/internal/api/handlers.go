@@ -131,12 +131,12 @@ func (h *Handler) ValidateShelfCode(c *gin.Context) {
 	var count int
 	if excludeID != nil {
 		err = h.db.Pool.QueryRow(ctx,
-			"SELECT COUNT(1) FROM products WHERE store_id = $1 AND shelf_code = $2 AND product_id != $3",
+			"SELECT COUNT(1) FROM admin_products WHERE store_id = $1 AND shelf_code = $2 AND product_id != $3",
 			storeID, shelfCode, *excludeID,
 		).Scan(&count)
 	} else {
 		err = h.db.Pool.QueryRow(ctx,
-			"SELECT COUNT(1) FROM products WHERE store_id = $1 AND shelf_code = $2",
+			"SELECT COUNT(1) FROM admin_products WHERE store_id = $1 AND shelf_code = $2",
 			storeID, shelfCode,
 		).Scan(&count)
 	}
@@ -309,7 +309,7 @@ func (h *Handler) DeleteProduct(c *gin.Context) {
 
 	if hardDelete {
 		// Delete S3 images first (before database deletion)
-		s3Prefix := fmt.Sprintf("products/%d/", productID)
+		s3Prefix := fmt.Sprintf("admin-panel/products/%d/images/", productID)
 		if err := h.deleteS3Folder(ctx, s3Prefix); err != nil {
 			log.Printf("Warning: Failed to delete S3 images for product %d: %v", productID, err)
 			// Continue with database deletion even if S3 cleanup fails
@@ -397,8 +397,8 @@ func (h *Handler) GetProducts(c *gin.Context) {
                 COALESCE(p.is_mini_app_recommendation, false) as is_mini_app_recommendation,
                 COALESCE(p.created_at, NOW()) as created_at,
                 COALESCE(p.updated_at, NOW()) as updated_at
-            FROM products p
-            LEFT JOIN stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
+            FROM admin_products p
+            LEFT JOIN admin_stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
             WHERE 1=1
         `
 	} else {
@@ -427,8 +427,8 @@ func (h *Handler) GetProducts(c *gin.Context) {
                 COALESCE(p.is_mini_app_recommendation, false) as is_mini_app_recommendation,
                 COALESCE(p.created_at, NOW()) as created_at,
                 COALESCE(p.updated_at, NOW()) as updated_at
-            FROM products p
-            LEFT JOIN stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
+            FROM admin_products p
+            LEFT JOIN admin_stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
             WHERE p.is_active = true
         `
 	}
@@ -659,8 +659,8 @@ func (h *Handler) GetProduct(c *gin.Context) {
                 COALESCE(p.is_mini_app_recommendation, false) as is_mini_app_recommendation,
                 COALESCE(p.created_at, NOW()) as created_at,
                 COALESCE(p.updated_at, NOW()) as updated_at
-	            FROM products p
-	            LEFT JOIN stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
+	            FROM admin_products p
+	            LEFT JOIN admin_stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
 	            WHERE p.product_id = $1 AND p.is_active = true
 	        `
 		} else {
@@ -687,8 +687,8 @@ func (h *Handler) GetProduct(c *gin.Context) {
                 COALESCE(p.is_mini_app_recommendation, false) as is_mini_app_recommendation,
                 COALESCE(p.created_at, NOW()) as created_at,
                 COALESCE(p.updated_at, NOW()) as updated_at
-	            FROM products p
-	            LEFT JOIN stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
+	            FROM admin_products p
+	            LEFT JOIN admin_stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
 	            WHERE p.product_id = $1 AND p.is_active = true
 	        `
 		}
@@ -724,8 +724,8 @@ func (h *Handler) GetProduct(c *gin.Context) {
                 COALESCE(p.is_mini_app_recommendation, false) as is_mini_app_recommendation,
                 COALESCE(p.created_at, NOW()) as created_at,
                 COALESCE(p.updated_at, NOW()) as updated_at
-	            FROM products p
-	            LEFT JOIN stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
+	            FROM admin_products p
+	            LEFT JOIN admin_stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
 
 
 	            WHERE p.product_uuid = $1 AND p.is_active = true
@@ -756,8 +756,8 @@ func (h *Handler) GetProduct(c *gin.Context) {
                 COALESCE(p.is_mini_app_recommendation, false) as is_mini_app_recommendation,
                 COALESCE(p.created_at, NOW()) as created_at,
                 COALESCE(p.updated_at, NOW()) as updated_at
-	            FROM products p
-	            LEFT JOIN stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
+	            FROM admin_products p
+	            LEFT JOIN admin_stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
 	            WHERE p.product_uuid = $1 AND p.is_active = true
 	        `
 		}
@@ -877,15 +877,15 @@ func (h *Handler) GetCategories(c *gin.Context) {
                 c.store_id, c.display_order, c.is_active, c.image_url, c.created_at, c.updated_at,
                 s.name as store_name, s.city as store_city, s.latitude as store_latitude,
                 s.longitude as store_longitude, s.type as store_type
-            FROM product_categories c
-            LEFT JOIN stores s ON c.store_id = s.store_id
+            FROM admin_product_categories c
+            LEFT JOIN admin_stores s ON c.store_id = s.store_id
         `
 	} else {
 		query = `
             SELECT
                 category_id, name, store_type_association, mini_app_association,
                 store_id, display_order, is_active, image_url, created_at, updated_at
-            FROM product_categories
+            FROM admin_product_categories
         `
 	}
 
@@ -1016,7 +1016,7 @@ func (h *Handler) GetCategories(c *gin.Context) {
 func (h *Handler) getSubcategoriesForCategory(ctx context.Context, categoryID int) ([]models.Subcategory, error) {
 	query := `
         SELECT subcategory_id, parent_category_id, name, image_url, display_order, is_active, created_at, updated_at
-        FROM subcategories
+        FROM admin_subcategories
         WHERE parent_category_id = $1 AND is_active = true
         ORDER BY display_order, subcategory_id
     `
@@ -1074,13 +1074,13 @@ func (h *Handler) GetStores(c *gin.Context) {
             SELECT
                 store_id, name, city, address, latitude, longitude, type, region_id, image_url, is_active, created_at, updated_at,
                 (6371 * acos(cos(radians($1)) * cos(radians(latitude)) * cos(radians(longitude) - radians($2)) + sin(radians($1)) * sin(radians(latitude)))) AS distance_km
-            FROM stores
+            FROM admin_stores
             WHERE is_active = true
         `
 	} else {
 		query = `
             SELECT store_id, name, city, address, latitude, longitude, type, region_id, image_url, is_active, created_at, updated_at
-            FROM stores
+            FROM admin_stores
             WHERE is_active = true
         `
 	}
@@ -1216,7 +1216,7 @@ func (h *Handler) Health(c *gin.Context) {
 func (h *Handler) getProductImages(ctx context.Context, productID int) ([]string, error) {
 	query := `
         SELECT image_url
-        FROM product_images
+        FROM admin_product_images
         WHERE product_id = $1
         ORDER BY display_order
     `
@@ -1242,7 +1242,7 @@ func (h *Handler) getProductImages(ctx context.Context, productID int) ([]string
 func (h *Handler) getProductCategories(ctx context.Context, productID int) ([]string, error) {
 	query := `
         SELECT CAST(pcm.category_id AS TEXT)
-        FROM product_category_mapping pcm
+        FROM admin_product_category_mapping pcm
         WHERE pcm.product_id = $1
         ORDER BY pcm.category_id
     `
@@ -1268,7 +1268,7 @@ func (h *Handler) getProductCategories(ctx context.Context, productID int) ([]st
 func (h *Handler) getProductSubcategories(ctx context.Context, productID int) ([]string, error) {
 	query := `
         SELECT CAST(psm.subcategory_id AS TEXT)
-        FROM product_subcategory_mapping psm
+        FROM admin_product_subcategory_mapping psm
         WHERE psm.product_id = $1
         ORDER BY psm.subcategory_id
     `
@@ -1349,8 +1349,8 @@ func (h *Handler) uploadToS3(ctx context.Context, productID int, fileHeader *mul
 	s3Client := s3.NewFromConfig(cfg)
 
 	// Upload to S3
-	bucketName := "expotoworld-product-images"
-	objectKey := fmt.Sprintf("products/%d/%d%s", productID, time.Now().UnixNano(), filepath.Ext(fileHeader.Filename))
+	bucketName := "expotoworld-media"
+	objectKey := fmt.Sprintf("admin-panel/products/%d/images/%d%s", productID, time.Now().UnixNano(), filepath.Ext(fileHeader.Filename))
 
 	_, err = s3Client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: &bucketName,
@@ -1393,7 +1393,7 @@ func (h *Handler) uploadGenericToS3(ctx context.Context, objectKey string, file 
 	}
 	s3Client := s3.NewFromConfig(cfg)
 
-	bucketName := "expotoworld-product-images"
+	bucketName := "expotoworld-media"
 	_, err = s3Client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: &bucketName,
 		Key:    &objectKey,
@@ -1458,7 +1458,7 @@ func (h *Handler) GetSubcategories(c *gin.Context) {
 
 	query := `
         SELECT subcategory_id, parent_category_id, name, image_url, display_order, is_active, created_at, updated_at
-        FROM subcategories
+        FROM admin_subcategories
         WHERE parent_category_id = $1 AND is_active = true
         ORDER BY display_order, subcategory_id
     `
@@ -1526,7 +1526,7 @@ func (h *Handler) CreateSubcategory(c *gin.Context) {
 
 	// Check for display order conflicts within the same category
 	conflictQuery := `
-        SELECT COUNT(*) FROM subcategories
+        SELECT COUNT(*) FROM admin_subcategories
         WHERE display_order = $1
         AND parent_category_id = $2
         AND is_active = true
@@ -1550,7 +1550,7 @@ func (h *Handler) CreateSubcategory(c *gin.Context) {
 	}
 
 	query := `
-        INSERT INTO subcategories (parent_category_id, name, image_url, display_order, is_active)
+        INSERT INTO admin_subcategories (parent_category_id, name, image_url, display_order, is_active)
         VALUES ($1, $2, $3, $4, $5)
         RETURNING subcategory_id, created_at, updated_at
     `
@@ -1599,7 +1599,7 @@ func (h *Handler) UpdateSubcategory(c *gin.Context) {
 
 	// Get the parent category ID for the subcategory being updated
 	var parentCategoryID int
-	err := h.db.Pool.QueryRow(ctx, "SELECT parent_category_id FROM subcategories WHERE subcategory_id = $1", subcategoryID).Scan(&parentCategoryID)
+	err := h.db.Pool.QueryRow(ctx, "SELECT parent_category_id FROM admin_subcategories WHERE subcategory_id = $1", subcategoryID).Scan(&parentCategoryID)
 	if err != nil {
 		log.Printf("Failed to get parent category ID: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to validate subcategory"})
@@ -1608,7 +1608,7 @@ func (h *Handler) UpdateSubcategory(c *gin.Context) {
 
 	// Check for display order conflicts within the same category (excluding current subcategory)
 	conflictQuery := `
-        SELECT COUNT(*) FROM subcategories
+        SELECT COUNT(*) FROM admin_subcategories
         WHERE display_order = $1
         AND parent_category_id = $2
         AND subcategory_id != $3
@@ -1634,7 +1634,7 @@ func (h *Handler) UpdateSubcategory(c *gin.Context) {
 	}
 
 	query := `
-        UPDATE subcategories
+        UPDATE admin_subcategories
         SET name = $2, image_url = $3, display_order = $4, is_active = $5, updated_at = CURRENT_TIMESTAMP
         WHERE subcategory_id = $1
         RETURNING updated_at
@@ -1667,13 +1667,13 @@ func (h *Handler) DeleteSubcategory(c *gin.Context) {
 	subcategoryID := c.Param("id")
 
 	// Delete S3 images first (before database deletion)
-	s3Prefix := fmt.Sprintf("subcategories/%s/", subcategoryID)
+	s3Prefix := fmt.Sprintf("admin-panel/subcategories/%s/images/", subcategoryID)
 	if err := h.deleteS3Folder(ctx, s3Prefix); err != nil {
 		log.Printf("Warning: Failed to delete S3 images for subcategory %s: %v", subcategoryID, err)
 		// Continue with database deletion even if S3 cleanup fails
 	}
 
-	query := `DELETE FROM subcategories WHERE subcategory_id = $1`
+	query := `DELETE FROM admin_subcategories WHERE subcategory_id = $1`
 
 	result, err := h.db.Pool.Exec(ctx, query, subcategoryID)
 	if err != nil {
@@ -1714,7 +1714,7 @@ func (h *Handler) CreateCategory(c *gin.Context) {
 
 	if newCategory.StoreID == nil {
 		conflictQuery = `
-            SELECT COUNT(*) FROM product_categories
+            SELECT COUNT(*) FROM admin_product_categories
             WHERE display_order = $1
             AND $2 = ANY(mini_app_association)
             AND store_id IS NULL
@@ -1726,7 +1726,7 @@ func (h *Handler) CreateCategory(c *gin.Context) {
 		).Scan(&conflictCount)
 	} else {
 		conflictQuery = `
-            SELECT COUNT(*) FROM product_categories
+            SELECT COUNT(*) FROM admin_product_categories
             WHERE display_order = $1
             AND $2 = ANY(mini_app_association)
             AND store_id = $3
@@ -1751,7 +1751,7 @@ func (h *Handler) CreateCategory(c *gin.Context) {
 	}
 
 	query := `
-        INSERT INTO product_categories (name, store_type_association, mini_app_association, store_id, display_order, is_active)
+        INSERT INTO admin_product_categories (name, store_type_association, mini_app_association, store_id, display_order, is_active)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING category_id, created_at, updated_at
     `
@@ -1806,7 +1806,7 @@ func (h *Handler) UpdateCategory(c *gin.Context) {
 
 	if updatedCategory.StoreID == nil {
 		conflictQuery = `
-            SELECT COUNT(*) FROM product_categories
+            SELECT COUNT(*) FROM admin_product_categories
             WHERE display_order = $1
             AND $2 = ANY(mini_app_association)
             AND store_id IS NULL
@@ -1820,7 +1820,7 @@ func (h *Handler) UpdateCategory(c *gin.Context) {
 		).Scan(&conflictCount)
 	} else {
 		conflictQuery = `
-            SELECT COUNT(*) FROM product_categories
+            SELECT COUNT(*) FROM admin_product_categories
             WHERE display_order = $1
             AND $2 = ANY(mini_app_association)
             AND store_id = $3
@@ -1847,7 +1847,7 @@ func (h *Handler) UpdateCategory(c *gin.Context) {
 	}
 
 	query := `
-        UPDATE product_categories
+        UPDATE admin_product_categories
         SET name = $2, store_type_association = $3, mini_app_association = $4, store_id = $5, display_order = $6, is_active = $7, updated_at = CURRENT_TIMESTAMP
         WHERE category_id = $1
         RETURNING updated_at
@@ -1886,14 +1886,14 @@ func (h *Handler) DeleteCategory(c *gin.Context) {
 
 	if hardDelete {
 		// Delete S3 images first (before database deletion)
-		s3Prefix := fmt.Sprintf("categories/%s/", categoryID)
+		s3Prefix := fmt.Sprintf("admin-panel/categories/%s/images/", categoryID)
 		if err := h.deleteS3Folder(ctx, s3Prefix); err != nil {
 			log.Printf("Warning: Failed to delete S3 images for category %s: %v", categoryID, err)
 			// Continue with database deletion even if S3 cleanup fails
 		}
 
 		// Perform hard delete (completely remove from database)
-		query := `DELETE FROM product_categories WHERE category_id = $1`
+		query := `DELETE FROM admin_product_categories WHERE category_id = $1`
 		_, err := h.db.Pool.Exec(ctx, query, categoryID)
 		if err != nil {
 			log.Printf("Failed to hard delete category %s: %v", categoryID, err)
@@ -1907,7 +1907,7 @@ func (h *Handler) DeleteCategory(c *gin.Context) {
 	} else {
 		// Perform soft delete (set is_active = false)
 		query := `
-            UPDATE product_categories
+            UPDATE admin_product_categories
             SET is_active = false, updated_at = CURRENT_TIMESTAMP
             WHERE category_id = $1
         `
@@ -1947,7 +1947,7 @@ func (h *Handler) CreateStore(c *gin.Context) {
 	}
 
 	query := `
-        INSERT INTO stores (name, city, address, latitude, longitude, type, region_id, image_url, is_active)
+        INSERT INTO admin_stores (name, city, address, latitude, longitude, type, region_id, image_url, is_active)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING store_id, created_at, updated_at
     `
@@ -1979,7 +1979,7 @@ func (h *Handler) CreateStore(c *gin.Context) {
 			_ = h.db.SetStorePartners(ctx, storeID, []models.StorePartner{})
 		} else {
 			var orgType string
-			if err := h.db.Pool.QueryRow(ctx, `SELECT org_type::text FROM organizations WHERE org_id = $1`, partner).Scan(&orgType); err != nil {
+			if err := h.db.Pool.QueryRow(ctx, `SELECT org_type::text FROM admin_organizations WHERE org_id = $1`, partner).Scan(&orgType); err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Selected organization not found"})
 				return
 			}
@@ -2038,7 +2038,7 @@ func (h *Handler) UpdateStore(c *gin.Context) {
 	)
 
 	query := `
-        UPDATE stores
+        UPDATE admin_stores
         SET name = $2, city = $3, address = $4, latitude = $5, longitude = $6, type = $7, region_id = $8, image_url = $9, is_active = $10, updated_at = CURRENT_TIMESTAMP
         WHERE store_id = $1
     `
@@ -2079,7 +2079,7 @@ func (h *Handler) UpdateStore(c *gin.Context) {
 			}
 		} else {
 			var orgType string
-			if err := h.db.Pool.QueryRow(ctx, `SELECT org_type::text FROM organizations WHERE org_id = $1`, partner).Scan(&orgType); err != nil {
+			if err := h.db.Pool.QueryRow(ctx, `SELECT org_type::text FROM admin_organizations WHERE org_id = $1`, partner).Scan(&orgType); err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Selected organization not found"})
 				return
 			}
@@ -2102,7 +2102,7 @@ func (h *Handler) UpdateStore(c *gin.Context) {
 
 	// Fetch updated_at to include in response
 	var updatedAt time.Time
-	if err := h.db.Pool.QueryRow(ctx, `SELECT updated_at FROM stores WHERE store_id = $1`, storeID).Scan(&updatedAt); err != nil {
+	if err := h.db.Pool.QueryRow(ctx, `SELECT updated_at FROM admin_stores WHERE store_id = $1`, storeID).Scan(&updatedAt); err != nil {
 		log.Printf("[UpdateStore] Failed to fetch updated_at for store_id=%s: %v", storeID, err)
 		// Non-fatal: continue without updated_at
 	}
@@ -2123,14 +2123,14 @@ func (h *Handler) DeleteStore(c *gin.Context) {
 
 	if hardDelete {
 		// Delete S3 images first (before database deletion)
-		s3Prefix := fmt.Sprintf("stores/%s/", storeID)
+		s3Prefix := fmt.Sprintf("admin-panel/stores/%s/images/", storeID)
 		if err := h.deleteS3Folder(ctx, s3Prefix); err != nil {
 			log.Printf("Warning: Failed to delete S3 images for store %s: %v", storeID, err)
 			// Continue with database deletion even if S3 cleanup fails
 		}
 
 		// Perform hard delete (completely remove from database)
-		query := `DELETE FROM stores WHERE store_id = $1`
+		query := `DELETE FROM admin_stores WHERE store_id = $1`
 		_, err := h.db.Pool.Exec(ctx, query, storeID)
 		if err != nil {
 			log.Printf("Failed to hard delete store %s: %v", storeID, err)
@@ -2144,7 +2144,7 @@ func (h *Handler) DeleteStore(c *gin.Context) {
 	} else {
 		// Perform soft delete (set is_active = false)
 		query := `
-            UPDATE stores
+            UPDATE admin_stores
             SET is_active = false, updated_at = CURRENT_TIMESTAMP
             WHERE store_id = $1
         `
@@ -2189,7 +2189,7 @@ func (h *Handler) deleteS3Folder(ctx context.Context, prefix string) error {
 	}
 
 	s3Client := s3.NewFromConfig(cfg)
-	bucketName := "expotoworld-product-images"
+	bucketName := "expotoworld-media"
 
 	// List and delete all objects with the given prefix
 	var token *string
@@ -2269,7 +2269,7 @@ func (h *Handler) AdminCleanupS3(c *gin.Context) {
 		return
 	}
 	s3Client := s3.NewFromConfig(cfg)
-	bucketName := "expotoworld-product-images"
+	bucketName := "expotoworld-media"
 
 	deleted := 0
 	for _, p := range prefixes {
@@ -2334,7 +2334,7 @@ func (h *Handler) UploadSubcategoryImage(c *gin.Context) {
 	}
 
 	// Upload to S3
-	imageURL, err := h.uploadGenericToS3(ctx, fmt.Sprintf("subcategories/%s/%d_%s", subcategoryID, time.Now().Unix(), header.Filename), file)
+	imageURL, err := h.uploadGenericToS3(ctx, fmt.Sprintf("admin-panel/subcategories/%s/images/%d_%s", subcategoryID, time.Now().Unix(), header.Filename), file)
 	if err != nil {
 		log.Printf("Failed to upload subcategory image to S3: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image"})
@@ -2343,7 +2343,7 @@ func (h *Handler) UploadSubcategoryImage(c *gin.Context) {
 
 	// Update subcategory with image URL
 	query := `
-        UPDATE subcategories
+        UPDATE admin_subcategories
         SET image_url = $2, updated_at = CURRENT_TIMESTAMP
         WHERE subcategory_id = $1
         RETURNING updated_at
@@ -2386,7 +2386,7 @@ func (h *Handler) UploadStoreImage(c *gin.Context) {
 	}
 
 	// Upload to S3
-	imageURL, err := h.uploadGenericToS3(ctx, fmt.Sprintf("stores/%s/%d_%s", storeID, time.Now().Unix(), header.Filename), file)
+	imageURL, err := h.uploadGenericToS3(ctx, fmt.Sprintf("admin-panel/stores/%s/images/%d_%s", storeID, time.Now().Unix(), header.Filename), file)
 	if err != nil {
 		log.Printf("Failed to upload store image to S3: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image"})
@@ -2395,7 +2395,7 @@ func (h *Handler) UploadStoreImage(c *gin.Context) {
 
 	// Update store with image URL
 	query := `
-        UPDATE stores
+        UPDATE admin_stores
         SET image_url = $2, updated_at = CURRENT_TIMESTAMP
         WHERE store_id = $1
         RETURNING updated_at
@@ -2492,7 +2492,7 @@ func (h *Handler) UploadProductImages(c *gin.Context) {
 		defer file.Close()
 
 		// Upload the file to S3 and get the CloudFront URL
-		objectKey := fmt.Sprintf("products/%d/%d_%s", productID, time.Now().UnixNano(), fileHeader.Filename)
+		objectKey := fmt.Sprintf("admin-panel/products/%d/images/%d_%s", productID, time.Now().UnixNano(), fileHeader.Filename)
 		imageURL, err := h.uploadGenericToS3(ctx, objectKey, file)
 		if err != nil {
 			log.Printf("Failed to upload image to S3: %v", err)
@@ -2712,7 +2712,7 @@ func (h *Handler) updateImageDisplayOrder(ctx context.Context, productID, imageI
 func (h *Handler) deleteProductImage(ctx context.Context, productID, imageID int) error {
 	// First, get the image URL before deleting from database
 	var imageURL string
-	query := `SELECT image_url FROM product_images WHERE product_id = $1 AND image_id = $2`
+	query := `SELECT image_url FROM admin_product_images WHERE product_id = $1 AND image_id = $2`
 	err := h.db.Pool.QueryRow(ctx, query, productID, imageID).Scan(&imageURL)
 	if err != nil {
 		return fmt.Errorf("failed to get image URL: %w", err)
@@ -2759,7 +2759,7 @@ func (h *Handler) deleteProductImage(ctx context.Context, productID, imageID int
 	}
 
 	s3Client := s3.NewFromConfig(cfg)
-	bucketName := "expotoworld-product-images"
+	bucketName := "expotoworld-media"
 
 	_, err = s3Client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: &bucketName,
@@ -2799,7 +2799,7 @@ func (h *Handler) UploadCategoryImage(c *gin.Context) {
 		return
 	}
 
-	imageURL, err := h.uploadGenericToS3(ctx, fmt.Sprintf("categories/%s/%d_%s", categoryID, time.Now().Unix(), header.Filename), file)
+	imageURL, err := h.uploadGenericToS3(ctx, fmt.Sprintf("admin-panel/categories/%s/images/%d_%s", categoryID, time.Now().Unix(), header.Filename), file)
 	if err != nil {
 		log.Printf("Failed to upload category image to S3: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image"})
@@ -2807,7 +2807,7 @@ func (h *Handler) UploadCategoryImage(c *gin.Context) {
 	}
 
 	query := `
-        UPDATE product_categories
+        UPDATE admin_product_categories
         SET image_url = $2, updated_at = CURRENT_TIMESTAMP
         WHERE category_id = $1
         RETURNING updated_at
@@ -2881,8 +2881,8 @@ func (h *Handler) GetManufacturerProducts(c *gin.Context) {
 			COALESCE(p.is_mini_app_recommendation, false) as is_mini_app_recommendation,
 			COALESCE(p.created_at, NOW()) as created_at,
 			COALESCE(p.updated_at, NOW()) as updated_at
-		FROM products p
-		LEFT JOIN stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore','ExhibitionSales')
+		FROM admin_products p
+		LEFT JOIN admin_stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore','ExhibitionSales')
 		WHERE p.owner_org_id::text IN (%s)
 		ORDER BY p.product_id`
 

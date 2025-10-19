@@ -88,10 +88,10 @@ func (h *Handler) getAdminOrders(ctx context.Context, req *models.AdminOrderList
 	// Count total records
 	countQuery := fmt.Sprintf(`
 		SELECT COUNT(*)
-		FROM orders o
+		FROM app_orders o
 
 
-		LEFT JOIN users u ON o.user_id = u.id
+		LEFT JOIN app_users u ON o.user_id = u.id
 
 
 
@@ -136,13 +136,13 @@ func (h *Handler) getAdminOrders(ctx context.Context, req *models.AdminOrderList
 
 			o.total_amount,
 			o.status,
-			(SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) as item_count,
+			(SELECT COUNT(*) FROM app_order_items oi WHERE oi.order_id = o.id) as item_count,
 			o.created_at,
 			o.updated_at
-		FROM orders o
+		FROM app_orders o
 
 
-		LEFT JOIN users u ON o.user_id = u.id
+		LEFT JOIN app_users u ON o.user_id = u.id
 
 
 
@@ -221,13 +221,13 @@ func (h *Handler) getAdminOrderByID(ctx context.Context, orderID string) (*model
 			o.mini_app_type,
 			o.total_amount,
 			o.status,
-			(SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) as item_count,
+			(SELECT COUNT(*) FROM app_order_items oi WHERE oi.order_id = o.id) as item_count,
 			o.created_at,
 			o.updated_at
-		FROM orders o
+		FROM app_orders o
 
 
-		LEFT JOIN users u ON o.user_id = u.id
+		LEFT JOIN app_users u ON o.user_id = u.id
 
 
 
@@ -303,7 +303,7 @@ func (h *Handler) updateOrderStatus(ctx context.Context, orderID string, newStat
 
 	// Get current status
 	var currentStatus models.OrderStatus
-	err = tx.QueryRow(ctx, "SELECT status FROM orders WHERE id = $1", orderID).Scan(&currentStatus)
+	err = tx.QueryRow(ctx, "SELECT status FROM app_orders WHERE id = $1", orderID).Scan(&currentStatus)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return fmt.Errorf("order not found")
@@ -313,7 +313,7 @@ func (h *Handler) updateOrderStatus(ctx context.Context, orderID string, newStat
 
 	// Update order status
 	_, err = tx.Exec(ctx,
-		"UPDATE orders SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+		"UPDATE app_orders SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
 		newStatus, orderID)
 	if err != nil {
 		return fmt.Errorf("failed to update order status: %w", err)
@@ -368,14 +368,14 @@ func (h *Handler) getOrderStatistics(ctx context.Context, dateFrom, dateTo strin
 	}
 
 	// Get total orders and revenue
-	totalQuery := fmt.Sprintf("SELECT COUNT(*), COALESCE(SUM(total_amount), 0) FROM orders %s", dateFilter)
+	totalQuery := fmt.Sprintf("SELECT COUNT(*), COALESCE(SUM(total_amount), 0) FROM app_orders %s", dateFilter)
 	err := h.db.Pool.QueryRow(ctx, totalQuery, dateArgs...).Scan(&stats.TotalOrders, &stats.TotalRevenue)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get total statistics: %w", err)
 	}
 
 	// Get orders by status
-	statusQuery := fmt.Sprintf("SELECT status, COUNT(*) FROM orders %s GROUP BY status", dateFilter)
+	statusQuery := fmt.Sprintf("SELECT status, COUNT(*) FROM app_orders %s GROUP BY status", dateFilter)
 	rows, err := h.db.Pool.Query(ctx, statusQuery, dateArgs...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get status statistics: %w", err)
@@ -392,7 +392,7 @@ func (h *Handler) getOrderStatistics(ctx context.Context, dateFrom, dateTo strin
 	}
 
 	// Get orders and revenue by mini-app
-	miniAppQuery := fmt.Sprintf("SELECT mini_app_type, COUNT(*), COALESCE(SUM(total_amount), 0) FROM orders %s GROUP BY mini_app_type", dateFilter)
+	miniAppQuery := fmt.Sprintf("SELECT mini_app_type, COUNT(*), COALESCE(SUM(total_amount), 0) FROM app_orders %s GROUP BY mini_app_type", dateFilter)
 	rows, err = h.db.Pool.Query(ctx, miniAppQuery, dateArgs...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get mini-app statistics: %w", err)
@@ -487,9 +487,9 @@ func (h *Handler) getAdminCarts(ctx context.Context, req *models.AdminCartListRe
 	// Get total count - count unique combinations of user_id and mini_app_type
 	countQuery := fmt.Sprintf(`
 		SELECT COUNT(DISTINCT CONCAT(c.user_id::text, '-', c.mini_app_type))
-		FROM carts c
-		LEFT JOIN users u ON c.user_id = u.id
-		LEFT JOIN products p ON c.product_id = p.product_uuid
+		FROM app_carts c
+		LEFT JOIN app_users u ON c.user_id = u.id
+		LEFT JOIN admin_products p ON c.product_id = p.product_uuid
 		%s
 	`, whereClause)
 
@@ -512,9 +512,9 @@ func (h *Handler) getAdminCarts(ctx context.Context, req *models.AdminCartListRe
 			COALESCE(SUM(p.main_price * c.quantity), 0) as total_value,
 			MIN(c.created_at) as created_at,
 			MAX(c.updated_at) as updated_at
-		FROM carts c
-		LEFT JOIN users u ON c.user_id = u.id
-		LEFT JOIN products p ON c.product_id = p.product_uuid
+		FROM app_carts c
+		LEFT JOIN app_users u ON c.user_id = u.id
+		LEFT JOIN admin_products p ON c.product_id = p.product_uuid
 		%s
 		GROUP BY c.user_id, c.mini_app_type, u.email, u.first_name, u.last_name, u.username
 		%s
@@ -578,9 +578,9 @@ func (h *Handler) getAdminCartByID(ctx context.Context, cartID string) (*models.
 			COALESCE(SUM(p.main_price * c.quantity), 0) as total_value,
 			MIN(c.created_at) as created_at,
 			MAX(c.updated_at) as updated_at
-		FROM carts c
-		LEFT JOIN users u ON c.user_id = u.id
-		LEFT JOIN products p ON c.product_id = p.product_uuid
+		FROM app_carts c
+		LEFT JOIN app_users u ON c.user_id = u.id
+		LEFT JOIN admin_products p ON c.product_id = p.product_uuid
 
 		WHERE c.user_id = $1 AND c.mini_app_type = $2
 		GROUP BY c.user_id, c.mini_app_type, u.email, u.first_name, u.last_name, u.username
@@ -620,8 +620,8 @@ func (h *Handler) getAdminCartByID(ctx context.Context, cartID string) (*models.
 			p.stock_left,
 			p.minimum_order_quantity,
 			p.is_active
-		FROM carts c
-		JOIN products p ON c.product_id = p.product_uuid
+		FROM app_carts c
+		JOIN admin_products p ON c.product_id = p.product_uuid
 		WHERE c.user_id = $1 AND c.mini_app_type = $2
 		ORDER BY c.created_at DESC
 	`
@@ -676,7 +676,7 @@ func (h *Handler) updateAdminCartItem(ctx context.Context, cartID, productID str
 
 	if quantity == 0 {
 		// Remove item from cart
-		query := `DELETE FROM carts WHERE user_id = $1 AND mini_app_type = $2 AND product_id = $3`
+		query := `DELETE FROM app_carts WHERE user_id = $1 AND mini_app_type = $2 AND product_id = $3`
 		_, err := h.db.Pool.Exec(ctx, query, userID, miniAppType, productID)
 		if err != nil {
 			return fmt.Errorf("failed to remove cart item: %w", err)
@@ -684,7 +684,7 @@ func (h *Handler) updateAdminCartItem(ctx context.Context, cartID, productID str
 	} else {
 		// Update quantity
 		query := `
-			UPDATE carts
+			UPDATE app_carts
 			SET quantity = $4, updated_at = CURRENT_TIMESTAMP
 			WHERE user_id = $1 AND mini_app_type = $2 AND product_id = $3
 		`
@@ -711,7 +711,7 @@ func (h *Handler) deleteAdminCart(ctx context.Context, cartID string) error {
 	userID := cartID[:lastHyphenIndex]
 	miniAppType := cartID[lastHyphenIndex+1:]
 
-	query := `DELETE FROM carts WHERE user_id = $1 AND mini_app_type = $2`
+	query := `DELETE FROM app_carts WHERE user_id = $1 AND mini_app_type = $2`
 	result, err := h.db.Pool.Exec(ctx, query, userID, miniAppType)
 	if err != nil {
 		return fmt.Errorf("failed to delete cart: %w", err)
@@ -755,8 +755,8 @@ func (h *Handler) getCartStatistics(ctx context.Context, dateFrom, dateTo string
 		SELECT
 			COUNT(DISTINCT CONCAT(c.user_id, '-', c.mini_app_type)) as total_carts,
 			COALESCE(SUM(p.main_price * c.quantity), 0) as total_value
-		FROM carts c
-		JOIN products p ON c.product_id = p.product_uuid
+		FROM app_carts c
+		JOIN admin_products p ON c.product_id = p.product_uuid
 		%s
 	`, dateFilter)
 
@@ -776,8 +776,8 @@ func (h *Handler) getCartStatistics(ctx context.Context, dateFrom, dateTo string
 			c.mini_app_type,
 			COUNT(DISTINCT CONCAT(c.user_id, '-', c.mini_app_type)) as cart_count,
 			COALESCE(SUM(p.main_price * c.quantity), 0) as total_value
-		FROM carts c
-		JOIN products p ON c.product_id = p.product_uuid
+		FROM app_carts c
+		JOIN admin_products p ON c.product_id = p.product_uuid
 		%s
 		GROUP BY c.mini_app_type
 	`, dateFilter)
@@ -802,7 +802,7 @@ func (h *Handler) getCartStatistics(ctx context.Context, dateFrom, dateTo string
 	// Get abandoned carts (older than 7 days)
 	abandonedQuery := `
 		SELECT COUNT(DISTINCT CONCAT(c.user_id, '-', c.mini_app_type))
-		FROM carts c
+		FROM app_carts c
 		WHERE c.updated_at < CURRENT_TIMESTAMP - INTERVAL '7 days'
 	`
 

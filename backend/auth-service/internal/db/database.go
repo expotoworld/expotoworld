@@ -225,7 +225,7 @@ func (db *Database) InitSchema(ctx context.Context) error {
 	log.Printf("Found users table with columns: %v", columns)
 
 	// Ensure email can be NULL for phone-based registrations
-	if _, err := db.Pool.Exec(ctx, "ALTER TABLE users ALTER COLUMN email DROP NOT NULL"); err != nil {
+	if _, err := db.Pool.Exec(ctx, "ALTER TABLE app_users ALTER COLUMN email DROP NOT NULL"); err != nil {
 		log.Printf("[AUTH-DB] Warning: could not relax NOT NULL on users.email: %v", err)
 	} else {
 		log.Println("[AUTH-DB] users.email set to NULLABLE (OK for phone-based auth)")
@@ -245,7 +245,7 @@ func (db *Database) GetUserRoleStatusByEmail(ctx context.Context, email string) 
 	var id, role, status string
 	query := `
 		SELECT id, role, status
-		FROM users
+		FROM app_users
 		WHERE email = $1
 	`
 	if err := db.Pool.QueryRow(ctx, query, email).Scan(&id, &role, &status); err != nil {
@@ -259,8 +259,8 @@ func (db *Database) GetOrgMembershipsByUserID(ctx context.Context, userID string
 	var memberships []models.OrgMembership
 	query := `
 		SELECT ou.org_id::text, o.org_type::text, ou.org_role::text, COALESCE(o.name, '')
-		FROM organization_users ou
-		JOIN organizations o ON o.org_id = ou.org_id
+		FROM admin_organization_users ou
+		JOIN admin_organizations o ON o.org_id = ou.org_id
 		WHERE ou.user_id = $1
 		ORDER BY ou.org_id
 	`
@@ -284,7 +284,7 @@ func (db *Database) GetUserByEmail(ctx context.Context, email string) (*models.U
 	var user models.User
 	query := `
 		SELECT id, username, email, phone, first_name, middle_name, last_name, created_at, updated_at
-		FROM users
+		FROM app_users
 		WHERE email = $1
 	`
 
@@ -313,7 +313,7 @@ func (db *Database) GetUserByEmail(ctx context.Context, email string) (*models.U
 // UpdateLastLogin updates the last_login timestamp for a user
 func (db *Database) UpdateLastLogin(ctx context.Context, userID string) error {
 	query := `
-		UPDATE users
+		UPDATE app_users
 		SET last_login = now()
 		WHERE id = $1
 	`
@@ -365,7 +365,7 @@ func getEnv(key, defaultValue string) string {
 func (db *Database) InitAdminSchema(ctx context.Context) error {
 	// Ensure unified tables and indexes exist
 	createUnified := `
-		CREATE TABLE IF NOT EXISTS verification_codes (
+		CREATE TABLE IF NOT EXISTS app_verification_codes (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			actor_type TEXT NOT NULL CHECK (actor_type IN ('admin','user')),
 			channel_type TEXT NOT NULL CHECK (channel_type IN ('email','phone')),
@@ -378,7 +378,7 @@ func (db *Database) InitAdminSchema(ctx context.Context) error {
 			created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 		);
 
-		CREATE TABLE IF NOT EXISTS rate_limits (
+		CREATE TABLE IF NOT EXISTS app_rate_limits (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			actor_type TEXT NOT NULL CHECK (actor_type IN ('admin','user')),
 			channel_type TEXT NOT NULL CHECK (channel_type IN ('email','phone')),
@@ -387,19 +387,19 @@ func (db *Database) InitAdminSchema(ctx context.Context) error {
 			window_start TIMESTAMP WITH TIME ZONE DEFAULT now()
 		);
 
-		CREATE INDEX IF NOT EXISTS idx_verification_subject_valid
-			ON verification_codes (channel_type, subject, used, expires_at DESC, created_at DESC);
-		CREATE INDEX IF NOT EXISTS idx_verification_ip_created
-			ON verification_codes (ip_address, created_at);
-		CREATE INDEX IF NOT EXISTS idx_verification_expiry
-			ON verification_codes (expires_at);
-		CREATE INDEX IF NOT EXISTS idx_verification_actor_subject
-			ON verification_codes (actor_type, channel_type, subject);
+		CREATE INDEX IF NOT EXISTS idx_app_verification_subject_valid
+			ON app_verification_codes (channel_type, subject, used, expires_at DESC, created_at DESC);
+		CREATE INDEX IF NOT EXISTS idx_app_verification_ip_created
+			ON app_verification_codes (ip_address, created_at);
+		CREATE INDEX IF NOT EXISTS idx_app_verification_expiry
+			ON app_verification_codes (expires_at);
+		CREATE INDEX IF NOT EXISTS idx_app_verification_actor_subject
+			ON app_verification_codes (actor_type, channel_type, subject);
 
-		CREATE INDEX IF NOT EXISTS idx_rate_limits_ip_window
-			ON rate_limits (ip_address, window_start);
-		CREATE INDEX IF NOT EXISTS idx_rate_limits_actor_ip_window
-			ON rate_limits (actor_type, ip_address, window_start);
+		CREATE INDEX IF NOT EXISTS idx_app_rate_limits_ip_window
+			ON app_rate_limits (ip_address, window_start);
+		CREATE INDEX IF NOT EXISTS idx_app_rate_limits_actor_ip_window
+			ON app_rate_limits (actor_type, ip_address, window_start);
 	`
 
 	if _, err := db.Pool.Exec(ctx, createUnified); err != nil {
@@ -414,7 +414,7 @@ func (db *Database) InitAdminSchema(ctx context.Context) error {
 func (db *Database) CreateVerificationCode(ctx context.Context, email, codeHash, ipAddress string, expiresAt time.Time) (*models.AdminVerificationCode, error) {
 	var code models.AdminVerificationCode
 	query := `
-		INSERT INTO verification_codes (actor_type, channel_type, subject, code_hash, expires_at, ip_address)
+		INSERT INTO app_verification_codes (actor_type, channel_type, subject, code_hash, expires_at, ip_address)
 		VALUES ('admin', 'email', $1, $2, $3, $4)
 		RETURNING id, subject AS email, code_hash, attempts, expires_at, used, ip_address, created_at
 	`
@@ -442,7 +442,7 @@ func (db *Database) GetVerificationCode(ctx context.Context, email string) (*mod
 	var code models.AdminVerificationCode
 	query := `
 		SELECT id, subject AS email, code_hash, attempts, expires_at, used, ip_address, created_at
-		FROM verification_codes
+		FROM app_verification_codes
 		WHERE actor_type = 'admin' AND channel_type = 'email' AND subject = $1 AND expires_at > now() AND used = false
 		ORDER BY created_at DESC
 		LIMIT 1
@@ -469,7 +469,7 @@ func (db *Database) GetVerificationCode(ctx context.Context, email string) (*mod
 // UpdateVerificationCodeAttempts increments the attempt count for admin email codes
 func (db *Database) UpdateVerificationCodeAttempts(ctx context.Context, id string) error {
 	query := `
-		UPDATE verification_codes
+		UPDATE app_verification_codes
 		SET attempts = attempts + 1
 		WHERE id = $1 AND actor_type = 'admin' AND channel_type = 'email'
 	`
@@ -481,7 +481,7 @@ func (db *Database) UpdateVerificationCodeAttempts(ctx context.Context, id strin
 // MarkVerificationCodeUsed marks an admin email verification code as used
 func (db *Database) MarkVerificationCodeUsed(ctx context.Context, id string) error {
 	query := `
-		UPDATE verification_codes
+		UPDATE app_verification_codes
 		SET used = true
 		WHERE id = $1 AND actor_type = 'admin' AND channel_type = 'email'
 	`
@@ -494,7 +494,7 @@ func (db *Database) MarkVerificationCodeUsed(ctx context.Context, id string) err
 func (db *Database) CheckRateLimit(ctx context.Context, ipAddress string, maxRequests int, windowHours int) (bool, error) {
 	query := `
 		SELECT COALESCE(SUM(request_count), 0) as total_requests
-		FROM rate_limits
+		FROM app_rate_limits
 		WHERE ip_address = $1 AND window_start > now() - interval '%d hours' AND actor_type = 'admin' AND channel_type = 'email'
 	`
 
@@ -511,7 +511,7 @@ func (db *Database) CheckRateLimit(ctx context.Context, ipAddress string, maxReq
 func (db *Database) IncrementRateLimit(ctx context.Context, ipAddress string) error {
 	// First try to update existing record for current hour
 	updateQuery := `
-		UPDATE rate_limits
+		UPDATE app_rate_limits
 		SET request_count = request_count + 1
 		WHERE actor_type = 'admin' AND channel_type = 'email' AND ip_address = $1 AND window_start >= date_trunc('hour', now())
 	`
@@ -524,7 +524,7 @@ func (db *Database) IncrementRateLimit(ctx context.Context, ipAddress string) er
 	// If no rows were updated, create new record
 	if result.RowsAffected() == 0 {
 		insertQuery := `
-			INSERT INTO rate_limits (actor_type, channel_type, ip_address, request_count, window_start)
+			INSERT INTO app_rate_limits (actor_type, channel_type, ip_address, request_count, window_start)
 			VALUES ('admin', 'email', $1, 1, date_trunc('hour', now()))
 		`
 
@@ -541,13 +541,13 @@ func (db *Database) IncrementRateLimit(ctx context.Context, ipAddress string) er
 func (db *Database) CleanupExpiredCodes(ctx context.Context) error {
 	// Remove expired verification codes
 	deleteCodesQuery := `
-		DELETE FROM verification_codes
+		DELETE FROM app_verification_codes
 		WHERE actor_type = 'admin' AND channel_type = 'email' AND expires_at < now() - interval '1 hour'
 	`
 
 	// Remove old rate limit records (older than 24 hours)
 	deleteRateLimitsQuery := `
-		DELETE FROM rate_limits
+		DELETE FROM app_rate_limits
 		WHERE actor_type = 'admin' AND channel_type = 'email' AND window_start < now() - interval '24 hours'
 	`
 
@@ -565,7 +565,7 @@ func (db *Database) CleanupExpiredCodes(ctx context.Context) error {
 // InitUserSchema ensures unified verification schema exists (idempotent)
 func (db *Database) InitUserSchema(ctx context.Context) error {
 	createUnified := `
-		CREATE TABLE IF NOT EXISTS verification_codes (
+		CREATE TABLE IF NOT EXISTS app_verification_codes (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			actor_type TEXT NOT NULL CHECK (actor_type IN ('admin','user')),
 			channel_type TEXT NOT NULL CHECK (channel_type IN ('email','phone')),
@@ -578,7 +578,7 @@ func (db *Database) InitUserSchema(ctx context.Context) error {
 			created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 		);
 
-		CREATE TABLE IF NOT EXISTS rate_limits (
+		CREATE TABLE IF NOT EXISTS app_rate_limits (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			actor_type TEXT NOT NULL CHECK (actor_type IN ('admin','user')),
 			channel_type TEXT NOT NULL CHECK (channel_type IN ('email','phone')),
@@ -587,19 +587,19 @@ func (db *Database) InitUserSchema(ctx context.Context) error {
 			window_start TIMESTAMP WITH TIME ZONE DEFAULT now()
 		);
 
-		CREATE INDEX IF NOT EXISTS idx_verification_subject_valid
-			ON verification_codes (channel_type, subject, used, expires_at DESC, created_at DESC);
-		CREATE INDEX IF NOT EXISTS idx_verification_ip_created
-			ON verification_codes (ip_address, created_at);
-		CREATE INDEX IF NOT EXISTS idx_verification_expiry
-			ON verification_codes (expires_at);
-		CREATE INDEX IF NOT EXISTS idx_verification_actor_subject
-			ON verification_codes (actor_type, channel_type, subject);
+		CREATE INDEX IF NOT EXISTS idx_app_verification_subject_valid
+			ON app_verification_codes (channel_type, subject, used, expires_at DESC, created_at DESC);
+		CREATE INDEX IF NOT EXISTS idx_app_verification_ip_created
+			ON app_verification_codes (ip_address, created_at);
+		CREATE INDEX IF NOT EXISTS idx_app_verification_expiry
+			ON app_verification_codes (expires_at);
+		CREATE INDEX IF NOT EXISTS idx_app_verification_actor_subject
+			ON app_verification_codes (actor_type, channel_type, subject);
 
-		CREATE INDEX IF NOT EXISTS idx_rate_limits_ip_window
-			ON rate_limits (ip_address, window_start);
-		CREATE INDEX IF NOT EXISTS idx_rate_limits_actor_ip_window
-			ON rate_limits (actor_type, ip_address, window_start);
+		CREATE INDEX IF NOT EXISTS idx_app_rate_limits_ip_window
+			ON app_rate_limits (ip_address, window_start);
+		CREATE INDEX IF NOT EXISTS idx_app_rate_limits_actor_ip_window
+			ON app_rate_limits (actor_type, ip_address, window_start);
 	`
 
 	if _, err := db.Pool.Exec(ctx, createUnified); err != nil {
@@ -614,7 +614,7 @@ func (db *Database) InitUserSchema(ctx context.Context) error {
 func (db *Database) CreateUserVerificationCode(ctx context.Context, email, codeHash, ipAddress string, expiresAt time.Time) (*models.UserVerificationCode, error) {
 	var code models.UserVerificationCode
 	query := `
-		INSERT INTO verification_codes (actor_type, channel_type, subject, code_hash, expires_at, ip_address)
+		INSERT INTO app_verification_codes (actor_type, channel_type, subject, code_hash, expires_at, ip_address)
 		VALUES ('user', 'email', $1, $2, $3, $4)
 		RETURNING id, subject AS email, code_hash, attempts, expires_at, used, ip_address, created_at
 	`
@@ -642,7 +642,7 @@ func (db *Database) GetUserVerificationCode(ctx context.Context, email string) (
 	var code models.UserVerificationCode
 	query := `
 		SELECT id, subject AS email, code_hash, attempts, expires_at, used, ip_address, created_at
-		FROM verification_codes
+		FROM app_verification_codes
 		WHERE actor_type = 'user' AND channel_type = 'email' AND subject = $1 AND expires_at > now() AND used = false
 		ORDER BY created_at DESC
 		LIMIT 1
@@ -669,7 +669,7 @@ func (db *Database) GetUserVerificationCode(ctx context.Context, email string) (
 // UpdateUserVerificationCodeAttempts increments the attempt count for user verification
 func (db *Database) UpdateUserVerificationCodeAttempts(ctx context.Context, id string) error {
 	query := `
-		UPDATE verification_codes
+		UPDATE app_verification_codes
 		SET attempts = attempts + 1
 		WHERE id = $1 AND actor_type = 'user' AND channel_type = 'email'
 	`
@@ -681,7 +681,7 @@ func (db *Database) UpdateUserVerificationCodeAttempts(ctx context.Context, id s
 // MarkUserVerificationCodeUsed marks a user verification code as used
 func (db *Database) MarkUserVerificationCodeUsed(ctx context.Context, id string) error {
 	query := `
-		UPDATE verification_codes
+		UPDATE app_verification_codes
 		SET used = true
 		WHERE id = $1 AND actor_type = 'user' AND channel_type = 'email'
 	`
@@ -696,7 +696,7 @@ func (db *Database) MarkUserVerificationCodeUsed(ctx context.Context, id string)
 func (db *Database) CheckUserRateLimit(ctx context.Context, ipAddress string, maxRequests int, windowHours int) (bool, error) {
 	query := `
 		SELECT COALESCE(SUM(request_count), 0) as total_requests
-		FROM rate_limits
+		FROM app_rate_limits
 		WHERE ip_address = $1 AND window_start > now() - interval '%d hours' AND actor_type = 'user' AND channel_type = 'email'
 	`
 
@@ -713,7 +713,7 @@ func (db *Database) CheckUserRateLimit(ctx context.Context, ipAddress string, ma
 func (db *Database) IncrementUserRateLimit(ctx context.Context, ipAddress string) error {
 	// First try to update existing record for current hour
 	updateQuery := `
-		UPDATE rate_limits
+		UPDATE app_rate_limits
 		SET request_count = request_count + 1
 		WHERE actor_type = 'user' AND channel_type = 'email' AND ip_address = $1 AND window_start >= date_trunc('hour', now())
 	`
@@ -726,7 +726,7 @@ func (db *Database) IncrementUserRateLimit(ctx context.Context, ipAddress string
 	// If no rows were updated, create new record
 	if result.RowsAffected() == 0 {
 		insertQuery := `
-			INSERT INTO rate_limits (actor_type, channel_type, ip_address, request_count, window_start)
+			INSERT INTO app_rate_limits (actor_type, channel_type, ip_address, request_count, window_start)
 			VALUES ('user', 'email', $1, 1, date_trunc('hour', now()))
 		`
 
@@ -743,13 +743,13 @@ func (db *Database) IncrementUserRateLimit(ctx context.Context, ipAddress string
 func (db *Database) CleanupExpiredUserCodes(ctx context.Context) error {
 	// Remove expired verification codes
 	deleteCodesQuery := `
-		DELETE FROM verification_codes
+		DELETE FROM app_verification_codes
 		WHERE actor_type = 'user' AND channel_type = 'email' AND expires_at < now() - interval '1 hour'
 	`
 
 	// Remove old rate limit records (older than 24 hours)
 	deleteRateLimitsQuery := `
-		DELETE FROM rate_limits
+		DELETE FROM app_rate_limits
 		WHERE actor_type = 'user' AND channel_type = 'email' AND window_start < now() - interval '24 hours'
 	`
 
@@ -770,7 +770,7 @@ func (db *Database) CleanupExpiredUserCodes(ctx context.Context) error {
 func (db *Database) CreateUserPhoneVerificationCode(ctx context.Context, phoneNumber, codeHash, ipAddress string, expiresAt time.Time) (*models.UserPhoneVerificationCode, error) {
 	var code models.UserPhoneVerificationCode
 	query := `
-		INSERT INTO verification_codes (actor_type, channel_type, subject, code_hash, expires_at, ip_address)
+		INSERT INTO app_verification_codes (actor_type, channel_type, subject, code_hash, expires_at, ip_address)
 		VALUES ('user', 'phone', $1, $2, $3, $4)
 		RETURNING id, subject AS phone_number, code_hash, attempts, expires_at, used, ip_address, created_at
 	`
@@ -796,7 +796,7 @@ func (db *Database) GetUserPhoneVerificationCode(ctx context.Context, phoneNumbe
 	var code models.UserPhoneVerificationCode
 	query := `
 		SELECT id, subject AS phone_number, code_hash, attempts, expires_at, used, ip_address, created_at
-		FROM verification_codes
+		FROM app_verification_codes
 		WHERE actor_type = 'user' AND channel_type = 'phone' AND subject = $1 AND expires_at > now() AND used = false
 		ORDER BY created_at DESC
 		LIMIT 1
@@ -821,7 +821,7 @@ func (db *Database) GetUserPhoneVerificationCode(ctx context.Context, phoneNumbe
 // UpdateUserPhoneVerificationCodeAttempts increments the attempt count for phone verification
 func (db *Database) UpdateUserPhoneVerificationCodeAttempts(ctx context.Context, id string) error {
 	query := `
-		UPDATE verification_codes
+		UPDATE app_verification_codes
 		SET attempts = attempts + 1
 		WHERE id = $1 AND actor_type = 'user' AND channel_type = 'phone'
 	`
@@ -832,7 +832,7 @@ func (db *Database) UpdateUserPhoneVerificationCodeAttempts(ctx context.Context,
 // MarkUserPhoneVerificationCodeUsed marks a phone verification code as used
 func (db *Database) MarkUserPhoneVerificationCodeUsed(ctx context.Context, id string) error {
 	query := `
-		UPDATE verification_codes
+		UPDATE app_verification_codes
 		SET used = true
 		WHERE id = $1 AND actor_type = 'user' AND channel_type = 'phone'
 	`
@@ -843,7 +843,7 @@ func (db *Database) MarkUserPhoneVerificationCodeUsed(ctx context.Context, id st
 // CleanupExpiredPhoneCodes removes expired phone verification codes
 func (db *Database) CleanupExpiredPhoneCodes(ctx context.Context) error {
 	deleteCodesQuery := `
-		DELETE FROM verification_codes
+		DELETE FROM app_verification_codes
 		WHERE actor_type = 'user' AND channel_type = 'phone' AND expires_at < now() - interval '1 hour'
 	`
 	if _, err := db.Pool.Exec(ctx, deleteCodesQuery); err != nil {
@@ -857,7 +857,7 @@ func (db *Database) GetUserByPhone(ctx context.Context, phone string) (*models.U
 	var user models.User
 	query := `
 		SELECT id, username, email, phone, first_name, middle_name, last_name, created_at, updated_at
-		FROM users
+		FROM app_users
 		WHERE phone = $1
 	`
 	err := db.Pool.QueryRow(ctx, query, phone).Scan(
@@ -895,7 +895,7 @@ func (db *Database) CreateUserFromPhone(ctx context.Context, phone string) (*mod
 	}
 
 	query := `
-		INSERT INTO users (username, email, phone, first_name, middle_name, last_name, created_at, updated_at)
+		INSERT INTO app_users (username, email, phone, first_name, middle_name, last_name, created_at, updated_at)
 		VALUES ($1, NULL, $2, $3, $4, $5, now(), now())
 		RETURNING id, username, email, phone, first_name, middle_name, last_name, created_at, updated_at
 	`
@@ -936,7 +936,7 @@ func (db *Database) CreateUserFromEmail(ctx context.Context, email string) (*mod
 	}
 
 	query := `
-		INSERT INTO users (username, email, first_name, middle_name, last_name, created_at, updated_at)
+		INSERT INTO app_users (username, email, first_name, middle_name, last_name, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, now(), now())
 		RETURNING id, username, email, phone, first_name, middle_name, last_name, created_at, updated_at
 	`

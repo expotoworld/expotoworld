@@ -188,8 +188,8 @@ func (h *Handler) getManufacturerOrders(ctx context.Context, req *models.AdminOr
 		placeholders[i] = fmt.Sprintf("$%d", argIdx+i)
 	}
 	ownershipCond := fmt.Sprintf(`EXISTS (
-		SELECT 1 FROM order_items oi
-		JOIN products p ON p.product_uuid = oi.product_id
+		SELECT 1 FROM app_order_items oi
+		JOIN admin_products p ON p.product_uuid = oi.product_id
 		WHERE oi.order_id = o.id AND p.owner_org_id::text IN (%s)
 	)`, strings.Join(placeholders, ", "))
 	where = appendCond(where, ownershipCond)
@@ -215,7 +215,7 @@ func (h *Handler) getManufacturerOrders(ctx context.Context, req *models.AdminOr
 	}
 
 	// Count
-	countQ := fmt.Sprintf(`SELECT COUNT(*) FROM orders o %s`, where)
+	countQ := fmt.Sprintf(`SELECT COUNT(*) FROM app_orders o %s`, where)
 	var total int
 	if err := h.db.Pool.QueryRow(ctx, countQ, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count failed: %w", err)
@@ -226,10 +226,10 @@ func (h *Handler) getManufacturerOrders(ctx context.Context, req *models.AdminOr
 		SELECT o.id, o.user_id, COALESCE(u.email, '') as user_email,
 		COALESCE(TRIM(COALESCE(u.first_name,'')||' '||COALESCE(u.last_name,'')), u.username) as user_name,
 		o.mini_app_type, o.total_amount, o.status,
-		(SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) as item_count,
+		(SELECT COUNT(*) FROM app_order_items oi WHERE oi.order_id = o.id) as item_count,
 		o.created_at, o.updated_at
-		FROM orders o
-		LEFT JOIN users u ON o.user_id = u.id
+		FROM app_orders o
+		LEFT JOIN app_users u ON o.user_id = u.id
 		%s %s LIMIT $%d OFFSET $%d`, where, orderBy, argIdx, argIdx+1)
 	args = append(args, req.Limit, offset)
 
@@ -255,7 +255,7 @@ func (h *Handler) orderBelongsToAnyOrg(ctx context.Context, orderID string, orgI
 		placeholders[i] = fmt.Sprintf("$%d", i+1)
 	}
 	q := fmt.Sprintf(`SELECT EXISTS(
-		SELECT 1 FROM order_items oi JOIN products p ON p.product_uuid = oi.product_id
+		SELECT 1 FROM app_order_items oi JOIN admin_products p ON p.product_uuid = oi.product_id
 		WHERE oi.order_id = $%d AND p.owner_org_id::text IN (%s)
 	)`, len(orgIDs)+1, strings.Join(placeholders, ", "))
 	args := make([]interface{}, 0, len(orgIDs)+1)

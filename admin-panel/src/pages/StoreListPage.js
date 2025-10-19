@@ -40,14 +40,12 @@ import {
 import { useToast } from '../contexts/ToastContext';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 
-import { regionService, storeService, orgService, relationshipService } from '../services/api';
+import { regionService, storeService, orgService, relationshipService, CATALOG_BASE } from '../services/api';
 
 
-// API base for production routing via Cloudflare Worker
-const API_BASE = process.env.REACT_APP_API_BASE_URL || 'https://device-api.expotoworld.com';
 const getImageUrl = (url) => {
   if (!url) return '';
-  return url.startsWith('http') ? url : `${API_BASE}${url}`;
+  return url.startsWith('http') ? url : url;
 };
 
 
@@ -134,7 +132,7 @@ const StoreListPage = () => {
   const fetchStores = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/api/v1/stores`);
+      const response = await fetch(`${CATALOG_BASE}/stores`);
       if (response.ok) {
         const data = await response.json();
         setStores(data);
