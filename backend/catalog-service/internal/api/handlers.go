@@ -89,7 +89,7 @@ func (h *Handler) CreateProduct(c *gin.Context) {
 		log.Printf("Failed to create product in DB: %v", err)
 
 		// Handle specific database errors
-		if strings.Contains(err.Error(), "duplicate key value violates unique constraint \"products_sku_key\"") {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint \"admin_products_sku_key\"") {
 			c.JSON(http.StatusConflict, gin.H{
 				"error":      fmt.Sprintf("SKU '%s' already exists. Please use a different SKU.", newProduct.SKU),
 				"error_code": "DUPLICATE_SKU",

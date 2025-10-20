@@ -245,7 +245,7 @@ func (r *UserRepository) getUserCount(ctx context.Context, params models.UserSea
 // ordersTableExists checks whether the 'orders' table exists in the current schema
 func (r *UserRepository) ordersTableExists(ctx context.Context) bool {
 	var regclass sql.NullString
-	err := r.db.DB.QueryRowContext(ctx, "SELECT to_regclass('public.orders')").Scan(&regclass)
+	err := r.db.DB.QueryRowContext(ctx, "SELECT to_regclass('app_orders')").Scan(&regclass)
 	if err != nil {
 		log.Printf("[USER-DB] orders table existence check error: %v", err)
 		return false

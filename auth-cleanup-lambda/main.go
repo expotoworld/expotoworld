@@ -60,19 +60,19 @@ func execDelete(ctx context.Context, pool *pgxpool.Pool, sql string) (int64, err
 func putMetrics(ctx context.Context, cw *cloudwatch.Client, ns string, r result) error {
 	now := time.Now()
 	metrics := []cwtypes.MetricDatum{
-		{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.AdminCodesExpired), Dimensions: dims("Table", "verification_codes_admin_email_expired")},
-		{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.AdminCodesUsed), Dimensions: dims("Table", "verification_codes_admin_email_used")},
-		{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.AdminRateLimits), Dimensions: dims("Table", "rate_limits_admin")},
-		{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.UserCodesExpired), Dimensions: dims("Table", "verification_codes_user_email_expired")},
-		{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.UserCodesUsed), Dimensions: dims("Table", "verification_codes_user_email_used")},
-		{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.UserPhoneCodesExp), Dimensions: dims("Table", "verification_codes_user_phone_expired")},
-		{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.UserPhoneCodesUsed), Dimensions: dims("Table", "verification_codes_user_phone_used")},
-		{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.UserRateLimits), Dimensions: dims("Table", "rate_limits_user")},
+		{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.AdminCodesExpired), Dimensions: dims("Table", "app_verification_codes_admin_email_expired")},
+		{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.AdminCodesUsed), Dimensions: dims("Table", "app_verification_codes_admin_email_used")},
+		{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.AdminRateLimits), Dimensions: dims("Table", "app_rate_limits_admin")},
+		{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.UserCodesExpired), Dimensions: dims("Table", "app_verification_codes_user_email_expired")},
+		{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.UserCodesUsed), Dimensions: dims("Table", "app_verification_codes_user_email_used")},
+		{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.UserPhoneCodesExp), Dimensions: dims("Table", "app_verification_codes_user_phone_expired")},
+		{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.UserPhoneCodesUsed), Dimensions: dims("Table", "app_verification_codes_user_phone_used")},
+		{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.UserRateLimits), Dimensions: dims("Table", "app_rate_limits_user")},
 	}
 	// Add refresh-token specific metrics
 	metrics = append(metrics,
-		cwtypes.MetricDatum{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.RevokedRefreshTokens24h), Dimensions: dims("Table", "refresh_tokens_revoked_24h")},
-		cwtypes.MetricDatum{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.ExpiredRefreshTokens7d), Dimensions: dims("Table", "refresh_tokens_expired_7d")},
+		cwtypes.MetricDatum{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.RevokedRefreshTokens24h), Dimensions: dims("Table", "app_refresh_tokens_revoked_24h")},
+		cwtypes.MetricDatum{MetricName: awsStr("RowsDeleted"), Timestamp: &now, Unit: cwtypes.StandardUnitCount, Value: awsFloat(r.ExpiredRefreshTokens7d), Dimensions: dims("Table", "app_refresh_tokens_expired_7d")},
 	)
 	_, err := cw.PutMetricData(ctx, &cloudwatch.PutMetricDataInput{
 		Namespace:  &ns,
@@ -139,53 +139,53 @@ func handler(ctx context.Context) (string, error) {
 	var res result
 	// Used > 24h first (privacy/storage), then expired-older-than-1h
 	// Admin
-	res.AdminCodesUsed, err = run(`DELETE FROM verification_codes WHERE actor_type = 'admin' AND channel_type = 'email' AND used = true AND created_at < now() - interval '24 hours'`, stmtTimeoutMs)
+	res.AdminCodesUsed, err = run(`DELETE FROM app_verification_codes WHERE actor_type = 'admin' AND channel_type = 'email' AND used = true AND created_at < now() - interval '24 hours'`, stmtTimeoutMs)
 	if err != nil {
 		return "", fmt.Errorf("admin used: %w", err)
 	}
-	res.AdminCodesExpired, err = run(`DELETE FROM verification_codes WHERE actor_type = 'admin' AND channel_type = 'email' AND expires_at < now() - interval '1 hour'`, stmtTimeoutMs)
+	res.AdminCodesExpired, err = run(`DELETE FROM app_verification_codes WHERE actor_type = 'admin' AND channel_type = 'email' AND expires_at < now() - interval '1 hour'`, stmtTimeoutMs)
 	if err != nil {
 		return "", fmt.Errorf("admin expired: %w", err)
 	}
-	res.AdminRateLimits, err = run(`DELETE FROM rate_limits WHERE actor_type = 'admin' AND channel_type = 'email' AND window_start < now() - interval '24 hours'`, stmtTimeoutMs)
+	res.AdminRateLimits, err = run(`DELETE FROM app_rate_limits WHERE actor_type = 'admin' AND channel_type = 'email' AND window_start < now() - interval '24 hours'`, stmtTimeoutMs)
 	if err != nil {
 		return "", fmt.Errorf("admin rate_limits: %w", err)
 	}
 
 	// User (email)
-	res.UserCodesUsed, err = run(`DELETE FROM verification_codes WHERE actor_type = 'user' AND channel_type = 'email' AND used = true AND created_at < now() - interval '24 hours'`, stmtTimeoutMs)
+	res.UserCodesUsed, err = run(`DELETE FROM app_verification_codes WHERE actor_type = 'user' AND channel_type = 'email' AND used = true AND created_at < now() - interval '24 hours'`, stmtTimeoutMs)
 	if err != nil {
 		return "", fmt.Errorf("user used: %w", err)
 	}
-	res.UserCodesExpired, err = run(`DELETE FROM verification_codes WHERE actor_type = 'user' AND channel_type = 'email' AND expires_at < now() - interval '1 hour'`, stmtTimeoutMs)
+	res.UserCodesExpired, err = run(`DELETE FROM app_verification_codes WHERE actor_type = 'user' AND channel_type = 'email' AND expires_at < now() - interval '1 hour'`, stmtTimeoutMs)
 	if err != nil {
 		return "", fmt.Errorf("user expired: %w", err)
 	}
 
 	// User (phone)
-	res.UserPhoneCodesUsed, err = run(`DELETE FROM verification_codes WHERE actor_type = 'user' AND channel_type = 'phone' AND used = true AND created_at < now() - interval '24 hours'`, stmtTimeoutMs)
+	res.UserPhoneCodesUsed, err = run(`DELETE FROM app_verification_codes WHERE actor_type = 'user' AND channel_type = 'phone' AND used = true AND created_at < now() - interval '24 hours'`, stmtTimeoutMs)
 	if err != nil {
 		return "", fmt.Errorf("user phone used: %w", err)
 	}
-	res.UserPhoneCodesExp, err = run(`DELETE FROM verification_codes WHERE actor_type = 'user' AND channel_type = 'phone' AND expires_at < now() - interval '1 hour'`, stmtTimeoutMs)
+	res.UserPhoneCodesExp, err = run(`DELETE FROM app_verification_codes WHERE actor_type = 'user' AND channel_type = 'phone' AND expires_at < now() - interval '1 hour'`, stmtTimeoutMs)
 	if err != nil {
 		return "", fmt.Errorf("user phone expired: %w", err)
 	}
 
 	// User rate limits
-	res.UserRateLimits, err = run(`DELETE FROM rate_limits WHERE actor_type = 'user' AND window_start < now() - interval '24 hours'`, stmtTimeoutMs)
+	res.UserRateLimits, err = run(`DELETE FROM app_rate_limits WHERE actor_type = 'user' AND window_start < now() - interval '24 hours'`, stmtTimeoutMs)
 	if err != nil {
 		return "", fmt.Errorf("user rate_limits: %w", err)
 	}
 
 	// Refresh tokens cleanup
 	// 1) Revoke-based deletion with 24h audit window
-	res.RevokedRefreshTokens24h, err = run(`DELETE FROM refresh_tokens WHERE revoked = true AND issued_at < now() - interval '24 hours'`, stmtTimeoutMs)
+	res.RevokedRefreshTokens24h, err = run(`DELETE FROM app_refresh_tokens WHERE revoked = true AND issued_at < now() - interval '24 hours'`, stmtTimeoutMs)
 	if err != nil {
 		return "", fmt.Errorf("refresh tokens revoked>24h: %w", err)
 	}
 	// 2) Fully expired older-than-3-days (optional pruning for non-revoked old tokens)
-	res.ExpiredRefreshTokens7d, err = run(`DELETE FROM refresh_tokens WHERE expires_at < now() - interval '3 days'`, stmtTimeoutMs)
+	res.ExpiredRefreshTokens7d, err = run(`DELETE FROM app_refresh_tokens WHERE expires_at < now() - interval '3 days'`, stmtTimeoutMs)
 	if err != nil {
 		return "", fmt.Errorf("refresh tokens expired>3d: %w", err)
 	}

@@ -653,7 +653,7 @@ const ProductForm = ({ open, onClose, onProductCreated, product = null, onProduc
       let errorMessage = err.message || `Failed to ${product ? 'update' : 'create'} product`;
 
       // Handle specific error cases
-      if (err.message && err.message.includes('duplicate key value violates unique constraint "products_sku_key"')) {
+      if (err.message && err.message.includes('duplicate key value violates unique constraint "admin_products_sku_key"')) {
         errorMessage = `SKU "${formData.sku}" already exists. Please use a different SKU (e.g., "${formData.sku}-${Date.now().toString().slice(-4)}")`;
       } else if (err.message && err.message.includes('SKU')) {
         errorMessage = `SKU error: ${err.message}`;
