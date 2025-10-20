@@ -196,7 +196,7 @@ func (db *Database) Health(ctx context.Context) error {
 // InitSchema verifies and gently migrates the required schema
 func (db *Database) InitSchema(ctx context.Context) error {
 	// 1) Check required tables
-	requiredTables := []string{"carts", "orders", "order_items", "products", "users", "stores"}
+	requiredTables := []string{"app_carts", "app_orders", "app_order_items", "admin_products", "app_users", "admin_stores"}
 	for _, tableName := range requiredTables {
 		query := `
 			SELECT EXISTS (
@@ -219,7 +219,7 @@ func (db *Database) InitSchema(ctx context.Context) error {
 	if err := db.Pool.QueryRow(ctx, `
 		SELECT EXISTS (
 			SELECT FROM information_schema.columns
-			WHERE table_schema = 'public' AND table_name = 'carts' AND column_name = 'mini_app_type'
+			WHERE table_schema = 'public' AND table_name = 'app_carts' AND column_name = 'mini_app_type'
 		);
 	`).Scan(&hasMiniApp); err != nil {
 		return fmt.Errorf("failed to check carts.mini_app_type: %w", err)
@@ -236,13 +236,13 @@ func (db *Database) InitSchema(ctx context.Context) error {
 	if err := db.Pool.QueryRow(ctx, `
 		SELECT EXISTS (
 			SELECT FROM information_schema.columns
-			WHERE table_schema = 'public' AND table_name = 'orders' AND column_name = 'mini_app_type'
+			WHERE table_schema = 'public' AND table_name = 'app_orders' AND column_name = 'mini_app_type'
 		);
 	`).Scan(&hasOrderMiniApp); err != nil {
 		return fmt.Errorf("failed to check orders.mini_app_type: %w", err)
 	}
 	if !hasOrderMiniApp {
-		if _, err := db.Pool.Exec(ctx, `ALTER TABLE public.orders ADD COLUMN mini_app_type VARCHAR(50) NOT NULL DEFAULT 'RetailStore';`); err != nil {
+		if _, err := db.Pool.Exec(ctx, `ALTER TABLE app_orders ADD COLUMN mini_app_type VARCHAR(50) NOT NULL DEFAULT 'RetailStore';`); err != nil {
 			return fmt.Errorf("failed to add orders.mini_app_type: %w", err)
 		}
 		log.Println("[ORDER-DB] Added orders.mini_app_type column")
@@ -253,7 +253,7 @@ func (db *Database) InitSchema(ctx context.Context) error {
 	if err := db.Pool.QueryRow(ctx, `
 		SELECT EXISTS (
 			SELECT FROM information_schema.columns
-			WHERE table_schema = 'public' AND table_name = 'carts' AND column_name = 'store_id'
+			WHERE table_schema = 'public' AND table_name = 'app_carts' AND column_name = 'store_id'
 		);
 	`).Scan(&hasStoreID); err != nil {
 		return fmt.Errorf("failed to check carts.store_id: %w", err)

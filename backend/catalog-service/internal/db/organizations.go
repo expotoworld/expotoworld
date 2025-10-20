@@ -139,7 +139,7 @@ func (db *Database) GetOrganizationUsers(ctx context.Context, orgID string) ([]m
 		  u.email,
 		  u.role::text AS role,
 		  ou.org_role::text AS org_role
-		FROM admin_admin_organization_users ou
+		FROM admin_organization_users ou
 		JOIN app_users u ON u.id = ou.user_id
 		WHERE ou.org_id = $1
 		ORDER BY full_name

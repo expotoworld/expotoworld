@@ -199,7 +199,7 @@ func (db *Database) InitSchema(ctx context.Context) error {
 	query := `
 		SELECT column_name, data_type
 		FROM information_schema.columns
-		WHERE table_name = 'users' AND table_schema = 'public'
+		WHERE table_name = 'app_users' AND table_schema = 'public'
 		ORDER BY ordinal_position;
 	`
 
