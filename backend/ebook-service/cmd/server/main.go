@@ -10,6 +10,7 @@ import (
 	"time"
 
 	api "github.com/expotoworld/expotoworld/backend/ebook-service/internal/api"
+	"github.com/expotoworld/expotoworld/backend/ebook-service/internal/ebookschema"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -54,13 +55,18 @@ func main() {
 			log.Fatalf("failed to create pgx pool: %v", err)
 		}
 		defer pool.Close()
+
+		// Initialize media schema (idempotent)
+		if err := ebookschema.Init(ctx, pool); err != nil {
+			log.Printf("[EBOOK] Warning: media schema init failed: %v", err)
+		}
 	}
 
 	r := gin.Default()
 
 	// CORS restricted to editor origin if provided
 	editorOrigin := getEnv("EDITOR_ORIGIN", "")
-	corsCfg := cors.Config{AllowMethods: []string{"GET", "POST", "PUT", "OPTIONS"}, AllowHeaders: []string{"Authorization", "Content-Type"}}
+	corsCfg := cors.Config{AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, AllowHeaders: []string{"Authorization", "Content-Type"}}
 	if editorOrigin != "" {
 		corsCfg.AllowOrigins = []string{editorOrigin}
 	} else {
@@ -88,7 +94,15 @@ func main() {
 		author.POST("/ebook/versions", api.PostManualVersionHandler(pool))
 		author.POST("/ebook/publish", api.PostPublishHandler(pool))
 		author.POST("/ebook/upload-image", api.UploadImageHandler())
-		author.DELETE("/ebook/delete-image", api.DeleteImageHandler())
+		// Guarded delete now needs DB
+		author.DELETE("/ebook/delete-image", api.DeleteImageHandler(pool))
+
+		// Dev-only admin tools inside editor (gated by env in handlers)
+		author.POST("/ebook/admin/reindex", api.AdminReindexHandler(pool))
+		author.GET("/ebook/admin/inspect", api.AdminInspectMediaHandler(pool))
+		author.GET("/ebook/admin/pending", api.AdminListPendingHandler(pool))
+		author.GET("/ebook/admin/media-list", api.AdminListMediaHandler(pool))
+
 	}
 
 	log.Printf("ebook-service listening on :%s", port)
