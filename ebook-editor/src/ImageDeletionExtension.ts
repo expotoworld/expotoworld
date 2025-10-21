@@ -88,6 +88,8 @@ export async function deleteImageFromS3(imageUrl: string): Promise<void> {
       data: { image_url: imageUrl },
       headers: {
         Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
       },
     })
 
