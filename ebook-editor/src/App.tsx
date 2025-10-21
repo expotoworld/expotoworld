@@ -14,6 +14,8 @@ import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
 
 import axios from 'axios'
+import AdminTools from './AdminTools'
+
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'https://device-api.expotoworld.com'
 import Login from './Login'
 import Toolbar from './Toolbar'
@@ -81,7 +83,7 @@ function useSaving() {
   return { status, lastSavedAt, markSaving, markSaved, markError }
 }
 
-function Shell({ children, status, lastSavedAt, toolbar, actionsRight }: React.PropsWithChildren<{ status: string; lastSavedAt: Date | null; toolbar: React.ReactNode; actionsRight?: React.ReactNode }>) {
+function Shell({ children, status, lastSavedAt, toolbar, actionsRight, afterUserMenu }: React.PropsWithChildren<{ status: string; lastSavedAt: Date | null; toolbar: React.ReactNode; actionsRight?: React.ReactNode; afterUserMenu?: React.ReactNode }>) {
   const { mode, setMode } = useThemeMode()
   const { t, i18n } = useTranslation()
   return (
@@ -123,6 +125,7 @@ function Shell({ children, status, lastSavedAt, toolbar, actionsRight }: React.P
               // Force immediate page reload to show login page
               window.location.reload();
             }} />
+            {afterUserMenu}
           </div>
         </div>
       </div>
@@ -206,8 +209,8 @@ export default function App() {
       Link.configure({ openOnClick: false }),
       ImageDeletionExtension.configure({
         onImageDelete: (imageUrl: string) => {
-          // Only delete images from our CDN (not external images)
-          if (imageUrl.includes('assets.expotoworld.com/ebook/images/')) {
+          // Only delete media from our CDN (not external). Use strict prefix under ebooks/huashangdao
+          if (imageUrl.startsWith('https://assets.expotoworld.com/ebooks/huashangdao/')) {
             deleteImageFromS3(imageUrl)
           }
         },
@@ -277,6 +280,7 @@ export default function App() {
             }}>{t('actions.publish')}</button>
           </>
         )}
+        afterUserMenu={token ? <div style={{ marginLeft: 0 }}><AdminTools token={token} /></div> : null}
       >
         <div className="editor-surface">
           <div className="editor-viewport" style={{ ['--zoom' as any]: 1 + (zoomLevel - 1) * 0.4 }}>
