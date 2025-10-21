@@ -113,3 +113,11 @@ auth-cleanup-lambda/*.zip
 # Backend service binaries
 backend/*/cmd/server/server
 backend/*/main
+
+# Infrastructure (do not commit tfstate or local IaC files)
+infra/
+
+# Lambda build artifacts (generalized)
+lambdas/**/dist/
+lambdas/**/bootstrap
+lambdas/**/function.zip
