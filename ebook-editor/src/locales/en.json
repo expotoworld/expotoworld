@@ -34,6 +34,9 @@
   "toolbar.image_add": "Add image",
   "toolbar.image_add_label": "Add",
 
+  "toolbar.media_add": "Add media",
+  "toolbar.media_add_label": "Add media",
+
   "status.saving": "Saving",
   "status.saved_at": "Saved at {{time}}",
   "status.save_failed": "Save failed",

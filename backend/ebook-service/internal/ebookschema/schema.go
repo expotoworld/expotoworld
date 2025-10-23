@@ -36,6 +36,14 @@ func Init(ctx context.Context, pool *pgxpool.Pool) error {
 			media_key TEXT NOT NULL,
 			PRIMARY KEY(version_id, media_key)
 		);`,
+		`CREATE TABLE IF NOT EXISTS ebook_media_assets (
+			media_key TEXT PRIMARY KEY,
+			file_type TEXT NOT NULL,
+			mime_type TEXT NOT NULL,
+			file_size BIGINT,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+		);`,
 	}
 
 	tx, err := pool.Begin(ctx)
@@ -57,4 +65,3 @@ func Init(ctx context.Context, pool *pgxpool.Pool) error {
 	log.Println("[EBOOK] Media schema verified")
 	return nil
 }
-

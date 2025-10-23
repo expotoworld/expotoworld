@@ -293,7 +293,7 @@ func PostPublishHandler(db *pgxpool.Pool) gin.HandlerFunc {
 }
 
 // UploadImageHandler handles POST /api/ebook/upload-image
-func UploadImageHandler() gin.HandlerFunc {
+func UploadImageHandler(db *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
 		defer cancel()
@@ -373,8 +373,244 @@ func UploadImageHandler() gin.HandlerFunc {
 		}
 		imageURL := fmt.Sprintf("%s/%s", strings.TrimRight(cdnBase, "/"), objectKey)
 
+		// Upsert into ebook_media_assets for consistency with new media endpoint
+		if db != nil {
+			_, _ = db.Exec(ctx, `INSERT INTO ebook_media_assets(media_key, file_type, mime_type, file_size, created_at, updated_at)
+				VALUES ($1,'image',$2,$3, now(), now())
+				ON CONFLICT (media_key) DO UPDATE SET file_type='image', mime_type=EXCLUDED.mime_type, file_size=EXCLUDED.file_size, updated_at=now()`,
+				objectKey, contentType, int64(len(fileContent)),
+			)
+		}
+
 		log.Printf("Successfully uploaded image to S3: %s", objectKey)
 		c.JSON(http.StatusOK, gin.H{"url": imageURL})
+	}
+}
+
+// UploadMediaHandler handles POST /api/ebook/upload-media for image, video, and audio
+func UploadMediaHandler(db *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 45*time.Second)
+		defer cancel()
+
+		// Accept file under field name "file"
+		file, header, err := c.Request.FormFile("file")
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "No file provided (expected field 'file')"})
+			return
+		}
+		defer file.Close()
+
+		fileBytes, err := io.ReadAll(file)
+		if err != nil {
+			log.Printf("read file: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read file"})
+			return
+		}
+
+		// Determine type: explicit form value takes precedence, else derive from Content-Type
+		typeHint := strings.ToLower(strings.TrimSpace(c.PostForm("type")))
+		contentType := header.Header.Get("Content-Type")
+		if contentType == "" {
+			contentType = http.DetectContentType(fileBytes)
+		}
+
+		var category string // image|video|audio
+		if typeHint == "image" || typeHint == "video" || typeHint == "audio" {
+			category = typeHint
+		} else if strings.HasPrefix(contentType, "image/") {
+			category = "image"
+		} else if strings.HasPrefix(contentType, "video/") {
+			category = "video"
+		} else if strings.HasPrefix(contentType, "audio/") {
+			category = "audio"
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported media type"})
+			return
+		}
+
+		// Validate allow-lists
+		allowedImages := map[string]bool{"image/jpeg": true, "image/jpg": true, "image/png": true, "image/svg+xml": true, "image/gif": true, "image/heic": true}
+		allowedVideos := map[string]bool{"video/mp4": true, "video/quicktime": true}
+		allowedAudio := map[string]bool{"audio/mpeg": true, "audio/mp4": true, "audio/x-m4a": true, "audio/wav": true}
+		switch category {
+		case "image":
+			if !allowedImages[strings.ToLower(contentType)] {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid image type"})
+				return
+			}
+		case "video":
+			if !allowedVideos[strings.ToLower(contentType)] {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid video type (allowed: MP4, MOV)"})
+				return
+			}
+		case "audio":
+			if !allowedAudio[strings.ToLower(contentType)] {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid audio type (allowed: MP3, M4A, WAV)"})
+				return
+			}
+		}
+
+		bucket := "expotoworld-media"
+		region := os.Getenv("AWS_REGION")
+		if region == "" {
+			region = os.Getenv("AWS_DEFAULT_REGION")
+		}
+		if region == "" {
+			region = "eu-central-1"
+		}
+
+		_ = os.Unsetenv("AWS_ACCESS_KEY_ID")
+		_ = os.Unsetenv("AWS_SECRET_ACCESS_KEY")
+		_ = os.Unsetenv("AWS_SESSION_TOKEN")
+
+		cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+		if err != nil {
+			log.Printf("aws cfg: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to configure S3"})
+			return
+		}
+		s3Client := s3.NewFromConfig(cfg)
+
+		// Determine prefix and key
+		var prefix string
+		switch category {
+		case "image":
+			prefix = "ebooks/huashangdao/images/"
+		case "video":
+			prefix = "ebooks/huashangdao/videos/"
+		case "audio":
+			prefix = "ebooks/huashangdao/audio/"
+		}
+		ext := filepath.Ext(header.Filename)
+		if ext == "" {
+			// best-effort extension based on content type
+			if category == "image" && strings.Contains(contentType, "png") {
+				ext = ".png"
+			}
+			if category == "image" && (strings.Contains(contentType, "jpeg") || strings.Contains(contentType, "jpg")) {
+				ext = ".jpg"
+			}
+			if category == "image" && strings.Contains(contentType, "gif") {
+				ext = ".gif"
+			}
+			if category == "image" && strings.Contains(contentType, "svg") {
+				ext = ".svg"
+			}
+			if category == "image" && strings.Contains(contentType, "heic") {
+				ext = ".heic"
+			}
+			if category == "video" && strings.Contains(contentType, "mp4") {
+				ext = ".mp4"
+			}
+			if category == "video" && strings.Contains(contentType, "quicktime") {
+				ext = ".mov"
+			}
+			if category == "audio" && (strings.Contains(contentType, "mpeg")) {
+				ext = ".mp3"
+			}
+			if category == "audio" && (strings.Contains(contentType, "mp4") || strings.Contains(contentType, "x-m4a")) {
+				ext = ".m4a"
+			}
+			if category == "audio" && strings.Contains(contentType, "wav") {
+				ext = ".wav"
+			}
+		}
+		objectKey := fmt.Sprintf("%s%d%s", prefix, time.Now().UnixNano(), ext)
+
+		// Upload
+		_, err = s3Client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket:      &bucket,
+			Key:         &objectKey,
+			Body:        bytes.NewReader(fileBytes),
+			ContentType: &contentType,
+		})
+		if err != nil {
+			log.Printf("s3 put: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload media"})
+			return
+		}
+
+		cdnBase := os.Getenv("ASSETS_CDN_BASE_URL")
+		if cdnBase == "" {
+			cdnBase = "https://assets.expotoworld.com"
+		}
+		url := fmt.Sprintf("%s/%s", strings.TrimRight(cdnBase, "/"), objectKey)
+		log.Printf("[UPLOAD media] cat=%s ct=%s name=%s size=%d key=%s", category, contentType, header.Filename, len(fileBytes), objectKey)
+
+		// Upsert metadata (no duration)
+		if db != nil {
+			tag, err := db.Exec(ctx, `INSERT INTO ebook_media_assets(media_key, file_type, mime_type, file_size, created_at, updated_at)
+				VALUES ($1,$2,$3,$4, now(), now())
+				ON CONFLICT (media_key) DO UPDATE SET file_type=EXCLUDED.file_type, mime_type=EXCLUDED.mime_type, file_size=EXCLUDED.file_size, updated_at=now()`,
+				objectKey, category, contentType, int64(len(fileBytes)),
+			)
+			if err != nil {
+				log.Printf("[UPLOAD media] upsert assets err=%v", err)
+			} else {
+				log.Printf("[UPLOAD media] upsert assets ok rows=%d", tag.RowsAffected())
+			}
+		}
+
+		c.JSON(http.StatusOK, gin.H{"url": url, "key": objectKey, "type": category, "mime_type": contentType, "size": len(fileBytes)})
+	}
+}
+
+// DeleteMediaHandler handles DELETE /api/ebook/delete-media for any media type
+func DeleteMediaHandler(db *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+		defer cancel()
+
+		var req struct {
+			MediaURL string `json:"media_url"`
+			ImageURL string `json:"image_url"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			b, _ := io.ReadAll(c.Request.Body)
+			_ = json.Unmarshal(b, &req)
+		}
+		urlStr := strings.TrimSpace(req.MediaURL)
+		if urlStr == "" {
+			urlStr = strings.TrimSpace(req.ImageURL)
+		}
+		if urlStr == "" {
+			urlStr = strings.TrimSpace(c.Query("media_url"))
+		}
+		if urlStr == "" {
+			urlStr = strings.TrimSpace(c.Query("image_url"))
+		}
+		if urlStr == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "media_url required"})
+			return
+		}
+
+		cdnBase := os.Getenv("ASSETS_CDN_BASE_URL")
+		if cdnBase == "" {
+			cdnBase = "https://assets.expotoworld.com"
+		}
+		if !strings.HasPrefix(urlStr, strings.TrimRight(cdnBase, "/")+"/") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid media URL"})
+			return
+		}
+		objectKey := strings.TrimPrefix(urlStr, strings.TrimRight(cdnBase, "/")+"/")
+		if !strings.HasPrefix(objectKey, "ebooks/huashangdao/") {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Can only delete ebook media"})
+			return
+		}
+
+		// Schedule deletion (same TTL logic as image)
+		ttlMin := 15
+		if s := strings.TrimSpace(os.Getenv("MEDIA_DELETE_TTL_MIN")); s != "" {
+			if n, e := strconv.Atoi(s); e == nil && n > 0 {
+				ttlMin = n
+			}
+		}
+		_, _ = db.Exec(ctx, `INSERT INTO ebook_media_pending_deletion(media_key,requested_at,not_before,attempts,last_checked_at)
+			VALUES ($1, now(), now() + ($2::int * interval '1 minute'), 0, NULL)
+			ON CONFLICT (media_key) DO UPDATE SET requested_at=now(), not_before=now() + ($2::int * interval '1 minute')`, objectKey, ttlMin)
+
+		c.JSON(http.StatusOK, gin.H{"status": "scheduled", "key": objectKey, "ttl_minutes": ttlMin})
 	}
 }
 

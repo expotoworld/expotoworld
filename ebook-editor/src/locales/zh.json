@@ -34,6 +34,9 @@
   "toolbar.image_add": "添加图片",
   "toolbar.image_add_label": "添加",
 
+  "toolbar.media_add": "添加媒体",
+  "toolbar.media_add_label": "添加媒体",
+
   "status.saving": "正在保存",
   "status.saved_at": "保存于 {{time}}",
   "status.save_failed": "保存失败",

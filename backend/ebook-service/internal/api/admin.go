@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -104,38 +103,6 @@ func AdminReindexHandler(db *pgxpool.Pool) gin.HandlerFunc {
 	}
 }
 
-// AdminInspectMediaHandler returns usage for a specific key or CDN URL (query param: target)
-func AdminInspectMediaHandler(db *pgxpool.Pool) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		if !adminEnabled() {
-			c.JSON(http.StatusForbidden, gin.H{"error": "admin tools disabled"})
-			return
-		}
-		target := c.Query("target")
-		if target == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "missing target"})
-			return
-		}
-		cdnBase := os.Getenv("ASSETS_CDN_BASE_URL")
-		if cdnBase == "" {
-			cdnBase = "https://assets.expotoworld.com"
-		}
-		key := target
-		if strings.HasPrefix(target, strings.TrimRight(cdnBase, "/")+"/") {
-			key = strings.TrimPrefix(target, strings.TrimRight(cdnBase, "/")+"/")
-		}
-		var inAutosave bool
-		var manualRefs, publishedRefs int
-		var lastSeen time.Time
-		err := db.QueryRow(c, `SELECT in_autosave, manual_refs, published_refs, last_seen_at FROM ebook_media_usage WHERE media_key=$1`, key).Scan(&inAutosave, &manualRefs, &publishedRefs, &lastSeen)
-		if err != nil {
-			c.JSON(http.StatusOK, gin.H{"media_key": key, "exists": false})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"media_key": key, "exists": true, "in_autosave": inAutosave, "manual_refs": manualRefs, "published_refs": publishedRefs, "last_seen_at": lastSeen})
-	}
-}
-
 // AdminListPendingHandler lists pending deletions
 func AdminListPendingHandler(db *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -164,52 +131,5 @@ func AdminListPendingHandler(db *pgxpool.Pool) gin.HandlerFunc {
 			items = append(items, gin.H{"media_key": mediaKey, "requested_at": requestedAt, "not_before": notBefore, "attempts": attempts, "last_checked_at": lastChecked})
 		}
 		c.JSON(http.StatusOK, gin.H{"items": items, "limit": limit, "offset": offset})
-	}
-}
-
-// AdminListMediaHandler returns usage rows with optional filters: autosave=1, manual=1, published=1
-func AdminListMediaHandler(db *pgxpool.Pool) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		if !adminEnabled() {
-			c.JSON(http.StatusForbidden, gin.H{"error": "admin tools disabled"})
-			return
-		}
-		autosave := c.Query("autosave") != ""
-		manual := c.Query("manual") != ""
-		published := c.Query("published") != ""
-
-		// Build WHERE clause dynamically
-		where := ""
-		if autosave || manual || published {
-			clauses := make([]string, 0, 3)
-			if autosave {
-				clauses = append(clauses, "(in_autosave=true AND manual_refs=0 AND published_refs=0)")
-			}
-			if manual {
-				clauses = append(clauses, "(manual_refs>0 AND in_autosave=false AND published_refs=0)")
-			}
-			if published {
-				clauses = append(clauses, "(published_refs>0 AND in_autosave=false AND manual_refs=0)")
-			}
-			where = "WHERE " + strings.Join(clauses, " OR ")
-		}
-
-		q := "SELECT media_key, in_autosave, manual_refs, published_refs, last_seen_at FROM ebook_media_usage " + where + " ORDER BY last_seen_at DESC NULLS LAST LIMIT 500"
-		rows, err := db.Query(c, q)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		defer rows.Close()
-		items := []gin.H{}
-		for rows.Next() {
-			var mediaKey string
-			var inAutosave bool
-			var manualRefs, publishedRefs int
-			var lastSeen *time.Time
-			_ = rows.Scan(&mediaKey, &inAutosave, &manualRefs, &publishedRefs, &lastSeen)
-			items = append(items, gin.H{"media_key": mediaKey, "in_autosave": inAutosave, "manual_refs": manualRefs, "published_refs": publishedRefs, "last_seen_at": lastSeen})
-		}
-		c.JSON(http.StatusOK, gin.H{"items": items})
 	}
 }

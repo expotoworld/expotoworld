@@ -113,6 +113,14 @@ func handler(ctx context.Context, _ event) (result, error) {
 					media_key TEXT NOT NULL,
 					PRIMARY KEY(version_id, media_key)
 				);`,
+			`CREATE TABLE IF NOT EXISTS ebook_media_assets (
+					media_key TEXT PRIMARY KEY,
+					file_type TEXT NOT NULL,
+					mime_type TEXT NOT NULL,
+					file_size BIGINT,
+					created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+					updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+				);`,
 		}
 		for _, s := range stmts {
 			if _, err := pool.Exec(ctx, s); err != nil {
@@ -163,6 +171,7 @@ func handler(ctx context.Context, _ event) (result, error) {
 		}
 		_, _ = pool.Exec(ctx, `DELETE FROM ebook_media_pending_deletion WHERE media_key=$1`, key)
 		_, _ = pool.Exec(ctx, `DELETE FROM ebook_media_usage WHERE media_key=$1`, key)
+		_, _ = pool.Exec(ctx, `DELETE FROM ebook_media_assets WHERE media_key=$1`, key)
 		res.Deleted++
 	}
 
