@@ -14,7 +14,8 @@ import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
 
 import axios from 'axios'
-import AdminTools from './AdminTools'
+import { ConfirmDialog, Modal } from './components/Modal'
+import PendingModal from './components/PendingModal'
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'https://device-api.expotoworld.com'
 import Login from './Login'
@@ -24,12 +25,20 @@ import { ThemeProvider, useThemeMode } from './theme'
 import './i18n'
 import { useTranslation } from 'react-i18next'
 import { AUTH_BASE, getRefreshToken, setAccessToken, setRefreshToken, clearTokens } from './auth'
-import { ImageDeletionExtension, deleteImageFromS3 } from './ImageDeletionExtension'
+import { MediaDeletionExtension, deleteMediaFromS3 } from './MediaDeletionExtension'
+import { VideoNode } from './nodes/VideoNode'
+import { AudioNode } from './nodes/AudioNode'
 
-function UserMenu({ onLogout }: { onLogout: () => void }) {
+function UserMenu({ onLogout, token }: { onLogout: () => void; token: string | null }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  const [pendingOpen, setPendingOpen] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [resultMsg, setResultMsg] = useState<string | null>(null)
+
+  const headers = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -68,8 +77,45 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
             </svg>
             {t('user.logout')}
           </button>
+          <button
+            className="dropdown-item"
+            onClick={() => { setOpen(false); setConfirmOpen(true) }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 12px' }}
+          >
+            <svg className="miw-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style={{ width: '18px', height: '18px' }}>
+              <path d="M3.08697 9H20.9134C21.4657 9 21.9134 9.44772 21.9134 10C21.9134 10.0277 21.9122 10.0554 21.9099 10.083L21.0766 20.083C21.0334 20.6013 20.6001 21 20.08 21H3.9203C3.40021 21 2.96695 20.6013 2.92376 20.083L2.09042 10.083C2.04456 9.53267 2.45355 9.04932 3.00392 9.00345C3.03155 9.00115 3.05925 9 3.08697 9ZM4.84044 19H19.1599L19.8266 11H4.17377L4.84044 19ZM13.4144 5H20.0002C20.5525 5 21.0002 5.44772 21.0002 6V7H3.00017V4C3.00017 3.44772 3.44789 3 4.00017 3H11.4144L13.4144 5Z"></path>
+            </svg>
+            <span>Re-index</span>
+          </button>
+          <button
+            className="dropdown-item"
+            onClick={() => { setOpen(false); setPendingOpen(true) }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 12px' }}
+          >
+            <svg className="miw-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style={{ width: '18px', height: '18px' }}>
+              <path d="M20 7V20C20 21.1046 19.1046 22 18 22H6C4.89543 22 4 21.1046 4 20V7H2V5H22V7H20ZM6 7V20H18V7H6ZM11 9H13V11H11V9ZM11 12H13V14H11V12ZM11 15H13V17H11V15ZM7 2H17V4H7V2Z"></path>
+            </svg>
+            <span>Pending</span>
+          </button>
         </div>
       )}
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Re-index"
+        message="Re-index everything now?"
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={async () => {
+          setConfirmOpen(false)
+          try {
+            await axios.post(`${API_BASE}/api/ebook/admin/reindex`, null, { headers })
+            setResultMsg('Re-index complete')
+          } catch (e) { setResultMsg('Re-index failed') }
+        }}
+      />
+      <Modal open={!!resultMsg} title="Status" onClose={() => setResultMsg(null)}>
+        <div>{resultMsg}</div>
+      </Modal>
+      <PendingModal token={token} open={pendingOpen} onClose={() => setPendingOpen(false)} />
     </div>
   )
 }
@@ -83,7 +129,7 @@ function useSaving() {
   return { status, lastSavedAt, markSaving, markSaved, markError }
 }
 
-function Shell({ children, status, lastSavedAt, toolbar, actionsRight, afterUserMenu }: React.PropsWithChildren<{ status: string; lastSavedAt: Date | null; toolbar: React.ReactNode; actionsRight?: React.ReactNode; afterUserMenu?: React.ReactNode }>) {
+function Shell({ children, status, lastSavedAt, toolbar, actionsRight, afterUserMenu, token }: React.PropsWithChildren<{ status: string; lastSavedAt: Date | null; toolbar: React.ReactNode; actionsRight?: React.ReactNode; afterUserMenu?: React.ReactNode; token?: string | null }>) {
   const { mode, setMode } = useThemeMode()
   const { t, i18n } = useTranslation()
   return (
@@ -118,7 +164,7 @@ function Shell({ children, status, lastSavedAt, toolbar, actionsRight, afterUser
                 </svg>
               )}
             </button>
-            <UserMenu onLogout={() => {
+            <UserMenu token={token} onLogout={() => {
               clearTokens(); // Clear both access and refresh tokens
               localStorage.removeItem('token'); // Clear old token key if exists
               delete axios.defaults.headers.common['Authorization']; // Remove auth header
@@ -206,12 +252,13 @@ export default function App() {
       TaskList,
       TaskItem,
       Image,
+      VideoNode,
+      AudioNode,
       Link.configure({ openOnClick: false }),
-      ImageDeletionExtension.configure({
-        onImageDelete: (imageUrl: string) => {
-          // Only delete media from our CDN (not external). Use strict prefix under ebooks/huashangdao
-          if (imageUrl.startsWith('https://assets.expotoworld.com/ebooks/huashangdao/')) {
-            deleteImageFromS3(imageUrl)
+      MediaDeletionExtension.configure({
+        onDelete: (url: string) => {
+          if (url.startsWith('https://assets.expotoworld.com/ebooks/huashangdao/')) {
+            deleteMediaFromS3(url)
           }
         },
       }),
@@ -258,7 +305,7 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <Shell
+      <Shell token={token}
         status={status}
         lastSavedAt={lastSavedAt}
         toolbar={<Toolbar editor={editor} zoomLevel={zoomLevel} onZoomChange={setZoomLevel} />}
@@ -280,7 +327,7 @@ export default function App() {
             }}>{t('actions.publish')}</button>
           </>
         )}
-        afterUserMenu={token ? <div style={{ marginLeft: 0 }}><AdminTools token={token} /></div> : null}
+
       >
         <div className="editor-surface">
           <div className="editor-viewport" style={{ ['--zoom' as any]: 1 + (zoomLevel - 1) * 0.4 }}>

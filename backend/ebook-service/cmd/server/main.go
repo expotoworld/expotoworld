@@ -93,16 +93,14 @@ func main() {
 		author.PUT("/ebook", api.PutAutosaveEbookHandler(pool))
 		author.POST("/ebook/versions", api.PostManualVersionHandler(pool))
 		author.POST("/ebook/publish", api.PostPublishHandler(pool))
-		author.POST("/ebook/upload-image", api.UploadImageHandler())
-		// Guarded delete now needs DB
+		author.POST("/ebook/upload-image", api.UploadImageHandler(pool))
+		author.POST("/ebook/upload-media", api.UploadMediaHandler(pool))
 		author.DELETE("/ebook/delete-image", api.DeleteImageHandler(pool))
+		author.DELETE("/ebook/delete-media", api.DeleteMediaHandler(pool))
 
-		// Dev-only admin tools inside editor (gated by env in handlers)
+		// Admin tools (author-gated)
 		author.POST("/ebook/admin/reindex", api.AdminReindexHandler(pool))
-		author.GET("/ebook/admin/inspect", api.AdminInspectMediaHandler(pool))
 		author.GET("/ebook/admin/pending", api.AdminListPendingHandler(pool))
-		author.GET("/ebook/admin/media-list", api.AdminListMediaHandler(pool))
-
 	}
 
 	log.Printf("ebook-service listening on :%s", port)

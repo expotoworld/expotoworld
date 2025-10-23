@@ -340,39 +340,48 @@ export default function Toolbar({ editor, zoomLevel, onZoomChange }: { editor: E
       {/* Link right after separator, before Add image */}
       <LinkPicker editor={editor} />
 
-      {/* Group 6 */}
-      <input id="_img_input" type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+      {/* Unified media upload */}
+      <input id="_media_input" type="file" accept="image/*,video/mp4,video/quicktime,audio/mpeg,audio/mp4,audio/x-m4a,audio/wav" style={{ display: 'none' }} onChange={async (e) => {
         const f = (e.target as HTMLInputElement).files?.[0];
         if (!f) return;
-
-        // Upload to S3 via ebook-service
         try {
           const formData = new FormData();
-          formData.append('image', f);
+          formData.append('file', f);
+          // Determine category for insertion and hinting backend
+          const mt = (f.type || '').toLowerCase();
+          let category: 'image' | 'video' | 'audio' | null = null;
+          if (mt.startsWith('image/')) category = 'image';
+          else if (mt.startsWith('video/')) category = 'video';
+          else if (mt.startsWith('audio/')) category = 'audio';
+          else {
+            const name = f.name.toLowerCase();
+            if (name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') || name.endsWith('.gif') || name.endsWith('.svg') || name.endsWith('.heic') || name.endsWith('.webp')) category = 'image';
+            else if (name.endsWith('.mp4') || name.endsWith('.mov')) category = 'video';
+            else if (name.endsWith('.mp3') || name.endsWith('.m4a') || name.endsWith('.wav')) category = 'audio';
+          }
+          if (category) formData.append('type', category);
 
           const token = localStorage.getItem('token');
-          const response = await axios.post(`${API_BASE}/api/ebook/upload-image`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              'Authorization': `Bearer ${token}`
-            }
+          const response = await axios.post(`${API_BASE}/api/ebook/upload-media`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` }
           });
-
-          const imageUrl = response.data.url;
-          editor.chain().focus().setImage({ src: imageUrl }).run();
+          const url = response.data.url as string;
+          if (category === 'video') editor.chain().focus().setVideo({ src: url }).run();
+          else if (category === 'audio') editor.chain().focus().setAudio({ src: url }).run();
+          else editor.chain().focus().setImage({ src: url }).run();
         } catch (error) {
-          console.error('Failed to upload image:', error);
-          alert('Failed to upload image. Please try again.');
+          console.error('Failed to upload media:', error);
+          alert('Failed to upload media. Please try again.');
         }
-
         (e.target as HTMLInputElement).value = '';
       }} />
-      <Btn onClick={() => (document.getElementById('_img_input') as HTMLInputElement)?.click()} title={t('toolbar.image_add')} aria-label={t('toolbar.image_add')}>
+      <Btn onClick={() => (document.getElementById('_media_input') as HTMLInputElement)?.click()} title={t('toolbar.media_add') || 'Add media'} aria-label={t('toolbar.media_add') || 'Add media'}>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
           <path d="M21 15V18H24V20H21V23H19V20H16V18H19V15H21ZM21.0082 3C21.556 3 22 3.44495 22 3.9934V13H20V5H4V18.999L14 9L17 12V14.829L14 11.8284L6.827 19H14V21H2.9918C2.44405 21 2 20.5551 2 20.0066V3.9934C2 3.44476 2.45531 3 2.9918 3H21.0082ZM8 7C9.10457 7 10 7.89543 10 9C10 10.1046 9.10457 11 8 11C6.89543 11 6 10.1046 6 9C6 7.89543 6.89543 7 8 7Z"></path>
         </svg>
-        <span>{t('toolbar.image_add_label')}</span>
+        <span>{t('toolbar.media_add_label') || 'Add media'}</span>
       </Btn>
+
     </div>
 
   );
