@@ -36,16 +36,44 @@
 
   "toolbar.media_add": "Add media",
   "toolbar.media_add_label": "Add media",
+  "toolbar.version_history": "Version History",
 
   "status.saving": "Saving",
   "status.saved_at": "Saved at {{time}}",
   "status.save_failed": "Save failed",
   "actions.save_version": "Save version",
   "actions.publish": "Publish",
-  "actions.version_success": "Manual version created",
-  "actions.version_fail": "Failed to create version",
+  "actions.manual_save": "Save version",
+  "actions.version_success": "Version saved",
+  "actions.version_fail": "Failed to save version",
   "actions.publish_success": "Published!",
   "actions.publish_fail": "Failed to publish",
+
+  "labels.version_name": "Version name",
+  "placeholders.version_name": "Version name",
+
+  "errors.version_name_required": "Please enter a version name",
+
+  "common.cancel": "Cancel",
+  "common.confirm": "Confirm",
+
+  "history.header": "Version History",
+  "history.tabs.manual": "Manual",
+  "history.tabs.published": "Published",
+  "history.empty": "No versions yet.",
+  "history.actions.inspect": "Inspect",
+  "history.actions.restore": "Restore",
+  "history.actions.publish": "Publish",
+  "history.actions.delete": "Delete",
+  "history.confirm.restore": "Restore this version? This will replace the current draft.",
+  "history.confirm.delete": "Are you sure you want to delete \"{{id}}\"?",
+  "history.publish.title": "Publish version",
+  "history.publish.label_placeholder": "Version name",
+  "history.actions.rename": "Rename",
+  "history.rename.title": "Rename version",
+  "history.rename.success": "Version renamed",
+  "history.rename.fail": "Failed to rename version",
+  "history.confirm.delete_label": "Are you sure you want to delete \"{{label}}\"?",
 
   "link.placeholder": "Paste a link",
 

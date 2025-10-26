@@ -66,7 +66,7 @@ func main() {
 
 	// CORS restricted to editor origin if provided
 	editorOrigin := getEnv("EDITOR_ORIGIN", "")
-	corsCfg := cors.Config{AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, AllowHeaders: []string{"Authorization", "Content-Type"}}
+	corsCfg := cors.Config{AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}, AllowHeaders: []string{"Authorization", "Content-Type"}}
 	if editorOrigin != "" {
 		corsCfg.AllowOrigins = []string{editorOrigin}
 	} else {
@@ -92,7 +92,16 @@ func main() {
 		author.GET("/ebook", api.GetDraftEbookHandler(pool))
 		author.PUT("/ebook", api.PutAutosaveEbookHandler(pool))
 		author.POST("/ebook/versions", api.PostManualVersionHandler(pool))
+		// New version-management endpoints
+		author.GET("/ebook/versions/:id/content", api.GetVersionContentHandler(pool))
+		author.POST("/ebook/versions/:id/restore", api.RestoreVersionHandler(pool))
+		author.POST("/ebook/versions/:id/publish", api.PublishFromManualVersionHandler(pool))
+		author.DELETE("/ebook/versions/:id", api.DeleteVersionHandler(pool))
+		author.PATCH("/ebook/versions/:id", api.PatchVersionLabelHandler(pool))
+
+		// Legacy publish-from-autosave (kept for compatibility; UI will not use it)
 		author.POST("/ebook/publish", api.PostPublishHandler(pool))
+
 		author.POST("/ebook/upload-image", api.UploadImageHandler(pool))
 		author.POST("/ebook/upload-media", api.UploadMediaHandler(pool))
 		author.DELETE("/ebook/delete-image", api.DeleteImageHandler(pool))

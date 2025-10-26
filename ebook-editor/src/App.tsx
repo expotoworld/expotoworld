@@ -28,6 +28,7 @@ import { AUTH_BASE, getRefreshToken, setAccessToken, setRefreshToken, clearToken
 import { MediaDeletionExtension, deleteMediaFromS3 } from './MediaDeletionExtension'
 import { VideoNode } from './nodes/VideoNode'
 import { AudioNode } from './nodes/AudioNode'
+import VersionHistorySidebar from './components/VersionHistorySidebar'
 
 function UserMenu({ onLogout, token }: { onLogout: () => void; token: string | null }) {
   const { t } = useTranslation()
@@ -187,6 +188,26 @@ export default function App() {
   const [zoomLevel, setZoomLevel] = useState<number>(1)
   const [token, setToken] = useState<string | null>(null)
   const [authBoot, setAuthBoot] = useState<boolean>(true)
+  const [versionsOpen, setVersionsOpen] = useState(false)
+  const [saveOpen, setSaveOpen] = useState(false)
+  const [saveName, setSaveName] = useState('')
+  const toastTimer = useRef<number | null>(null)
+  const [toastMsg, setToastMsg] = useState<string | null>(null)
+  const [toastType, setToastType] = useState<'success'|'error'|'warn'|'info'>('info')
+  const [toastVisible, setToastVisible] = useState(false)
+  useEffect(() => {
+    const onToast = (e: any) => {
+      const msg = e?.detail?.message || String(e?.detail || '') || 'Notice'
+      const type = (e?.detail?.type || e?.detail?.variant || 'info') as 'success'|'error'|'warn'|'info'
+      setToastMsg(msg)
+      setToastType(type)
+      setToastVisible(true)
+      if (toastTimer.current) window.clearTimeout(toastTimer.current as any)
+      toastTimer.current = window.setTimeout(() => setToastVisible(false), 2500) as any
+    }
+    window.addEventListener('miw:toast' as any, onToast as any)
+    return () => window.removeEventListener('miw:toast' as any, onToast as any)
+  }, [])
 
   useEffect(() => {
     (async () => {
@@ -308,23 +329,15 @@ export default function App() {
       <Shell token={token}
         status={status}
         lastSavedAt={lastSavedAt}
-        toolbar={<Toolbar editor={editor} zoomLevel={zoomLevel} onZoomChange={setZoomLevel} />}
+        toolbar={<Toolbar editor={editor} zoomLevel={zoomLevel} onZoomChange={setZoomLevel} onOpenHistory={() => setVersionsOpen(true)} />}
         actionsRight={(
           <>
-            <button className="secondary-btn" onClick={async () => {
-              if (!editor) return
-              try {
-                await axios.post(`${API_BASE}/api/ebook/versions`, null)
-                alert(t('actions.version_success'))
-              } catch (e) { alert(t('actions.version_fail')) }
-            }}>{t('actions.save_version')}</button>
-            <button className="primary-btn" onClick={async () => {
-              if (!editor) return
-              try {
-                await axios.post(`${API_BASE}/api/ebook/publish`, null)
-                alert(t('actions.publish_success'))
-              } catch (e) { alert(t('actions.publish_fail')) }
-            }}>{t('actions.publish')}</button>
+            <button className="secondary-btn" onClick={() => setVersionsOpen(true)}>
+              {t('toolbar.version_history') || 'Version History'}
+            </button>
+            <button className="primary-btn danger" onClick={() => { setSaveName(''); setSaveOpen(true) }}>
+              {t('actions.save_version') || 'Save version'}
+            </button>
           </>
         )}
 
@@ -336,6 +349,38 @@ export default function App() {
         </div>
         {editor && <WordCount editor={editor} />}
       </Shell>
-    </ThemeProvider>
-  )
-}
+        <Modal open={saveOpen} title={t('actions.save_version') || 'Save version'} onClose={() => setSaveOpen(false)}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <input className="miw-version-input" value={saveName} onChange={e => setSaveName(e.target.value)} placeholder={t('placeholders.version_name') || 'Version name'} />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button className="secondary-btn" onClick={() => setSaveOpen(false)}>{t('common.cancel') || 'Cancel'}</button>
+              <button className="primary-btn" onClick={async () => {
+                if (!editor) return
+
+                const label = saveName.trim()
+                if (!label) {
+                  window.dispatchEvent(new CustomEvent('miw:toast' as any, { detail: { message: t('errors.version_name_required') || 'Please enter a version name', type: 'error' } } as any) as any)
+                  return
+                }
+                try {
+                  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+                  await axios.post(`${API_BASE}/api/ebook/versions`, { label }, { headers })
+                  setSaveOpen(false)
+                  window.dispatchEvent(new CustomEvent('miw:toast', { detail: { message: t('actions.version_success'), type: 'success' } }))
+                } catch {
+                  window.dispatchEvent(new CustomEvent('miw:toast', { detail: { message: t('actions.version_fail'), type: 'error' } }))
+                }
+              }}>{t('common.confirm') || 'Confirm'}</button>
+            </div>
+          </div>
+        </Modal>
+        {/* Toast */}
+        <div className={`miw-toast ${toastVisible ? 'is-visible' : ''}`}>
+          <div className={`miw-toast-card ${toastType}`}>{toastMsg}</div>
+        </div>
+        <VersionHistorySidebar open={versionsOpen} onClose={() => setVersionsOpen(false)} token={token!} onRestored={(content) => { if (content) editor?.commands.setContent(content, false) }} />
+      </ThemeProvider>
+    )
+  }
+
+
