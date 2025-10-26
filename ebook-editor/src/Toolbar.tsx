@@ -196,11 +196,12 @@ function MenuItem({ onClick, children }: React.PropsWithChildren<{ onClick: ()=>
 }
 
 
-export default function Toolbar({ editor, zoomLevel, onZoomChange }: { editor: Editor | null; zoomLevel: number; onZoomChange: (n: number) => void }) {
+export default function Toolbar({ editor, zoomLevel, onZoomChange, onOpenHistory }: { editor: Editor | null; zoomLevel: number; onZoomChange: (n: number) => void; onOpenHistory?: () => void }) {
   if (!editor) return null;
   const { t } = useTranslation()
   return (
     <div className="editor-toolbar" role="toolbar" aria-label="Formatting toolbar">
+
       <Btn onClick={() => editor.chain().focus().undo().run()} title={t('toolbar.undo')} aria-label={t('toolbar.undo')}>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
           <path d="M5.82843 6.99955L8.36396 9.53509L6.94975 10.9493L2 5.99955L6.94975 1.0498L8.36396 2.46402L5.82843 4.99955H13C17.4183 4.99955 21 8.58127 21 12.9996C21 17.4178 17.4183 20.9996 13 20.9996H4V18.9996H13C16.3137 18.9996 19 16.3133 19 12.9996C19 9.68584 16.3137 6.99955 13 6.99955H5.82843Z"></path>
@@ -290,20 +291,7 @@ export default function Toolbar({ editor, zoomLevel, onZoomChange }: { editor: E
       </Btn>
       {/* Highlight as horizontal picker */}
       <HighlightPicker editor={editor} />
-      <Btn onClick={() => editor.chain().focus()
-  .unsetMark('bold')
-  .unsetMark('italic')
-  .unsetMark('underline')
-  .unsetMark('strike')
-  .unsetMark('highlight')
-  .unsetMark('superscript')
-  .unsetMark('subscript')
-    .unsetMark('textStyle')
-  .run()} title={t('toolbar.clear')} aria-label={t('toolbar.clear')}>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-          <path d="M12.6512 14.0654L11.6047 20H9.57389L10.9247 12.339L3.51465 4.92892L4.92886 3.51471L20.4852 19.0711L19.071 20.4853L12.6512 14.0654ZM11.7727 7.53009L12.0425 5.99999H10.2426L8.24257 3.99999H19.9999V5.99999H14.0733L13.4991 9.25652L11.7727 7.53009Z"></path>
-        </svg>
-      </Btn>
+
       <div className="toolbar-sep" />
 
 
@@ -371,7 +359,7 @@ export default function Toolbar({ editor, zoomLevel, onZoomChange }: { editor: E
           else editor.chain().focus().setImage({ src: url }).run();
         } catch (error) {
           console.error('Failed to upload media:', error);
-          alert('Failed to upload media. Please try again.');
+          window.dispatchEvent(new CustomEvent('miw:toast', { detail: { message: 'Failed to upload media. Please try again.', type: 'error' } }));
         }
         (e.target as HTMLInputElement).value = '';
       }} />

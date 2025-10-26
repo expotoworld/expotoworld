@@ -42,8 +42,8 @@
   "status.save_failed": "保存失败",
   "actions.save_version": "保存版本",
   "actions.publish": "发布",
-  "actions.version_success": "正式版本已创建",
-  "actions.version_fail": "创建版本失败",
+  "actions.version_success": "版本已保存",
+  "actions.version_fail": "保存版本失败",
   "actions.publish_success": "已发布！",
   "actions.publish_fail": "发布失败",
 
@@ -61,4 +61,36 @@
 
   "user.menu_tooltip": "华商道",
   "user.logout": "退出登录"
+,
+
+  "toolbar.version_history": "版本历史",
+  "actions.manual_save": "保存版本",
+  "labels.version_name": "版本名称",
+  "placeholders.version_name": "版本名称",
+  "common.cancel": "取消",
+  "common.confirm": "确认",
+
+
+  "errors.version_name_required": "请输入版本名称",
+
+  "history.header": "版本历史",
+  "history.tabs.manual": "手动",
+  "history.tabs.published": "已发布",
+  "history.empty": "暂无版本",
+  "history.actions.inspect": "查看",
+  "history.actions.restore": "恢复",
+  "history.actions.publish": "发布",
+  "history.actions.delete": "删除",
+  "history.confirm.restore": "确定要恢复此版本吗？这将替换当前草稿。",
+  "history.confirm.delete": "确定要删除 \"{{id}}\" 吗？",
+  "history.publish.title": "发布版本",
+  "history.publish.label_placeholder": "版本名称",
+
+  "history.actions.rename": "重命名",
+  "history.rename.title": "重命名版本",
+  "history.rename.success": "版本已重命名",
+  "history.rename.fail": "重命名版本失败",
+  "history.confirm.delete_label": "确定要删除 \"{{label}}\" 吗？"
+
+
 }

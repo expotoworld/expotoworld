@@ -599,6 +599,17 @@ func DeleteMediaHandler(db *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
+		// Guard: only enqueue when not referenced anywhere and not in autosave
+		var inAutosave bool
+		var manualRefs, publishedRefs int
+		err := db.QueryRow(ctx, `SELECT in_autosave, manual_refs, published_refs FROM ebook_media_usage WHERE media_key=$1`, objectKey).Scan(&inAutosave, &manualRefs, &publishedRefs)
+		if err == nil {
+			if inAutosave || manualRefs > 0 || publishedRefs > 0 {
+				c.JSON(http.StatusOK, gin.H{"status": "skipped", "reason": "still_referenced", "key": objectKey})
+				return
+			}
+		}
+
 		// Schedule deletion (same TTL logic as image)
 		ttlMin := 15
 		if s := strings.TrimSpace(os.Getenv("MEDIA_DELETE_TTL_MIN")); s != "" {
@@ -660,6 +671,12 @@ func DeleteImageHandler(db *pgxpool.Pool) gin.HandlerFunc {
 		var manualRefs, publishedRefs int
 		_ = db.QueryRow(ctx, `SELECT in_autosave, manual_refs, published_refs FROM ebook_media_usage WHERE media_key=$1`, objectKey).Scan(&inAutosave, &manualRefs, &publishedRefs)
 
+		// Guard: only enqueue when not referenced anywhere and not in autosave
+		if inAutosave || manualRefs > 0 || publishedRefs > 0 {
+			c.JSON(http.StatusOK, gin.H{"status": "skipped", "reason": "still_referenced", "key": objectKey})
+			return
+		}
+
 		// Schedule deletion with TTL
 		ttlMin := 15
 		if s := strings.TrimSpace(os.Getenv("MEDIA_DELETE_TTL_MIN")); s != "" {
@@ -670,5 +687,341 @@ func DeleteImageHandler(db *pgxpool.Pool) gin.HandlerFunc {
 		_, _ = db.Exec(ctx, `INSERT INTO ebook_media_pending_deletion(media_key,requested_at,not_before,attempts,last_checked_at) VALUES ($1, now(), now() + ($2::int * interval '1 minute'), 0, NULL) ON CONFLICT (media_key) DO UPDATE SET requested_at=now(), not_before=now() + ($2::int * interval '1 minute')`, objectKey, ttlMin)
 
 		c.JSON(http.StatusOK, gin.H{"status": "scheduled", "key": objectKey, "ttl_minutes": ttlMin})
+	}
+}
+
+// GetVersionContentHandler returns JSON content for a specific version id
+func GetVersionContentHandler(db *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := strings.TrimSpace(c.Param("id"))
+		if id == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "id required"})
+			return
+		}
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+		defer cancel()
+
+		u, _ := storage.NewS3Uploader(ctx)
+		if !u.Enabled() {
+			c.JSON(http.StatusFailedDependency, gin.H{"error": "s3 not configured"})
+			return
+		}
+
+		var key string
+		if err := db.QueryRow(ctx, `SELECT ev.s3_key
+			FROM ebook_versions ev
+			JOIN ebooks e ON e.id=ev.ebook_id
+			WHERE e.slug='main' AND ev.id=$1`, id).Scan(&key); err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "version not found"})
+			return
+		}
+		b, err := u.GetJSON(ctx, key)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		var content any
+		_ = json.Unmarshal(b, &content)
+		c.JSON(http.StatusOK, gin.H{"id": id, "content": content})
+	}
+}
+
+// RestoreVersionHandler replaces autosave content with the version's JSON and updates media usage
+func RestoreVersionHandler(db *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := strings.TrimSpace(c.Param("id"))
+		if id == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "id required"})
+			return
+		}
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
+		defer cancel()
+
+		u, _ := storage.NewS3Uploader(ctx)
+		if !u.Enabled() {
+			c.JSON(http.StatusFailedDependency, gin.H{"error": "s3 not configured"})
+			return
+		}
+
+		tx, err := db.Begin(ctx)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer tx.Rollback(ctx)
+
+		var ebookID string
+		var oldContent sql.NullString
+		if err := tx.QueryRow(ctx, `SELECT id, content::text FROM ebooks WHERE slug='main' FOR UPDATE`).Scan(&ebookID, &oldContent); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		var key string
+		if err := tx.QueryRow(ctx, `SELECT s3_key FROM ebook_versions WHERE id=$1 AND ebook_id=$2`, id, ebookID).Scan(&key); err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "version not found"})
+			return
+		}
+
+		b, err := u.GetJSON(ctx, key)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		var newContent any
+		_ = json.Unmarshal(b, &newContent)
+
+		cdnBase := os.Getenv("ASSETS_CDN_BASE_URL")
+		if cdnBase == "" {
+			cdnBase = "https://assets.expotoworld.com"
+		}
+		allowedPrefix := "ebooks/huashangdao/"
+		oldKeys := map[string]struct{}{}
+		if oldContent.Valid && strings.TrimSpace(oldContent.String) != "" {
+			var oc any
+			_ = json.Unmarshal([]byte(oldContent.String), &oc)
+			for _, k := range mediatools.ExtractMediaKeys(oc, cdnBase, allowedPrefix) {
+				oldKeys[k] = struct{}{}
+			}
+		}
+		newKeys := map[string]struct{}{}
+		for _, k := range mediatools.ExtractMediaKeys(newContent, cdnBase, allowedPrefix) {
+			newKeys[k] = struct{}{}
+		}
+
+		// Update ebooks.content
+		if _, err := tx.Exec(ctx, `UPDATE ebooks SET content=$1::jsonb, updated_at=now() WHERE id=$2`, string(b), ebookID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		// Maintain usage flags
+		for k := range newKeys {
+			if _, existed := oldKeys[k]; !existed {
+				_, _ = tx.Exec(ctx, `INSERT INTO ebook_media_usage(media_key,in_autosave,last_seen_at) VALUES ($1,true,now()) ON CONFLICT (media_key) DO UPDATE SET in_autosave=true,last_seen_at=now()`, k)
+			} else {
+				_, _ = tx.Exec(ctx, `UPDATE ebook_media_usage SET last_seen_at=now() WHERE media_key=$1`, k)
+			}
+		}
+		for k := range oldKeys {
+			if _, still := newKeys[k]; !still {
+				_, _ = tx.Exec(ctx, `UPDATE ebook_media_usage SET in_autosave=false WHERE media_key=$1`, k)
+			}
+		}
+
+		if err := tx.Commit(ctx); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "restored"})
+	}
+}
+
+// DeleteVersionHandler removes a version, updates media refs, and deletes JSON from S3 (post-commit)
+func DeleteVersionHandler(db *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := strings.TrimSpace(c.Param("id"))
+		if id == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "id required"})
+			return
+		}
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
+		defer cancel()
+
+		u, _ := storage.NewS3Uploader(ctx)
+		if !u.Enabled() {
+			c.JSON(http.StatusFailedDependency, gin.H{"error": "s3 not configured"})
+			return
+		}
+
+		tx, err := db.Begin(ctx)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer tx.Rollback(ctx)
+
+		// Ensure version belongs to our ebook and capture s3 key BEFORE deleting rows
+		var kind, key, ebookID string
+		if err := tx.QueryRow(ctx, `SELECT ev.kind, ev.s3_key, ev.ebook_id
+			FROM ebook_versions ev JOIN ebooks e ON e.id=ev.ebook_id
+			WHERE e.slug='main' AND ev.id=$1`, id).Scan(&kind, &key, &ebookID); err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "version not found"})
+			return
+		}
+
+		// Load mapped media keys (handle errors explicitly)
+		mediaKeys := []string{}
+		if rows, qerr := tx.Query(ctx, `SELECT media_key FROM ebook_version_media WHERE version_id=$1`, id); qerr == nil {
+			for rows.Next() {
+				var mk string
+				if err := rows.Scan(&mk); err == nil {
+					mediaKeys = append(mediaKeys, mk)
+				}
+			}
+			rows.Close()
+		}
+
+		for _, mk := range mediaKeys {
+			if kind == "manual" {
+				_, _ = tx.Exec(ctx, `UPDATE ebook_media_usage SET manual_refs=GREATEST(manual_refs-1,0), last_seen_at=now() WHERE media_key=$1`, mk)
+			} else {
+				_, _ = tx.Exec(ctx, `UPDATE ebook_media_usage SET published_refs=GREATEST(published_refs-1,0), last_seen_at=now() WHERE media_key=$1`, mk)
+			}
+			// If now unused anywhere, schedule deletion
+			var inAutosave bool
+			var mRef, pRef int
+			_ = tx.QueryRow(ctx, `SELECT in_autosave, manual_refs, published_refs FROM ebook_media_usage WHERE media_key=$1`, mk).Scan(&inAutosave, &mRef, &pRef)
+			if !inAutosave && mRef == 0 && pRef == 0 {
+				ttlMin := 15
+				if s := strings.TrimSpace(os.Getenv("MEDIA_DELETE_TTL_MIN")); s != "" {
+					if n, e := strconv.Atoi(s); e == nil && n > 0 {
+						ttlMin = n
+					}
+				}
+				_, _ = tx.Exec(ctx, `INSERT INTO ebook_media_pending_deletion(media_key,requested_at,not_before,attempts,last_checked_at)
+					VALUES ($1, now(), now() + ($2::int * interval '1 minute'), 0, NULL)
+					ON CONFLICT (media_key) DO UPDATE SET requested_at=now(), not_before=now() + ($2::int * interval '1 minute')`, mk, ttlMin)
+			}
+		}
+		// Remove mapping rows then the version row (explicitly for both kinds)
+		if _, err := tx.Exec(ctx, `DELETE FROM ebook_version_media WHERE version_id=$1`, id); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if _, err := tx.Exec(ctx, `DELETE FROM ebook_versions WHERE id=$1`, id); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		if err := tx.Commit(ctx); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Delete object outside transaction (applies to BOTH manual and published)
+		if key != "" {
+			if err := u.DeleteObject(ctx, key); err != nil {
+				log.Printf("[EBOOK] s3 delete failed key=%s err=%v", key, err)
+			}
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "deleted"})
+	}
+}
+
+// PublishFromManualVersionHandler creates a published version by cloning a manual version
+func PublishFromManualVersionHandler(db *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := strings.TrimSpace(c.Param("id"))
+		if id == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "id required"})
+			return
+		}
+		var req struct {
+			Label string `json:"label"`
+		}
+		_ = c.ShouldBindJSON(&req)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 20*time.Second)
+		defer cancel()
+
+		u, _ := storage.NewS3Uploader(ctx)
+		if !u.Enabled() {
+			c.JSON(http.StatusFailedDependency, gin.H{"error": "s3 not configured"})
+			return
+		}
+
+		tx, err := db.Begin(ctx)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer tx.Rollback(ctx)
+
+		// Ensure it is a manual version under our ebook
+		var ebookID, kind, key string
+		if err := tx.QueryRow(ctx, `SELECT ev.ebook_id, ev.kind, ev.s3_key
+			FROM ebook_versions ev JOIN ebooks e ON e.id=ev.ebook_id
+			WHERE e.slug='main' AND ev.id=$1`, id).Scan(&ebookID, &kind, &key); err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "version not found"})
+			return
+		}
+		if kind != "manual" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "not a manual version"})
+			return
+		}
+
+		b, err := u.GetJSON(ctx, key)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		var content any
+		_ = json.Unmarshal(b, &content)
+
+		pubKey := storage.TimestampKey("ebook/versions/published/")
+		if _, err := u.UploadJSON(ctx, pubKey, content); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		var lbl *string
+		if s := strings.TrimSpace(req.Label); s != "" {
+			lbl = &s
+		}
+		var newID string
+		if err := tx.QueryRow(ctx, `INSERT INTO ebook_versions(ebook_id, kind, s3_key, label) VALUES ($1,'published',$2,$3) RETURNING id`, ebookID, pubKey, lbl).Scan(&newID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		cdnBase := os.Getenv("ASSETS_CDN_BASE_URL")
+		if cdnBase == "" {
+			cdnBase = "https://assets.expotoworld.com"
+		}
+		allowedPrefix := "ebooks/huashangdao/"
+		for _, mk := range mediatools.ExtractMediaKeys(content, cdnBase, allowedPrefix) {
+			_, _ = tx.Exec(ctx, `INSERT INTO ebook_media_usage(media_key,published_refs,last_seen_at) VALUES ($1,1,now()) ON CONFLICT (media_key) DO UPDATE SET published_refs=ebook_media_usage.published_refs+1,last_seen_at=now()`, mk)
+			_, _ = tx.Exec(ctx, `INSERT INTO ebook_version_media(version_id,media_key) VALUES ($1,$2) ON CONFLICT DO NOTHING`, newID, mk)
+		}
+
+		if err := tx.Commit(ctx); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "published", "id": newID})
+	}
+}
+
+// PatchVersionLabelHandler updates the label of a version (manual or published) under the main ebook
+func PatchVersionLabelHandler(db *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := strings.TrimSpace(c.Param("id"))
+		if id == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "id required"})
+			return
+		}
+		var req struct {
+			Label string `json:"label"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON"})
+			return
+		}
+		s := strings.TrimSpace(req.Label)
+		var label *string
+		if s != "" {
+			label = &s
+		}
+
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+		defer cancel()
+		cmd, err := db.Exec(ctx, `UPDATE ebook_versions ev SET label=$1 FROM ebooks e WHERE ev.ebook_id=e.id AND e.slug='main' AND ev.id=$2`, label, id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if cmd.RowsAffected() == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "version not found"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "renamed"})
 	}
 }
