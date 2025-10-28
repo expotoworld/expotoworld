@@ -89,36 +89,89 @@ function LinkPicker({ editor }: { editor: Editor }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState('');
+  const [page, setPage] = useState<'url' | 'headings'>('url');
+  const [query, setQuery] = useState('');
   const selectionEmpty = editor.state.selection.empty;
   const rootRef = useRef<HTMLDivElement>(null);
   const canAct = url.trim().length > 0;
 
+  const [headings, setHeadings] = useState<Array<{ id: string; level: number; text: string }>>([]);
+
+  useEffect(() => {
+    if (!open) return;
+    const collect = () => {
+      const out: Array<{ id: string; level: number; text: string }> = [];
+      editor.state.doc.descendants((node: any) => {
+        if (node.type?.name === 'heading') {
+          const id = node.attrs?.id;
+          const level = node.attrs?.level;
+          if (id && level) out.push({ id, level, text: node.textContent || `Heading ${level}` });
+        }
+      });
+      if (process.env.NODE_ENV !== 'production') {
+        // eslint-disable-next-line no-console
+        // dev log removed
+      }
+      setHeadings(out);
+    };
+    collect();
+    const handler = () => collect();
+    editor.on('update', handler);
+    return () => editor.off('update', handler);
+  }, [open, editor]);
+
   const activeHref = (editor.getAttributes('link').href as string | undefined) || '';
   const hasLink = !!activeHref;
+  const isInHeading = editor.isActive('heading');
+  const isOnMedia = editor.isActive('image') || editor.isActive('video') || editor.isActive('audio');
+  const linkDisabled = (selectionEmpty && !hasLink) || isInHeading || isOnMedia;
+
   const toggle = () => {
-    if (selectionEmpty && !hasLink) return; // no-op when nothing selected and no existing link
+    if (linkDisabled) return; // prevent opening when not allowed
+    // Always reset to Page 1 when opening
+    setPage('url');
+    setQuery('');
+    // If clicking the button without an existing link, clear URL; if editing, show href
     setUrl(activeHref || '');
     setOpen(v => !v);
   };
+
   useEffect(() => {
     if (!open) return;
     const onDocDown = (e: MouseEvent) => {
       if (!rootRef.current) return;
-      if (!rootRef.current.contains(e.target as Node)) setOpen(false);
+      if (!rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setPage('url');
+        setQuery('');
+      }
     };
     document.addEventListener('mousedown', onDocDown);
     return () => document.removeEventListener('mousedown', onDocDown);
   }, [open]);
 
+
+
+
   const apply = () => {
     if (!canAct) return;
-    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+    let u = url.trim();
+    // Normalize internal links to fragment form for in-editor navigation
+    const prefix = `${window.location.origin}${window.location.pathname}`;
+    if (u.startsWith(prefix + '#')) {
+      u = u.slice(prefix.length);
+    }
+    editor.chain().focus().extendMarkRange('link').setLink({ href: u }).run();
     setOpen(false);
+    setPage('url');
+    setQuery('');
   };
   const unlink = () => {
     if (!canAct) return;
     editor.chain().focus().unsetLink().run();
     setOpen(false);
+    setPage('url');
+    setQuery('');
   };
   const openHref = () => {
     if (!canAct) return;
@@ -126,6 +179,8 @@ function LinkPicker({ editor }: { editor: Editor }) {
     if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
     window.open(u, '_blank');
     setOpen(false);
+    setPage('url');
+    setQuery('');
   };
   useEffect(() => {
     if (!editor) return;
@@ -134,7 +189,14 @@ function LinkPicker({ editor }: { editor: Editor }) {
       const anchor = target.closest('a');
       if (anchor) {
         const href = anchor.getAttribute('href') || '';
-        setUrl(href);
+        // For internal heading links, show absolute URL in the picker
+        if (href.startsWith('#')) {
+          setUrl(`${window.location.origin}${window.location.pathname}${href}`);
+        } else {
+          setUrl(href);
+        }
+        setPage('url');
+        setQuery('');
         setOpen(true);
       }
     };
@@ -142,44 +204,101 @@ function LinkPicker({ editor }: { editor: Editor }) {
     return () => editor.view.dom.removeEventListener('click', onClick);
   }, [editor]);
 
+  const filteredHeadings = headings.filter(h =>
+    !query.trim() || (h.text || '').toLowerCase().includes(query.trim().toLowerCase())
+  );
+
   return (
     <div ref={rootRef} className="dropdown" style={{ position: 'relative' }}>
       <button
         className={`toolbar-btn${editor.isActive('link') ? ' is-active' : ''}`}
         onClick={toggle}
         type="button"
-        data-tooltip={selectionEmpty && !hasLink ? t('toolbar.link_select') : t('toolbar.link')}
+        data-tooltip={linkDisabled ? t('toolbar.link_select') : t('toolbar.link')}
         aria-label={t('toolbar.link')}
-        disabled={selectionEmpty && !hasLink}
+        disabled={linkDisabled}
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
           <path d="M18.3638 15.5355L16.9496 14.1213L18.3638 12.7071C20.3164 10.7545 20.3164 7.58866 18.3638 5.63604C16.4112 3.68341 13.2453 3.68341 11.2927 5.63604L9.87849 7.05025L8.46428 5.63604L9.87849 4.22182C12.6122 1.48815 17.0443 1.48815 19.778 4.22182C22.5117 6.95549 22.5117 11.3876 19.778 14.1213L18.3638 15.5355ZM15.5353 18.364L14.1211 19.7782C11.3875 22.5118 6.95531 22.5118 4.22164 19.7782C1.48797 17.0445 1.48797 12.6123 4.22164 9.87868L5.63585 8.46446L7.05007 9.87868L5.63585 11.2929C3.68323 13.2455 3.68323 16.4113 5.63585 18.364C7.58847 20.3166 10.7543 20.3166 12.7069 18.364L14.1211 16.9497L15.5353 18.364ZM14.8282 7.75736L16.2425 9.17157L9.17139 16.2426L7.75717 14.8284L14.8282 7.75736Z"></path>
         </svg>
       </button>
       {open && (
-        <div className="link-pop" role="menu">
-          <input className="link-input" value={url} onChange={e => setUrl(e.target.value)}
-                 placeholder={t('link.placeholder')}
-                 onKeyDown={(e) => {
-                   if (e.key === 'Enter') { e.preventDefault(); if (canAct) { apply(); editor.chain().focus().run(); } }
-                   if (e.key === 'Escape') { e.preventDefault(); setOpen(false); setUrl(activeHref || ''); }
-                 }} />
-          <button className="link-action" onClick={apply} data-tooltip={t('toolbar.apply_link')} aria-label={t('toolbar.apply_link')} disabled={!canAct}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-              <path d="M9.9997 15.1709L19.1921 5.97852L20.6063 7.39273L9.9997 17.9993L3.63574 11.6354L5.04996 10.2212L9.9997 15.1709Z"></path>
-            </svg>
-          </button>
-          <div className="picker-sep" aria-hidden />
-          <button className="link-action" onClick={openHref} data-tooltip={t('toolbar.open_link_new')} aria-label={t('toolbar.open_link_new')} disabled={!canAct}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-              <path d="M10 6V8H5V19H16V14H18V20C18 20.5523 17.5523 21 17 21H4C3.44772 21 3 20.5523 3 20V7C3 6.44772 3.44772 6 4 6H10ZM21 3V11H19L18.9999 6.413L11.2071 14.2071L9.79289 12.7929L17.5849 5H13V3H21Z"></path>
-            </svg>
-          </button>
-          <button className="link-action" onClick={unlink} data-tooltip={t('toolbar.remove_link')} aria-label={t('toolbar.remove_link')} disabled={!canAct}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-              <path d="M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 4V6H15V4H9Z"></path>
-            </svg>
-          </button>
+        <div className="link-pop" role="menu" ref={rootRef}>
+          {page === 'url' && (
+            <>
+              <div className="link-row">
+                <input id="link-url-input" name="link-url" className="link-input" value={url} onChange={e => setUrl(e.target.value)}
+                       placeholder={t('link.placeholder')}
+                       onKeyDown={(e) => {
+                         if (e.key === 'Enter') { e.preventDefault(); if (canAct) { apply(); editor.chain().focus().run(); } }
+                         if (e.key === 'Escape') { e.preventDefault(); setOpen(false); setUrl(activeHref || ''); }
+                       }} />
+                <button className="link-action" onClick={apply} title={t('link.insertTooltip')} data-tooltip={t('link.insertTooltip')} aria-label={t('link.insertTooltip')} disabled={!canAct}>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M9.9997 15.1709L19.1921 5.97852L20.6063 7.39273L9.9997 17.9993L3.63574 11.6354L5.04996 10.2212L9.9997 15.1709Z"></path>
+                  </svg>
+                </button>
+                <div className="picker-sep" aria-hidden />
+                <button className="link-action" onClick={openHref} title={t('link.openTooltip')} data-tooltip={t('link.openTooltip')} aria-label={t('link.openTooltip')} disabled={!canAct}>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M10 6V8H5V19H16V14H18V20C18 20.5523 17.5523 21 17 21H4C3.44772 21 3 20.5523 3 20V7C3 6.44772 3.44772 6 4 6H10ZM21 3V11H19L18.9999 6.413L11.2071 14.2071L9.79289 12.7929L17.5849 5H13V3H21Z"></path>
+                  </svg>
+                </button>
+                <button className="link-action" onClick={unlink} title={t('link.removeTooltip')} data-tooltip={t('link.removeTooltip')} aria-label={t('link.removeTooltip')} disabled={!canAct}>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 4V6H15V4H9Z"></path>
+                  </svg>
+                </button>
+              </div>
+              <div className="picker-hr" aria-hidden />
+              <div className="link-headings-wrap">
+                <button className="link-headings-toggle" type="button" onClick={() => setPage('headings')} aria-label={t('toolbar.headings')} aria-controls="link-headings-list">
+                  <span>{t('toolbar.headings')}</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden style={{ width: 18, height: 18 }}>
+                    <path d="M1.99974 13.0001L1.9996 11.0002L18.1715 11.0002L14.2218 7.05044L15.636 5.63623L22 12.0002L15.636 18.3642L14.2218 16.9499L18.1716 13.0002L1.99974 13.0001Z"></path>
+                  </svg>
+                </button>
+              </div>
+            </>
+          )}
+
+          {page === 'headings' && (
+            <div className="link-headings-page">
+              <div className="head-search-row">
+                <button type="button" className="link-action" aria-label="Back" onClick={() => setPage('url')}>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden style={{ width: 18, height: 18 }}>
+                    <path d="M22.0003 13.0001L22.0004 11.0002L5.82845 11.0002L9.77817 7.05044L8.36396 5.63623L2 12.0002L8.36396 18.3642L9.77817 16.9499L5.8284 13.0002L22.0003 13.0001Z"></path>
+                  </svg>
+                </button>
+                <input
+                  id="link-headings-search"
+                  name="link-headings-search"
+                  className="link-input"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder={t('toolbar.search_headings') || 'Search headings'}
+                />
+              </div>
+              <div id="link-headings-list" className="link-headings-list" role="listbox" aria-label={t('toolbar.headings')}>
+                {filteredHeadings.map(h => (
+                  <button
+                    key={h.id}
+                    type="button"
+                    className="link-heading-item"
+                    style={{ paddingLeft: 12 + (h.level - 1) * 16 }}
+                    onClick={() => {
+                      editor.chain().focus().extendMarkRange('link').setLink({ href: `#${h.id}` }).run();
+                      setOpen(false);
+                      setPage('url');
+                      setQuery('');
+                    }}
+                  >
+                    {h.text}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -187,20 +306,34 @@ function LinkPicker({ editor }: { editor: Editor }) {
   );
 }
 
-function MenuItem({ onClick, children }: React.PropsWithChildren<{ onClick: ()=>void }>) {
+function MenuItem({ onClick, children, active, className }: React.PropsWithChildren<{ onClick: ()=>void; active?: boolean; className?: string }>) {
+  const cls = `menu-item${active ? ' is-active' : ''}${className ? ' ' + className : ''}`;
   return (
-    <div className="menu-item" role="menuitem" onClick={onClick}>
+    <div className={cls} role="menuitem" aria-checked={active ? 'true' : 'false'} onClick={onClick}>
       {children}
     </div>
   );
 }
 
 
-export default function Toolbar({ editor, zoomLevel, onZoomChange, onOpenHistory }: { editor: Editor | null; zoomLevel: number; onZoomChange: (n: number) => void; onOpenHistory?: () => void }) {
+export default function Toolbar({ editor, outlineOpen, onToggleOutline, zoomLevel, onZoomChange, onOpenHistory }: { editor: Editor | null; outlineOpen?: boolean; onToggleOutline?: () => void; zoomLevel: number; onZoomChange: (n: number) => void; onOpenHistory?: () => void }) {
   if (!editor) return null;
   const { t } = useTranslation()
   return (
     <div className="editor-toolbar" role="toolbar" aria-label="Formatting toolbar">
+
+      <button
+        className={`toolbar-btn${outlineOpen ? ' is-active' : ''}`}
+        onClick={() => onToggleOutline?.()}
+        type="button"
+        title={t('outline.tooltip')}
+        aria-label={t('outline.tooltip')}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+          <path d="M2 4C2 3.44772 2.44772 3 3 3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4ZM4 5V19H20V5H4ZM6 7H8V9H6V7ZM8 11H6V13H8V11ZM6 15H8V17H6V15ZM18 7H10V9H18V7ZM10 15H18V17H10V15ZM18 11H10V13H18V11Z"></path>
+        </svg>
+      </button>
+      <div className="toolbar-sep" />
 
       <Btn onClick={() => editor.chain().focus().undo().run()} title={t('toolbar.undo')} aria-label={t('toolbar.undo')}>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -216,19 +349,19 @@ export default function Toolbar({ editor, zoomLevel, onZoomChange, onOpenHistory
 
       {/* Group 2 */}
       <Dropdown label={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M17 11V4H19V21H17V13H7V21H5V4H7V11H17Z"/></svg>} active={editor.isActive('heading')}>
-        <MenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
+        <MenuItem active={editor.isActive('heading', { level: 1 })} onClick={() => { editor.chain().focus().toggleHeading({ level: 1 }).run(); }}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M13 20H11V13H4V20H2V4H4V11H11V4H13V20ZM21.0005 8V20H19.0005L19 10.204L17 10.74V8.67L19.5005 8H21.0005Z"/></svg>
           <span>{t('toolbar.heading1')}</span>
         </MenuItem>
-        <MenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+        <MenuItem active={editor.isActive('heading', { level: 2 })} onClick={() => { editor.chain().focus().toggleHeading({ level: 2 }).run(); }}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M4 4V11H11V4H13V20H11V13H4V20H2V4H4ZM18.5 8C20.5711 8 22.25 9.67893 22.25 11.75C22.25 12.6074 21.9623 13.3976 21.4781 14.0292L21.3302 14.2102L18.0343 18H22V20H15L14.9993 18.444L19.8207 12.8981C20.0881 12.5908 20.25 12.1893 20.25 11.75C20.25 10.7835 19.4665 10 18.5 10C17.5818 10 16.8288 10.7071 16.7558 11.6065L16.75 11.75H14.75C14.75 9.67893 16.4289 8 18.5 8Z"/></svg>
           <span>{t('toolbar.heading2')}</span>
         </MenuItem>
-        <MenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
+        <MenuItem active={editor.isActive('heading', { level: 3 })} onClick={() => { editor.chain().focus().toggleHeading({ level: 3 }).run(); }}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M22 8L21.9984 10L19.4934 12.883C21.0823 13.3184 22.25 14.7728 22.25 16.5C22.25 18.5711 20.5711 20.25 18.5 20.25C16.674 20.25 15.1528 18.9449 14.8184 17.2166L16.7821 16.8352C16.9384 17.6413 17.6481 18.25 18.5 18.25C19.4665 18.25 20.25 17.4665 20.25 16.5C20.25 15.5335 19.4665 14.75 18.5 14.75C18.214 14.75 17.944 14.8186 17.7056 14.9403L16.3992 13.3932L19.3484 10H15V8H22ZM4 4V11H11V4H13V20H11V13H4V20H2V4H4Z"/></svg>
           <span>{t('toolbar.heading3')}</span>
         </MenuItem>
-        <MenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}>
+        <MenuItem active={editor.isActive('heading', { level: 4 })} onClick={() => { editor.chain().focus().toggleHeading({ level: 4 }).run(); }}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M13 20H11V13H4V20H2V4H4V11H11V4H13V20ZM22 8V16H23.5V18H22V20H20V18H14.5V16.66L19.5 8H22ZM20 11.133L17.19 16H20V11.133Z"/></svg>
           <span>{t('toolbar.heading4')}</span>
         </MenuItem>
@@ -329,7 +462,7 @@ export default function Toolbar({ editor, zoomLevel, onZoomChange, onOpenHistory
       <LinkPicker editor={editor} />
 
       {/* Unified media upload */}
-      <input id="_media_input" type="file" accept="image/*,video/mp4,video/quicktime,audio/mpeg,audio/mp4,audio/x-m4a,audio/wav" style={{ display: 'none' }} onChange={async (e) => {
+      <input id="_media_input" name="_media_input" type="file" accept="image/*,video/mp4,video/quicktime,audio/mpeg,audio/mp4,audio/x-m4a,audio/wav" style={{ display: 'none' }} onChange={async (e) => {
         const f = (e.target as HTMLInputElement).files?.[0];
         if (!f) return;
         try {

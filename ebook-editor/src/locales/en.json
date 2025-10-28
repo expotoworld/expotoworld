@@ -37,6 +37,8 @@
   "toolbar.media_add": "Add media",
   "toolbar.media_add_label": "Add media",
   "toolbar.version_history": "Version History",
+  "toolbar.view_headings": "View heading list",
+  "outline.header": "Outline",
 
   "status.saving": "Saving",
   "status.saved_at": "Saved at {{time}}",
@@ -88,6 +90,40 @@
   "placeholder.editor": "EXPO Made in World",
 
   "user.menu_tooltip": "Huashangdao",
-  "user.logout": "Logout"
+  "user.logout": "Logout",
+
+  "toolbar.search_headings": "Search headings",
+  "common.save": "Save",
+
+  "outline.tooltip": "Outline List",
+
+  "link.insertTooltip": "Insert link",
+  "link.openTooltip": "Open link",
+  "link.removeTooltip": "Remove link",
+
+  "version.readOnly": "Read-only",
+  "version.reindex": "Re-index",
+  "version.pending": "Pending",
+
+  "version.reindexDialog.title": "Re-index",
+  "version.reindexDialog.message": "Re-index everything now?",
+  "version.reindexDialog.confirm": "Confirm",
+  "version.reindexDialog.cancel": "Cancel",
+
+  "version.reindexStatus.success": "Re-index complete",
+  "version.reindexStatus.fail": "Re-index failed",
+  "version.statusTitle": "Status",
+
+  "version.pending.title": "Pending Deletions",
+  "version.pending.loading": "Loading...",
+  "version.pending.empty": "No files pending deletion",
+  "version.pending.table.fileName": "File Name",
+  "version.pending.table.requestedAt": "Requested At",
+  "version.pending.table.timeUntilDeletion": "Time Until Deletion",
+  "version.pending.table.attempts": "Attempts",
+  "version.pending.ready": "Ready for deletion",
+  "version.pending.prev": "Prev",
+  "version.pending.next": "Next",
+  "version.pending.page": "Page {{num}}"
 }
 

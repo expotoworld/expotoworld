@@ -11,6 +11,7 @@ import TextAlign from '@tiptap/extension-text-align'
 import Image from '@tiptap/extension-image'
 import { VideoNode } from './nodes/VideoNode'
 import { AudioNode } from './nodes/AudioNode'
+import { useTranslation } from 'react-i18next'
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'https://device-api.expotoworld.com'
 
@@ -51,6 +52,7 @@ export default function VersionInspector() {
     return () => { cancelled = true }
   }, [id, editor])
 
+  const { t } = useTranslation()
   return (
     <div className="editor-app">
       <div className="editor-header">
@@ -63,7 +65,7 @@ export default function VersionInspector() {
             </button>
           </div>
           <div className="topbar-right">
-            <span className="status-badge">Read-only</span>
+            <span className="status-badge">{t('version.readOnly')}</span>
           </div>
         </div>
       </div>

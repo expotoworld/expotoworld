@@ -29,6 +29,9 @@ import { MediaDeletionExtension, deleteMediaFromS3 } from './MediaDeletionExtens
 import { VideoNode } from './nodes/VideoNode'
 import { AudioNode } from './nodes/AudioNode'
 import VersionHistorySidebar from './components/VersionHistorySidebar'
+import OutlineSidebar from './components/OutlineSidebar'
+import { HeadingWithId } from './extensions/HeadingWithId'
+import { InternalLinkNavigation } from './extensions/InternalLinkNavigation'
 
 function UserMenu({ onLogout, token }: { onLogout: () => void; token: string | null }) {
   const { t } = useTranslation()
@@ -86,7 +89,7 @@ function UserMenu({ onLogout, token }: { onLogout: () => void; token: string | n
             <svg className="miw-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style={{ width: '18px', height: '18px' }}>
               <path d="M3.08697 9H20.9134C21.4657 9 21.9134 9.44772 21.9134 10C21.9134 10.0277 21.9122 10.0554 21.9099 10.083L21.0766 20.083C21.0334 20.6013 20.6001 21 20.08 21H3.9203C3.40021 21 2.96695 20.6013 2.92376 20.083L2.09042 10.083C2.04456 9.53267 2.45355 9.04932 3.00392 9.00345C3.03155 9.00115 3.05925 9 3.08697 9ZM4.84044 19H19.1599L19.8266 11H4.17377L4.84044 19ZM13.4144 5H20.0002C20.5525 5 21.0002 5.44772 21.0002 6V7H3.00017V4C3.00017 3.44772 3.44789 3 4.00017 3H11.4144L13.4144 5Z"></path>
             </svg>
-            <span>Re-index</span>
+            <span>{t('version.reindex')}</span>
           </button>
           <button
             className="dropdown-item"
@@ -96,24 +99,26 @@ function UserMenu({ onLogout, token }: { onLogout: () => void; token: string | n
             <svg className="miw-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style={{ width: '18px', height: '18px' }}>
               <path d="M20 7V20C20 21.1046 19.1046 22 18 22H6C4.89543 22 4 21.1046 4 20V7H2V5H22V7H20ZM6 7V20H18V7H6ZM11 9H13V11H11V9ZM11 12H13V14H11V12ZM11 15H13V17H11V15ZM7 2H17V4H7V2Z"></path>
             </svg>
-            <span>Pending</span>
+            <span>{t('version.pending')}</span>
           </button>
         </div>
       )}
       <ConfirmDialog
         open={confirmOpen}
-        title="Re-index"
-        message="Re-index everything now?"
+        title={t('version.reindexDialog.title')}
+        message={t('version.reindexDialog.message')}
+        confirmText={t('version.reindexDialog.confirm') || t('common.confirm')}
+        cancelText={t('version.reindexDialog.cancel') || t('common.cancel')}
         onCancel={() => setConfirmOpen(false)}
         onConfirm={async () => {
           setConfirmOpen(false)
           try {
             await axios.post(`${API_BASE}/api/ebook/admin/reindex`, null, { headers })
-            setResultMsg('Re-index complete')
-          } catch (e) { setResultMsg('Re-index failed') }
+            setResultMsg(t('version.reindexStatus.success'))
+          } catch (e) { setResultMsg(t('version.reindexStatus.fail')) }
         }}
       />
-      <Modal open={!!resultMsg} title="Status" onClose={() => setResultMsg(null)}>
+      <Modal open={!!resultMsg} title={t('version.statusTitle')} onClose={() => setResultMsg(null)}>
         <div>{resultMsg}</div>
       </Modal>
       <PendingModal token={token} open={pendingOpen} onClose={() => setPendingOpen(false)} />
@@ -189,6 +194,7 @@ export default function App() {
   const [token, setToken] = useState<string | null>(null)
   const [authBoot, setAuthBoot] = useState<boolean>(true)
   const [versionsOpen, setVersionsOpen] = useState(false)
+  const [outlineOpen, setOutlineOpen] = useState(false)
   const [saveOpen, setSaveOpen] = useState(false)
   const [saveName, setSaveName] = useState('')
   const toastTimer = useRef<number | null>(null)
@@ -264,11 +270,13 @@ export default function App() {
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ codeBlock: false, code: false }),
+      StarterKit.configure({ codeBlock: false, code: false, heading: false }),
       Underline,
       Highlight.configure({ multicolor: true }),
       Superscript,
       Subscript,
+      // Custom heading with persistent IDs (H1-H4)
+      HeadingWithId.configure({ levels: [1, 2, 3, 4] }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       TaskList,
       TaskItem,
@@ -276,6 +284,8 @@ export default function App() {
       VideoNode,
       AudioNode,
       Link.configure({ openOnClick: false }),
+      // Intercept internal #fragment clicks to scroll in-editor
+      InternalLinkNavigation,
       MediaDeletionExtension.configure({
         onDelete: (url: string) => {
           if (url.startsWith('https://assets.expotoworld.com/ebooks/huashangdao/')) {
@@ -298,6 +308,20 @@ export default function App() {
     return () => clearInterval(id)
   }, [saveDraft, editor])
 
+  // Scroll to hash on initial load (after hydration)
+  useEffect(() => {
+    if (!editor) return
+    const hash = decodeURIComponent(window.location.hash || '')
+    if (hash && hash.startsWith('#')) {
+      const id = hash.slice(1)
+      // try after a short delay to ensure DOM exists
+      setTimeout(() => {
+        const el = document.getElementById(id)
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 500)
+    }
+  }, [editor])
+
   // Fetch latest draft on init (after token + editor are ready) and hydrate editor
   useEffect(() => {
     if (!token || !editor) return
@@ -311,7 +335,6 @@ export default function App() {
           editor.commands.setContent(content, false)
         }
       } catch (e) {
-        console.warn('Failed to load draft on init', e)
         if ((e as any)?.response?.status === 401) {
           try { localStorage.removeItem('ebook_token') } catch {}
           setToken(null)
@@ -329,7 +352,7 @@ export default function App() {
       <Shell token={token}
         status={status}
         lastSavedAt={lastSavedAt}
-        toolbar={<Toolbar editor={editor} zoomLevel={zoomLevel} onZoomChange={setZoomLevel} onOpenHistory={() => setVersionsOpen(true)} />}
+        toolbar={<Toolbar editor={editor} outlineOpen={outlineOpen} onToggleOutline={() => setOutlineOpen(v => !v)} zoomLevel={zoomLevel} onZoomChange={setZoomLevel} onOpenHistory={() => setVersionsOpen(true)} />}
         actionsRight={(
           <>
             <button className="secondary-btn" onClick={() => setVersionsOpen(true)}>
@@ -347,6 +370,7 @@ export default function App() {
             <EditorContent editor={editor} />
           </div>
         </div>
+        {editor && <OutlineSidebar editor={editor} open={outlineOpen} />}
         {editor && <WordCount editor={editor} />}
       </Shell>
         <Modal open={saveOpen} title={t('actions.save_version') || 'Save version'} onClose={() => setSaveOpen(false)}>

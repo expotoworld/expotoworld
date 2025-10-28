@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
 import { Modal } from './Modal'
+import { useTranslation } from 'react-i18next'
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'https://device-api.expotoworld.com'
 
@@ -15,6 +16,7 @@ function filenameFromKey(key: string) {
 }
 
 export default function PendingModal({ token, open, onClose }: { token: string; open: boolean; onClose: () => void }) {
+  const { t } = useTranslation()
   const [items, setItems] = useState<Array<any>>([])
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(0)
@@ -54,18 +56,18 @@ export default function PendingModal({ token, open, onClose }: { token: string; 
   const goNext = () => { if (items.length === limit) setPage(p => p + 1) }
 
   return (
-    <Modal open={open} title="Pending Deletions" onClose={onClose} width={760}>
+    <Modal open={open} title={t('version.pending.title')} onClose={onClose} width={760}>
       <div style={{ minWidth: 640 }}>
-        {loading && <div style={{ padding: 8, fontSize: 14 }}>Loading...</div>}
-        {(!loading && items.length === 0) && <div style={{ padding: 12, color: 'var(--color-muted)' }}>No files pending deletion</div>}
+        {loading && <div style={{ padding: 8, fontSize: 14 }}>{t('version.pending.loading')}</div>}
+        {(!loading && items.length === 0) && <div style={{ padding: 12, color: 'var(--color-muted)' }}>{t('version.pending.empty')}</div>}
         {items.length > 0 && (
           <div style={{ overflowX: 'auto' }}>
             <table className="miw-table" style={{ minWidth: 680 }}>
               <thead><tr>
-                <th style={{ textAlign: 'left' }}>File Name</th>
-                <th>Requested At</th>
-                <th>Time Until Deletion</th>
-                <th>Attempts</th>
+                <th style={{ textAlign: 'left' }}>{t('version.pending.table.fileName')}</th>
+                <th>{t('version.pending.table.requestedAt')}</th>
+                <th>{t('version.pending.table.timeUntilDeletion')}</th>
+                <th>{t('version.pending.table.attempts')}</th>
               </tr></thead>
               <tbody>
                 {items.map((it: any) => {
@@ -73,7 +75,7 @@ export default function PendingModal({ token, open, onClose }: { token: string; 
                   const diffMs = nb - now
                   const overdue = diffMs <= 0
                   let countdown = ''
-                  if (overdue) countdown = 'Ready for deletion'
+                  if (overdue) countdown = t('version.pending.ready')
                   else {
                     const s = Math.floor(diffMs / 1000)
                     const mm = Math.floor(s / 60)
@@ -93,9 +95,9 @@ export default function PendingModal({ token, open, onClose }: { token: string; 
             </table>
             {showPager && (
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-                <button className="secondary-btn" onClick={goPrev} disabled={page === 0}>Prev</button>
-                <span style={{ fontSize: 12, color: 'var(--color-muted)' }}>Page {page + 1}</span>
-                <button className="secondary-btn" onClick={goNext} disabled={items.length < limit}>Next</button>
+                <button className="secondary-btn" onClick={goPrev} disabled={page === 0}>{t('version.pending.prev')}</button>
+                <span style={{ fontSize: 12, color: 'var(--color-muted)' }}>{t('version.pending.page', { num: page + 1 })}</span>
+                <button className="secondary-btn" onClick={goNext} disabled={items.length < limit}>{t('version.pending.next')}</button>
               </div>
             )}
           </div>
