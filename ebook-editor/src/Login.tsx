@@ -36,11 +36,6 @@ export default function LoginNew({ onToken }: LoginNewProps) {
 
   const AUTH_BASE = import.meta.env.VITE_AUTH_BASE || 'https://device-api.expotoworld.com';
 
-  // Debug: Log AUTH_BASE to console
-  useEffect(() => {
-    console.log('[Ebook Editor Login] AUTH_BASE:', AUTH_BASE);
-    console.log('[Ebook Editor Login] VITE_AUTH_BASE env var:', import.meta.env.VITE_AUTH_BASE);
-  }, [AUTH_BASE]);
 
   // Countdown timer for code expiration
   useEffect(() => {

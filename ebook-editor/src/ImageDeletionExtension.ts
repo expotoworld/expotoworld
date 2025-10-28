@@ -80,7 +80,6 @@ export async function deleteImageFromS3(imageUrl: string): Promise<void> {
     })()
 
     if (!token) {
-      console.warn('No auth token found, skipping image deletion')
       return
     }
 
@@ -93,7 +92,6 @@ export async function deleteImageFromS3(imageUrl: string): Promise<void> {
       },
     })
 
-    console.log('Successfully deleted image from S3:', imageUrl)
   } catch (error) {
     console.error('Failed to delete image from S3:', error)
     // Don't throw error - we don't want to interrupt the user's editing flow

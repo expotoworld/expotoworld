@@ -27,6 +27,8 @@
   "toolbar.align_right": "右对齐",
   "toolbar.align_justify": "两端对齐",
   "toolbar.link": "插入链接",
+  "toolbar.view_headings": "查看标题列表",
+  "outline.header": "大纲",
   "toolbar.link_select": "选择要链接的文本",
   "toolbar.apply_link": "链接",
   "toolbar.open_link_new": "打开链接",
@@ -90,7 +92,42 @@
   "history.rename.title": "重命名版本",
   "history.rename.success": "版本已重命名",
   "history.rename.fail": "重命名版本失败",
-  "history.confirm.delete_label": "确定要删除 \"{{label}}\" 吗？"
+  "history.confirm.delete_label": "确定要删除 \"{{label}}\" 吗？",
+
+  "toolbar.search_headings": "查找标题",
+  "common.save": "保存",
+
+  "outline.tooltip": "标题列表",
+
+  "link.insertTooltip": "确认链接",
+  "link.openTooltip": "打开链接",
+  "link.removeTooltip": "去除链接",
+
+  "version.readOnly": "只可读取",
+  "version.reindex": "重新索引",
+  "version.pending": "等待删除",
+
+  "version.reindexDialog.title": "重新索引",
+  "version.reindexDialog.message": "现在重新索引全部内容？",
+  "version.reindexDialog.confirm": "确认",
+  "version.reindexDialog.cancel": "取消",
+
+  "version.reindexStatus.success": "重新索引完成",
+  "version.reindexStatus.fail": "重新索引失败",
+  "version.statusTitle": "状态",
+
+  "version.pending.title": "待删除文件",
+  "version.pending.loading": "加载中...",
+  "version.pending.empty": "暂无待删除文件",
+  "version.pending.table.fileName": "文件名",
+  "version.pending.table.requestedAt": "请求时间",
+  "version.pending.table.timeUntilDeletion": "剩余删除时间",
+  "version.pending.table.attempts": "尝试次数",
+  "version.pending.ready": "可删除",
+  "version.pending.prev": "上一页",
+  "version.pending.next": "下一页",
+  "version.pending.page": "第 {{num}} 页"
+
 
 
 }
