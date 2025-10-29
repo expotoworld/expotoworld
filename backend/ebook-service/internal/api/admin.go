@@ -99,6 +99,17 @@ func AdminReindexHandler(db *pgxpool.Pool) gin.HandlerFunc {
 				_, _ = db.Exec(ctx, `INSERT INTO ebook_version_media(version_id,media_key) VALUES ($1,$2) ON CONFLICT DO NOTHING`, id, mk)
 			}
 		}
+
+		// Enqueue any zero-reference media not already pending (sweep after reindex)
+		_, _ = db.Exec(ctx, `
+                INSERT INTO ebook_media_pending_deletion (media_key, requested_at, not_before, attempts, last_checked_at)
+                SELECT mu.media_key, now(), now() + interval '15 minutes', 0, NULL
+                FROM ebook_media_usage mu
+                LEFT JOIN ebook_media_pending_deletion pd ON pd.media_key = mu.media_key
+                WHERE mu.in_autosave = false AND mu.manual_refs = 0 AND mu.published_refs = 0
+                  AND pd.media_key IS NULL
+            `)
+
 		c.JSON(http.StatusOK, gin.H{"status": "reindexed"})
 	}
 }

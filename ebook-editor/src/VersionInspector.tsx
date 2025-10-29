@@ -9,6 +9,11 @@ import Superscript from '@tiptap/extension-superscript'
 import Subscript from '@tiptap/extension-subscript'
 import TextAlign from '@tiptap/extension-text-align'
 import Image from '@tiptap/extension-image'
+import Link from '@tiptap/extension-link'
+import TaskList from '@tiptap/extension-task-list'
+import TaskItem from '@tiptap/extension-task-item'
+import { HeadingWithId } from './extensions/HeadingWithId'
+import { InternalLinkNavigation } from './extensions/InternalLinkNavigation'
 import { VideoNode } from './nodes/VideoNode'
 import { AudioNode } from './nodes/AudioNode'
 import { useTranslation } from 'react-i18next'
@@ -22,15 +27,20 @@ export default function VersionInspector() {
   const editor = useEditor({
     editable: false,
     extensions: [
-      StarterKit.configure({ codeBlock: false, code: false }),
+      StarterKit.configure({ codeBlock: false, code: false, heading: false }),
       Underline,
       Highlight.configure({ multicolor: true }),
       Superscript,
       Subscript,
+      HeadingWithId.configure({ levels: [1, 2, 3, 4] }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      TaskList,
+      TaskItem,
       Image,
       VideoNode,
       AudioNode,
+      Link.configure({ openOnClick: true }),
+      InternalLinkNavigation,
     ],
     content: '<p />'
   })
@@ -79,4 +89,3 @@ export default function VersionInspector() {
     </div>
   )
 }
-
