@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 export function Modal({ open, title, onClose, children, width = 520 }: {
   open: boolean;
@@ -7,6 +8,8 @@ export function Modal({ open, title, onClose, children, width = 520 }: {
   children: React.ReactNode;
   width?: number | string;
 }) {
+  const { t } = useTranslation()
+
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -21,7 +24,7 @@ export function Modal({ open, title, onClose, children, width = 520 }: {
         {title && (
           <div className="miw-modal-header">
             <h3>{title}</h3>
-            <button className="miw-close" onClick={onClose} aria-label="Close">×</button>
+            <button className="miw-close" onClick={onClose} aria-label={t('common.close') || 'Close'}>×</button>
           </div>
         )}
         <div className="miw-modal-body">{children}</div>

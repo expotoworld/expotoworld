@@ -316,9 +316,11 @@ function MenuItem({ onClick, children, active, className }: React.PropsWithChild
 }
 
 
-export default function Toolbar({ editor, outlineOpen, onToggleOutline, zoomLevel, onZoomChange, onOpenHistory }: { editor: Editor | null; outlineOpen?: boolean; onToggleOutline?: () => void; zoomLevel: number; onZoomChange: (n: number) => void; onOpenHistory?: () => void }) {
+export default function Toolbar({ editor, outlineOpen, onToggleOutline, zoomLevel, onZoomChange, onOpenHistory, onOpenDictionary }: { editor: Editor | null; outlineOpen?: boolean; onToggleOutline?: () => void; zoomLevel: number; onZoomChange: (n: number) => void; onOpenHistory?: () => void; onOpenDictionary?: () => void }) {
   if (!editor) return null;
   const { t } = useTranslation()
+  const selectionReady = !editor.state.selection.empty && !editor.isActive('link') && !(editor as any).isActive?.('dictionaryTerm');
+
   return (
     <div className="editor-toolbar" role="toolbar" aria-label="Formatting toolbar">
 
@@ -500,7 +502,17 @@ export default function Toolbar({ editor, outlineOpen, onToggleOutline, zoomLeve
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
           <path d="M21 15V18H24V20H21V23H19V20H16V18H19V15H21ZM21.0082 3C21.556 3 22 3.44495 22 3.9934V13H20V5H4V18.999L14 9L17 12V14.829L14 11.8284L6.827 19H14V21H2.9918C2.44405 21 2 20.5551 2 20.0066V3.9934C2 3.44476 2.45531 3 2.9918 3H21.0082ZM8 7C9.10457 7 10 7.89543 10 9C10 10.1046 9.10457 11 8 11C6.89543 11 6 10.1046 6 9C6 7.89543 6.89543 7 8 7Z"></path>
         </svg>
+
         <span>{t('toolbar.media_add_label') || 'Add media'}</span>
+      </Btn>
+
+
+      {/* Dictionary manager */}
+      <Btn onClick={() => onOpenDictionary?.()} title={selectionReady ? (t('toolbar.dictionary_select_ready') || 'Dictionary (selection ready)') : (t('toolbar.dictionary') || 'Dictionary')} aria-label={t('toolbar.dictionary') || 'Dictionary'}>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+          <path d="M5 3C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H18C19.1046 21 20 20.1046 20 19V6C20 4.89543 19.1046 4 18 4H7C6.44772 4 6 3.55228 6 3H5ZM6 6H18V19H6C5.44772 19 5 18.5523 5 18V7C5 6.44772 5.44772 6 6 6ZM8 8H16V10H8V8ZM8 12H14V14H8V12Z" />
+        </svg>
+        <span>{t('toolbar.dictionary') || 'Dictionary'}</span>
       </Btn>
 
     </div>

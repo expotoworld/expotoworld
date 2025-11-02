@@ -130,4 +130,25 @@
 
 
 
+,
+  "toolbar.dictionary": "华商道概念库",
+  "toolbar.dictionary_select_ready": "概念库（已选中文本）",
+
+  "dictionary.sidebar_aria": "概念库侧边栏",
+  "dictionary.sidebar_title": "华商道概念库",
+  "dictionary.add": "添加",
+  "dictionary.add_selected": "添加所选文本",
+  "dictionary.select_to_add": "选择文本以添加",
+  "dictionary.empty": "暂无词条。选择文本后点击添加。",
+  "dictionary.actions.edit": "编辑",
+  "dictionary.actions.delete": "删除",
+  "dictionary.modal.add_title": "添加词条",
+  "dictionary.modal.edit_title": "编辑词条",
+  "dictionary.field.term": "词条",
+  "dictionary.field.definition": "定义",
+  "dictionary.confirm.delete_title": "删除词条",
+  "dictionary.confirm.delete_message": "移除“{{term}}”并取消全部链接？",
+
+  "common.close": "关闭"
+
 }
