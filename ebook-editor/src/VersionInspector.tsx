@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useEditor, EditorContent } from '@tiptap/react'
@@ -17,14 +17,20 @@ import { InternalLinkNavigation } from './extensions/InternalLinkNavigation'
 import { VideoNode } from './nodes/VideoNode'
 import { AudioNode } from './nodes/AudioNode'
 import { useTranslation } from 'react-i18next'
+import { DictionaryPopup } from './components/DictionaryPopup'
+import type { DictTerm } from './extensions/DictionaryTerm'
+import { extractDictionaryTermsFromJSON } from './extensions/DictionaryMeta'
 import { DictionaryTerm } from './extensions/DictionaryTerm'
 import { DictionaryMeta } from './extensions/DictionaryMeta'
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'https://device-api.expotoworld.com'
 
+
 export default function VersionInspector() {
   const { id } = useParams<{ id: string }>()
   const nav = useNavigate()
+
+  const [dictTerms, setDictTerms] = useState<DictTerm[]>([])
 
   const editor = useEditor({
     editable: false,
@@ -58,6 +64,7 @@ export default function VersionInspector() {
         if (!tok) { nav('/'); return }
         const res = await axios.get(`${API_BASE}/api/ebook/versions/${id}/content`, { headers: { Authorization: `Bearer ${tok}` } })
         const content = res.data?.content
+        if (!cancelled && content) setDictTerms(extractDictionaryTermsFromJSON(content))
         if (!cancelled && editor && content) editor.commands.setContent(content, false)
       } catch (e) {
         console.error('Failed to load version content', e)
@@ -77,6 +84,8 @@ export default function VersionInspector() {
                 <path d="M22.0003 13.0001L22.0004 11.0002L5.82845 11.0002L9.77817 7.05044L8.36396 5.63623L2 12.0002L8.36396 18.3642L9.77817 16.9499L5.8284 13.0002L22.0003 13.0001Z"></path>
               </svg>
             </button>
+            <DictionaryPopup terms={dictTerms} />
+
           </div>
           <div className="topbar-right">
             <span className="status-badge">{t('version.readOnly')}</span>
