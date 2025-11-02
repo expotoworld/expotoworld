@@ -108,9 +108,9 @@ export default function DictionarySidebar({ open, onClose, editor, terms, setTer
             <div style={{ padding: '8px 12px', color: 'var(--color-muted)' }}>{t('dictionary.empty') || 'No terms yet. Select text and click Add.'}</div>
           )}
           {terms.map(ti => (
-            <div key={ti.id} id={`dict-row-${ti.id}`} className="miw-media-row">
+            <div key={ti.id} className="miw-media-row">
               <div className="miw-media-name" title={ti.term} style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ti.term}</div>
-              <div id={`dict-row-btns-${ti.id}`} style={{ display: 'inline-flex', gap: 8 }}>
+              <div style={{ display: 'inline-flex', gap: 8 }}>
                 <button className="link-action" onClick={() => onEdit(ti)} aria-label={t('dictionary.actions.edit') || 'Edit'}><EditIcon /></button>
                 <button className="link-action" onClick={() => onDelete(ti)} aria-label={t('dictionary.actions.delete') || 'Delete'}><TrashIcon /></button>
               </div>

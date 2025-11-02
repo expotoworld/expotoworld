@@ -6,13 +6,31 @@ export function DictionaryPopup({ terms }: { terms: DictTerm[] }) {
   const [open, setOpen] = useState(false)
   const [data, setData] = useState<{ id: string, term: string, rect: { left: number, top: number, width: number, height: number } } | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
+  const closeBtnRef = useRef<HTMLButtonElement>(null)
+  const prevFocusRef = useRef<HTMLElement | null>(null)
+  const titleId = 'miw-dict-title'
+  const bodyId = 'miw-dict-body'
+  const doClose = () => {
+    setOpen(false)
+    setTimeout(() => {
+      const prev = prevFocusRef.current
+      if (prev && document.contains(prev)) prev.focus()
+      else {
+        const pm = document.querySelector('.ProseMirror') as HTMLElement | null
+        pm?.focus?.()
+      }
+    }, 0)
+  }
+
   const { t } = useTranslation()
 
   useEffect(() => {
     function onShow(e: Event) {
       const detail = (e as CustomEvent).detail as any
+      prevFocusRef.current = (document.activeElement as HTMLElement) || null
       setData(detail)
       setOpen(true)
+      setTimeout(() => { closeBtnRef.current?.focus() }, 0)
     }
     window.addEventListener('miw:dict-popup' as any, onShow)
     const onScroll = (e: Event) => {
@@ -20,14 +38,14 @@ export function DictionaryPopup({ terms }: { terms: DictTerm[] }) {
       if (!open) return
       const target = e.target as HTMLElement | null
       if (target && rootRef.current && rootRef.current.contains(target)) return
-      setOpen(false)
+      doClose()
     }
     window.addEventListener('scroll', onScroll, true)
-    const onResize = () => { if (open) setOpen(false) }
+    const onResize = () => { if (open) doClose() }
     window.addEventListener('resize', onResize)
     const onClick = (ev: MouseEvent) => {
       if (!rootRef.current) return
-      if (!rootRef.current.contains(ev.target as Node)) setOpen(false)
+      if (!rootRef.current.contains(ev.target as Node)) doClose()
     }
     document.addEventListener('mousedown', onClick)
     return () => {
@@ -54,12 +72,35 @@ export function DictionaryPopup({ terms }: { terms: DictTerm[] }) {
   if (top < 8) top = Math.min(data.rect.top + data.rect.height + gap, vh - height - 8)
 
   return (
-    <div ref={rootRef} className="miw-dict-popup" style={{ position: 'fixed', left, top, width, height, zIndex: 2010 }}>
+    <div
+      ref={rootRef}
+      className="miw-dict-popup"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      aria-describedby={bodyId}
+      tabIndex={-1}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') { e.stopPropagation(); doClose(); return }
+        if (e.key === 'Tab') {
+          const root = rootRef.current
+          if (!root) return
+          const focusable = Array.from(root.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+            .filter(el => !el.hasAttribute('disabled'))
+          if (focusable.length === 0) return
+          const first = focusable[0]
+          const last = focusable[focusable.length - 1]
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+        }
+      }}
+      style={{ position: 'fixed', left, top, width, height, zIndex: 2010 }}
+    >
       <div className="miw-dict-popup-header">
-        <div className="miw-dict-popup-title" title={title}>{title}</div>
-        <button className="miw-dict-popup-close" onClick={() => setOpen(false)} aria-label={t('common.close') || 'Close'}>×</button>
+        <div className="miw-dict-popup-title" id={titleId} title={title}>{title}</div>
+        <button ref={closeBtnRef} className="miw-dict-popup-close" onClick={doClose} aria-label={t('common.close') || 'Close'}>×</button>
       </div>
-      <div className="miw-dict-popup-body">
+      <div className="miw-dict-popup-body" id={bodyId}>
         {definition}
       </div>
     </div>

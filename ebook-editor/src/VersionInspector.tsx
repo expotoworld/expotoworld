@@ -17,6 +17,8 @@ import { InternalLinkNavigation } from './extensions/InternalLinkNavigation'
 import { VideoNode } from './nodes/VideoNode'
 import { AudioNode } from './nodes/AudioNode'
 import { useTranslation } from 'react-i18next'
+import { DictionaryTerm } from './extensions/DictionaryTerm'
+import { DictionaryMeta } from './extensions/DictionaryMeta'
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'https://device-api.expotoworld.com'
 
@@ -39,7 +41,9 @@ export default function VersionInspector() {
       Image,
       VideoNode,
       AudioNode,
+      DictionaryMeta,
       Link.configure({ openOnClick: true }),
+      DictionaryTerm,
       InternalLinkNavigation,
     ],
     content: '<p />'
