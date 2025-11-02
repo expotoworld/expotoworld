@@ -33,6 +33,11 @@ import OutlineSidebar from './components/OutlineSidebar'
 import { HeadingWithId } from './extensions/HeadingWithId'
 import { InternalLinkNavigation } from './extensions/InternalLinkNavigation'
 
+import { DictionaryTerm, linkAllTerms, removeAllDictionaryMarksById, type DictTerm } from './extensions/DictionaryTerm'
+import { DictionaryMeta, extractDictionaryTermsFromJSON, upsertDictionaryMetaInEditor } from './extensions/DictionaryMeta'
+import DictionarySidebar from './components/DictionarySidebar'
+import { DictionaryPopup } from './components/DictionaryPopup'
+
 function UserMenu({ onLogout, token }: { onLogout: () => void; token: string | null }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -196,6 +201,9 @@ export default function App() {
   const [versionsOpen, setVersionsOpen] = useState(false)
   const [outlineOpen, setOutlineOpen] = useState(false)
   const [saveOpen, setSaveOpen] = useState(false)
+  const [dictOpen, setDictOpen] = useState(false)
+  const [dictTerms, setDictTerms] = useState<DictTerm[]>([])
+
   const [saveName, setSaveName] = useState('')
   const toastTimer = useRef<number | null>(null)
   const [toastMsg, setToastMsg] = useState<string | null>(null)
@@ -261,10 +269,14 @@ export default function App() {
     }
   }, [token])
 
-  const debouncedSave = useMemo(() => debounce(saveDraft, 2000), [saveDraft])
-
-  const saveRef = useRef(debouncedSave)
-  useEffect(() => { saveRef.current = debouncedSave; return () => debouncedSave.cancel?.() }, [debouncedSave])
+  const latestEditorRef = useRef<any | null>(null)
+  const debouncedLinkAndSave = useMemo(() => debounce(() => {
+    const ed = latestEditorRef.current
+    if (!ed) return
+    if (dictTerms.length) linkAllTerms(ed, dictTerms)
+    saveDraft(ed.getJSON())
+  }, 2000), [dictTerms, saveDraft])
+  useEffect(() => { return () => debouncedLinkAndSave.cancel?.() }, [debouncedLinkAndSave])
 
   const { t } = useTranslation()
 
@@ -283,7 +295,11 @@ export default function App() {
       Image,
       VideoNode,
       AudioNode,
+      DictionaryMeta,
+
       Link.configure({ openOnClick: false }),
+      DictionaryTerm,
+
       // Intercept internal #fragment clicks to scroll in-editor
       InternalLinkNavigation,
       MediaDeletionExtension.configure({
@@ -296,12 +312,24 @@ export default function App() {
 
       // Placeholder.configure({ placeholder: 'Getting started\n\nType to begin  use the toolbar for formatting' }),
 
+
       Placeholder.configure({ placeholder: t('placeholder.editor') }),
 
     ],
     content: '<p>Start writing your book...</p>',
-    onUpdate: ({ editor }) => { saveRef.current(editor.getJSON()) },
+    onUpdate: ({ editor }) => { latestEditorRef.current = editor; debouncedLinkAndSave() },
   })
+
+  const updateTerms = useCallback((next: DictTerm[]) => {
+    setDictTerms(next)
+    if (editor) {
+      upsertDictionaryMetaInEditor(editor, next)
+      linkAllTerms(editor, next)
+      // persist immediately and also schedule debounced save as a backup
+      saveDraft(editor.getJSON())
+      debouncedLinkAndSave()
+    }
+  }, [editor, debouncedLinkAndSave, saveDraft])
 
   useEffect(() => {
     const id = setInterval(() => { if (editor) saveDraft(editor.getJSON()) }, 10 * 60 * 1000)
@@ -310,6 +338,7 @@ export default function App() {
 
   // Scroll to hash on initial load (after hydration)
   useEffect(() => {
+
     if (!editor) return
     const hash = decodeURIComponent(window.location.hash || '')
     if (hash && hash.startsWith('#')) {
@@ -333,6 +362,9 @@ export default function App() {
         if (!cancelled && content && typeof content === 'object' && Object.keys(content || {}).length > 0) {
           // Do not emit update to avoid triggering autosave immediately
           editor.commands.setContent(content, false)
+          const extracted = extractDictionaryTermsFromJSON(content)
+          setDictTerms(Array.isArray(extracted) ? extracted : [])
+          if (extracted && extracted.length) linkAllTerms(editor, extracted)
         }
       } catch (e) {
         if ((e as any)?.response?.status === 401) {
@@ -351,8 +383,9 @@ export default function App() {
     <ThemeProvider>
       <Shell token={token}
         status={status}
+
         lastSavedAt={lastSavedAt}
-        toolbar={<Toolbar editor={editor} outlineOpen={outlineOpen} onToggleOutline={() => setOutlineOpen(v => !v)} zoomLevel={zoomLevel} onZoomChange={setZoomLevel} onOpenHistory={() => setVersionsOpen(true)} />}
+        toolbar={<Toolbar editor={editor} outlineOpen={outlineOpen} onToggleOutline={() => setOutlineOpen(v => !v)} zoomLevel={zoomLevel} onZoomChange={setZoomLevel} onOpenHistory={() => setVersionsOpen(true)} onOpenDictionary={() => setDictOpen(true)} />}
         actionsRight={(
           <>
             <button className="secondary-btn" onClick={() => setVersionsOpen(true)}>
@@ -371,6 +404,9 @@ export default function App() {
           </div>
         </div>
         {editor && <OutlineSidebar editor={editor} open={outlineOpen} />}
+        {editor && <DictionarySidebar open={dictOpen} onClose={() => setDictOpen(false)} editor={editor} terms={dictTerms} setTerms={updateTerms} />}
+        <DictionaryPopup terms={dictTerms} />
+
         {editor && <WordCount editor={editor} />}
       </Shell>
         <Modal open={saveOpen} title={t('actions.save_version') || 'Save version'} onClose={() => setSaveOpen(false)}>

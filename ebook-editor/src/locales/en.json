@@ -124,6 +124,25 @@
   "version.pending.ready": "Ready for deletion",
   "version.pending.prev": "Prev",
   "version.pending.next": "Next",
-  "version.pending.page": "Page {{num}}"
-}
+  "version.pending.page": "Page {{num}}",
 
+  "toolbar.dictionary": "Dictionary",
+  "toolbar.dictionary_select_ready": "Dictionary (selection ready)",
+
+  "dictionary.sidebar_aria": "Dictionary sidebar",
+  "dictionary.sidebar_title": "Dictionary",
+  "dictionary.add": "Add",
+  "dictionary.add_selected": "Add selected text",
+  "dictionary.select_to_add": "Select text to add",
+  "dictionary.empty": "No terms yet. Select text and click Add.",
+  "dictionary.actions.edit": "Edit",
+  "dictionary.actions.delete": "Delete",
+  "dictionary.modal.add_title": "Add term",
+  "dictionary.modal.edit_title": "Edit term",
+  "dictionary.field.term": "Term",
+  "dictionary.field.definition": "Definition",
+  "dictionary.confirm.delete_title": "Delete term",
+  "dictionary.confirm.delete_message": "Remove \"{{term}}\" from dictionary and unlink all occurrences?",
+
+  "common.close": "Close"
+}
