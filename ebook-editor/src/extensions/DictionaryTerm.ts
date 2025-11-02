@@ -112,6 +112,9 @@ export function linkAllTerms(editor: Editor, terms: DictTerm[]) {
   const linkMarkType = schema.marks['link']
   if (!dictMarkType) return
 
+  // Cleanup: remove any dictionaryTerm marks whose id is not in the current terms list
+  removeOrphanDictionaryMarks(editor, terms)
+
   const sorted = [...terms].sort((a, b) => b.term.length - a.term.length)
 
   editor.view.dispatch(state.tr.setMeta('addToHistory', false)) // no-op write to ensure mapping
@@ -164,10 +167,33 @@ export function linkAllTerms(editor: Editor, terms: DictTerm[]) {
 
   if (tr.docChanged) {
     editor.view.dispatch(tr)
-
-  } else {
-
   }
+}
+
+export function removeOrphanDictionaryMarks(editor: Editor, terms: DictTerm[]) {
+  if (!editor) return
+  const { state } = editor.view
+  const dictMarkType = state.schema.marks['dictionaryTerm']
+  if (!dictMarkType) return
+  const valid = new Set((terms || []).map(t => t.id))
+  let tr = state.tr
+  state.doc.descendants((node, pos) => {
+    if (!node.isText) return true
+    const marks = node.marks || []
+    for (const m of marks) {
+      if (m.type === dictMarkType) {
+        const id = m.attrs?.id as string | undefined
+        if (!id || !valid.has(id)) {
+          const from = pos
+          const to = pos + (node.text?.length || 0)
+          tr = tr.removeMark(from, to, dictMarkType)
+          break
+        }
+      }
+    }
+    return true
+  })
+  if (tr.docChanged) editor.view.dispatch(tr)
 }
 
 export function removeAllDictionaryMarksById(editor: Editor, id: string) {
@@ -197,4 +223,3 @@ export function removeAllDictionaryMarksById(editor: Editor, id: string) {
   })
   if (tr.docChanged) editor.view.dispatch(tr)
 }
-

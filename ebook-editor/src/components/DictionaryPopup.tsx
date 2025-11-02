@@ -27,6 +27,8 @@ export function DictionaryPopup({ terms }: { terms: DictTerm[] }) {
   useEffect(() => {
     function onShow(e: Event) {
       const detail = (e as CustomEvent).detail as any
+      const found = terms.find(t => t.id === detail.id)
+      if (!found) return
       prevFocusRef.current = (document.activeElement as HTMLElement) || null
       setData(detail)
       setOpen(true)
