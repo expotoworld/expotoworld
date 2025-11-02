@@ -24,10 +24,13 @@ export function DictionaryPopup({ terms }: { terms: DictTerm[] }) {
 
   const { t } = useTranslation()
 
+  const termsRef = useRef<DictTerm[]>([])
+  useEffect(() => { termsRef.current = terms }, [terms])
+
   useEffect(() => {
     function onShow(e: Event) {
       const detail = (e as CustomEvent).detail as any
-      const found = terms.find(t => t.id === detail.id)
+      const found = termsRef.current.find(t => t.id === detail.id)
       if (!found) return
       prevFocusRef.current = (document.activeElement as HTMLElement) || null
       setData(detail)
@@ -35,6 +38,12 @@ export function DictionaryPopup({ terms }: { terms: DictTerm[] }) {
       setTimeout(() => { closeBtnRef.current?.focus() }, 0)
     }
     window.addEventListener('miw:dict-popup' as any, onShow)
+    return () => {
+      window.removeEventListener('miw:dict-popup' as any, onShow)
+    }
+  }, [])
+
+  useEffect(() => {
     const onScroll = (e: Event) => {
       // Close only when the PAGE/VIEWPORT scrolls, not when the popup itself scrolls
       if (!open) return
@@ -42,16 +51,16 @@ export function DictionaryPopup({ terms }: { terms: DictTerm[] }) {
       if (target && rootRef.current && rootRef.current.contains(target)) return
       doClose()
     }
-    window.addEventListener('scroll', onScroll, true)
     const onResize = () => { if (open) doClose() }
-    window.addEventListener('resize', onResize)
     const onClick = (ev: MouseEvent) => {
+      if (!open) return
       if (!rootRef.current) return
       if (!rootRef.current.contains(ev.target as Node)) doClose()
     }
+    window.addEventListener('scroll', onScroll, true)
+    window.addEventListener('resize', onResize)
     document.addEventListener('mousedown', onClick)
     return () => {
-      window.removeEventListener('miw:dict-popup' as any, onShow)
       window.removeEventListener('scroll', onScroll, true)
       window.removeEventListener('resize', onResize)
       document.removeEventListener('mousedown', onClick)
