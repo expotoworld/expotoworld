@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -56,25 +55,3 @@ func TestAuthMiddleware_RejectsMissingToken(t *testing.T) {
 		t.Fatalf("expected 401 for missing token, got %d", w.Code)
 	}
 }
-
-func TestAuthMiddleware_ValidJWT(t *testing.T) {
-	// Provide a short-lived HMAC token using the secret from env
-	// When JWT_SECRET is not set, middleware should return 500
-	setGinTestMode()
-	os.Setenv("JWT_SECRET", "test-secret")
-	defer os.Unsetenv("JWT_SECRET")
-
-	r := gin.New()
-	r.Use(AuthMiddleware())
-	r.GET("/secure", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"ok": true}) })
-
-	// This test only verifies that middleware runs with a secret; token validity is covered by library
-	req := httptest.NewRequest(http.MethodGet, "/secure", nil)
-	// No token provided -> 401 Unauthorized
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("expected 401 without token, got %d", w.Code)
-	}
-}
-

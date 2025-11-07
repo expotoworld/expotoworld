@@ -44,10 +44,9 @@ jobs:
         if: steps.lookup.outputs.found == 'false'
         env:
           DATABASE_URL_SECRET_ARN: ${{ secrets.DATABASE_URL_SECRET_ARN }}
-          JWT_SECRET_ARN: ${{ secrets.JWT_SECRET_ARN }}
         run: |
-          if [ -z "$DATABASE_URL_SECRET_ARN" ] || [ -z "$JWT_SECRET_ARN" ]; then
-            echo "DATABASE_URL_SECRET_ARN and JWT_SECRET_ARN must be set in repo secrets" >&2
+          if [ -z "$DATABASE_URL_SECRET_ARN" ]; then
+            echo "DATABASE_URL_SECRET_ARN must be set in repo secrets" >&2
             exit 1
           fi
           aws apprunner create-service \
@@ -59,11 +58,11 @@ jobs:
                 \"ImageConfiguration\":{\
                   \"Port\":\"$APP_PORT\",\
                   \"RuntimeEnvironmentVariables\":{\
-                    \"EBOOK_S3_BUCKET\":\"expotoworld-ebook-versions\"\
+                    \"EBOOK_S3_BUCKET\":\"expotoworld-ebook-versions\",\
+                    \"AUTH_JWKS_URL\":\"https://api.expotoworld.com/auth/.well-known/jwks.json\"\
                   },\
                   \"RuntimeEnvironmentSecrets\":{\
-                    \"DATABASE_URL\":\"$DATABASE_URL_SECRET_ARN\",\
-                    \"JWT_SECRET\":\"$JWT_SECRET_ARN\"\
+                    \"DATABASE_URL\":\"$DATABASE_URL_SECRET_ARN\"\
                   }\
                 }\
               },\
@@ -84,13 +83,32 @@ jobs:
               \"UnhealthyThreshold\":5\
             }"
 
-      - name: Service already exists (auto-deployment enabled)
+      - name: Update environment (ensure AUTH_JWKS_URL) for existing service
         if: steps.lookup.outputs.found == 'true'
+        env:
+          DATABASE_URL_SECRET_ARN: ${{ secrets.DATABASE_URL_SECRET_ARN }}
         run: |
-          echo "✅ App Runner service already exists: ${{ steps.lookup.outputs.service_arn }}"
-          echo "✅ Auto-deployment is enabled - service will automatically deploy new ECR images"
-          echo "✅ No manual update needed - skipping to avoid race condition with auto-deployment"
-          echo ""
+          echo "✅ App Runner service exists: ${{ steps.lookup.outputs.service_arn }}"
+          echo "🔄 Ensuring RuntimeEnvironmentVariables/Secrets are updated..."
+          aws apprunner update-service \
+            --service-arn "${{ steps.lookup.outputs.service_arn }}" \
+            --source-configuration "{\
+              \"ImageRepository\":{\
+                \"ImageRepositoryType\":\"ECR\",\
+                \"ImageIdentifier\":\"$ECR_REPOSITORY_URI:latest\",\
+                \"ImageConfiguration\":{\
+                  \"Port\":\"$APP_PORT\",\
+                  \"RuntimeEnvironmentVariables\":{\
+                    \"EBOOK_S3_BUCKET\":\"expotoworld-ebook-versions\",\
+                    \"AUTH_JWKS_URL\":\"https://api.expotoworld.com/auth/.well-known/jwks.json\"\
+                  },\
+                  \"RuntimeEnvironmentSecrets\":{\
+                    \"DATABASE_URL\":\"$DATABASE_URL_SECRET_ARN\"\
+                  }\
+                }\
+              },\
+              \"AutoDeploymentsEnabled\":true\
+            }"
           echo "📋 Service Status:"
           aws apprunner describe-service \
             --service-arn "${{ steps.lookup.outputs.service_arn }}" \

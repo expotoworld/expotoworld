@@ -145,6 +145,9 @@ func setupRouter(handler *api.Handler) *gin.Engine {
 	// Keep /health for App Runner legacy health checks, but make it liveness-only
 	router.GET("/health", func(c *gin.Context) { c.Status(200) })
 
+	// JWKS endpoint for RS256 public keys
+	router.GET("/.well-known/jwks.json", handler.JWKS)
+
 	// API routes
 	auth := router.Group("/api/auth")
 	{

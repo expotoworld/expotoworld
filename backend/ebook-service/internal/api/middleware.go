@@ -3,7 +3,6 @@ package api
 import (
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -13,13 +12,10 @@ import (
 // JWTOptionalMiddleware parses JWT if present but does not enforce it
 func JWTOptionalMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		secret := os.Getenv("JWT_SECRET")
 		auth := c.GetHeader("Authorization")
-		if len(auth) > 7 && auth[:7] == "Bearer " && secret != "" {
+		if len(auth) > 7 && auth[:7] == "Bearer " {
 			tokStr := auth[7:]
-			if token, err := jwt.Parse(tokStr, func(token *jwt.Token) (interface{}, error) {
-				return []byte(secret), nil
-			}); err == nil && token != nil && token.Valid {
+			if token, err := jwt.Parse(tokStr, keyFunc); err == nil && token != nil && token.Valid {
 				if claims, ok := token.Claims.(jwt.MapClaims); ok {
 					if v, ok := claims["user_id"]; ok {
 						c.Set("user_id", v)
@@ -40,13 +36,7 @@ func JWTOptionalMiddleware() gin.HandlerFunc {
 // JWTMiddleware requires a valid JWT
 func JWTMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		secret := os.Getenv("JWT_SECRET")
 		auth := c.GetHeader("Authorization")
-		if secret == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "missing or invalid token", "detail": "server JWT secret not configured"})
-			c.Abort()
-			return
-		}
 		if len(auth) <= 7 || auth[:7] != "Bearer " {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "missing or invalid token", "detail": "authorization header missing or malformed"})
 			c.Abort()
@@ -57,13 +47,7 @@ func JWTMiddleware() gin.HandlerFunc {
 			log.Printf("[JWT] Authorization header present, token prefix: %s...", auth[7:27])
 		}
 		tokStr := auth[7:]
-		token, err := jwt.Parse(tokStr, func(token *jwt.Token) (interface{}, error) {
-			// Accept only HMAC-signed tokens
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, jwt.ErrSignatureInvalid
-			}
-			return []byte(secret), nil
-		})
+		token, err := jwt.Parse(tokStr, keyFunc)
 		if err != nil || token == nil || !token.Valid {
 			msg := "invalid token"
 			if err != nil {

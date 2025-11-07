@@ -3,7 +3,6 @@ package api
 import (
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -28,18 +27,8 @@ func OptionalAuthMiddleware() gin.HandlerFunc {
 		}
 
 		tokenString := tokenParts[1]
-		secret := os.Getenv("JWT_SECRET")
-		if secret == "" {
-			c.Next()
-			return
-		}
-
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, jwt.ErrSignatureInvalid
-			}
-			return []byte(secret), nil
-		})
+		// Parse using JWKS (optional mode: ignore errors)
+		token, err := jwt.Parse(tokenString, keyFuncFromJWKS)
 		if err == nil && token != nil && token.Valid {
 			if claims, ok := token.Claims.(jwt.MapClaims); ok {
 				if v, ok := claims["user_id"]; ok {
@@ -77,19 +66,8 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		secret := os.Getenv("JWT_SECRET")
-		if secret == "" {
-			log.Printf("[AuthMiddleware] JWT_SECRET not set")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Server not configured"})
-			c.Abort()
-			return
-		}
-		token, err := jwt.Parse(tokenParts[1], func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, jwt.ErrSignatureInvalid
-			}
-			return []byte(secret), nil
-		})
+		// Parse using JWKS (required mode)
+		token, err := jwt.Parse(tokenParts[1], keyFuncFromJWKS)
 		if err != nil || !token.Valid {
 			log.Printf("[AuthMiddleware] token invalid: %v", err)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
