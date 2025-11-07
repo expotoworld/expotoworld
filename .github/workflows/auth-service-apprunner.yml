@@ -101,7 +101,7 @@ jobs:
                   "Port": "8081",
                   "RuntimeEnvironmentSecrets": {
                     "DATABASE_URL": "${{ secrets.DATABASE_URL_SECRET_ARN }}",
-                    "JWT_SECRET": "${{ secrets.JWT_SECRET_ARN }}"
+                    "JWT_PRIVATE_KEY_PEM": "${{ secrets.JWT_PRIVATE_KEY_PEM_ARN }}"
                   },
                   "RuntimeEnvironmentVariables": {
                     "PORT": "8081",

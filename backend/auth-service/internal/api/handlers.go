@@ -110,12 +110,6 @@ func (h *Handler) Login(c *gin.Context) {
 
 // generateJWTToken creates a JWT token for the user
 func (h *Handler) generateJWTToken(userID string, email string, role string) (string, error) {
-	// Get JWT secret from environment
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		return "", fmt.Errorf("JWT secret not configured")
-	}
-
 	// Get access token expiration: default 30 minutes.
 	// Prefer JWT_EXPIRATION_MINUTES; fallback to JWT_EXPIRATION_HOURS for backward compatibility.
 	expirationMinutes := 30
@@ -158,15 +152,11 @@ func (h *Handler) generateJWTToken(userID string, email string, role string) (st
 		}
 	}
 
-	// Create token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// Sign token
-	tokenString, err := token.SignedString([]byte(secret))
+	// RS256 sign with private key and set kid
+	tokenString, err := signJWTWithRS256(map[string]interface{}(claims))
 	if err != nil {
 		return "", err
 	}
-
 	return tokenString, nil
 }
 
@@ -192,22 +182,21 @@ func (h *Handler) Refresh(c *gin.Context) {
 	}
 	existingToken := parts[1]
 
-	// Parse existing token
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-
+	// Parse existing token using RS256 public key
+	pub, err := getRSAPublicKey()
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "Server not configured",
-			Message: "JWT secret missing",
+			Message: "RSA keys not configured",
 		})
 		return
 	}
 
 	token, err := jwt.Parse(existingToken, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, jwt.ErrSignatureInvalid
 		}
-		return []byte(secret), nil
+		return pub, nil
 	})
 	if err != nil || !token.Valid {
 		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
@@ -389,22 +378,22 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		tokenString := tokenParts[1]
 
-		// Parse and validate token
-		secret := os.Getenv("JWT_SECRET")
-		if secret == "" {
+		// Parse and validate token using RS256 public key
+		pub, err := getRSAPublicKey()
+		if err != nil {
 			c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 				Error:   "Server not configured",
-				Message: "JWT secret missing",
+				Message: "RSA keys not configured",
 			})
 			c.Abort()
 			return
 		}
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 				return nil, jwt.ErrSignatureInvalid
 			}
-			return []byte(secret), nil
+			return pub, nil
 		})
 
 		if err != nil || !token.Valid {

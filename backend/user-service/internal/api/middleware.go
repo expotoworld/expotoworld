@@ -2,7 +2,6 @@ package api
 
 import (
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/expotoworld/expotoworld/backend/user-service/internal/models"
@@ -46,23 +45,8 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		tokenString := tokenParts[1]
 
-		// Parse and validate token
-		secret := os.Getenv("JWT_SECRET")
-		if secret == "" {
-			c.JSON(http.StatusInternalServerError, models.ErrorResponse{
-				Error:   "Server not configured",
-				Message: "JWT secret missing",
-			})
-			c.Abort()
-			return
-		}
-
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, jwt.ErrSignatureInvalid
-			}
-			return []byte(secret), nil
-		})
+		// Parse and validate token using JWKS (RS256)
+		token, err := jwt.Parse(tokenString, keyFuncFromJWKS)
 
 		if err != nil || !token.Valid {
 			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
