@@ -88,6 +88,16 @@ jobs:
           DATABASE_URL_SECRET_ARN: ${{ secrets.DATABASE_URL_SECRET_ARN }}
         run: |
           echo "✅ App Runner service exists: ${{ steps.lookup.outputs.service_arn }}"
+          echo "⏳ Waiting for service to be stable before update..."
+          for i in {1..40}; do
+            STATUS=$(aws apprunner describe-service --service-arn "${{ steps.lookup.outputs.service_arn }}" --query 'Service.Status' --output text)
+            echo "Current status: $STATUS"
+            if [ "$STATUS" = "OPERATION_IN_PROGRESS" ]; then
+              sleep 15
+            else
+              break
+            fi
+          done
           echo "🔄 Ensuring RuntimeEnvironmentVariables/Secrets are updated..."
           aws apprunner update-service \
             --service-arn "${{ steps.lookup.outputs.service_arn }}" \
@@ -105,8 +115,21 @@ jobs:
                   }\
                 }\
               },\
-              \"AutoDeploymentsEnabled\":true\
+              \"AutoDeploymentsEnabled\":true,\
+              \"AuthenticationConfiguration\":{\
+                \"AccessRoleArn\":\"$ECR_ACCESS_ROLE_ARN\"\
+              }\
             }"
+          echo "⏳ Waiting for service to finish update..."
+          for i in {1..40}; do
+            STATUS=$(aws apprunner describe-service --service-arn "${{ steps.lookup.outputs.service_arn }}" --query 'Service.Status' --output text)
+            echo "Current status: $STATUS"
+            if [ "$STATUS" = "OPERATION_IN_PROGRESS" ]; then
+              sleep 15
+            else
+              break
+            fi
+          done
           echo "📋 Service Status:"
           aws apprunner describe-service \
             --service-arn "${{ steps.lookup.outputs.service_arn }}" \
