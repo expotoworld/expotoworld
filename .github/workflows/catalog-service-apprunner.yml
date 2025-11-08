@@ -58,7 +58,7 @@ jobs:
                 \"ImageConfiguration\":{\
                   \"Port\":\"$APP_PORT\",\
                   \"RuntimeEnvironmentVariables\":{\
-                    \"AUTH_JWKS_URL\":\"https://api.expotoworld.com/auth/.well-known/jwks.json\"\
+                    \"AUTH_JWKS_URL\":\"https://ge6ik5nm6e.eu-central-1.awsapprunner.com/.well-known/jwks.json\"\
                   },\
                   \"RuntimeEnvironmentSecrets\":{\
                     \"DATABASE_URL\":\"$DATABASE_URL_SECRET_ARN\"\
@@ -108,7 +108,7 @@ jobs:
                 \"ImageConfiguration\":{\
                   \"Port\":\"$APP_PORT\",\
                   \"RuntimeEnvironmentVariables\":{\
-                    \"AUTH_JWKS_URL\":\"https://api.expotoworld.com/auth/.well-known/jwks.json\"\
+                    \"AUTH_JWKS_URL\":\"https://ge6ik5nm6e.eu-central-1.awsapprunner.com/.well-known/jwks.json\"\
                   },\
                   \"RuntimeEnvironmentSecrets\":{\
                     \"DATABASE_URL\":\"$DATABASE_URL_SECRET_ARN\"\
