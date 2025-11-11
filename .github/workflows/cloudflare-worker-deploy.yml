@@ -1,0 +1,25 @@
+name: Cloudflare Worker Deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Wrangler
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # If your worker uses KV, D1, or other bindings, add them via wrangler.toml instead
+          command: deploy cloudflare-worker/worker.js --name device-api-expotoworld
+
+      - name: Purge Cloudflare Cache (optional)
+        if: always()
+        run: |
+          echo "Purge step is optional; if you want, set up a separate action using Cloudflare API to purge cache."
+

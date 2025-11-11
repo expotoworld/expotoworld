@@ -62,6 +62,9 @@ export default {
       backendUrl = 'https://mttci22rgj.eu-central-1.awsapprunner.com';
     } else if (path.startsWith('/api/admin/orders')) {
       backendUrl = 'https://mttci22rgj.eu-central-1.awsapprunner.com';
+    } else if (path.startsWith('/.well-known')) {
+      // JWKS and other .well-known endpoints exposed at gateway root
+      backendUrl = 'https://ge6ik5nm6e.eu-central-1.awsapprunner.com';
     } else if (path.startsWith('/api/auth')) {
       // Auth service - handles all authentication
       backendUrl = 'https://ge6ik5nm6e.eu-central-1.awsapprunner.com';
@@ -107,8 +110,13 @@ export default {
       );
     }
 
-    // Build backend request URL
-    const backendRequestUrl = backendUrl + path + url.search;
+    // Build backend request URL with optional path rewrite
+    let backendPath = path;
+    // Rewrite gateway-prefixed JWKS to auth-service root JWKS
+    if (path === '/api/auth/.well-known/jwks.json') {
+      backendPath = '/.well-known/jwks.json';
+    }
+    const backendRequestUrl = backendUrl + backendPath + url.search;
 
     // Clone headers and add forwarding headers
     const headers = new Headers(request.headers);
