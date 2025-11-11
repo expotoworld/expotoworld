@@ -16,7 +16,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           # If your worker uses KV, D1, or other bindings, add them via wrangler.toml instead
-          command: deploy cloudflare-worker/worker.js --name device-api-expotoworld
+          command: deploy cloudflare-worker/worker.js --name device-api-gateway
 
       - name: Purge Cloudflare Cache (optional)
         if: always()
