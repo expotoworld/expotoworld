@@ -59,7 +59,7 @@ jobs:
                   \"Port\":\"$APP_PORT\",\
                   \"RuntimeEnvironmentVariables\":{\
                     \"EBOOK_S3_BUCKET\":\"expotoworld-ebook-versions\",\
-                    \"AUTH_JWKS_URL\":\"https://ge6ik5nm6e.eu-central-1.awsapprunner.com/.well-known/jwks.json\"\
+                    \"AUTH_JWKS_URL\":\"https://device-api.expotoworld.com/api/auth/.well-known/jwks.json\"\
                   },\
                   \"RuntimeEnvironmentSecrets\":{\
                     \"DATABASE_URL\":\"$DATABASE_URL_SECRET_ARN\"\
@@ -110,7 +110,7 @@ jobs:
                   \"Port\":\"$APP_PORT\",\
                   \"RuntimeEnvironmentVariables\":{\
                     \"EBOOK_S3_BUCKET\":\"expotoworld-ebook-versions\",\
-                    \"AUTH_JWKS_URL\":\"https://ge6ik5nm6e.eu-central-1.awsapprunner.com/.well-known/jwks.json\"\
+                    \"AUTH_JWKS_URL\":\"https://device-api.expotoworld.com/api/auth/.well-known/jwks.json\"\
                   },\
                   \"RuntimeEnvironmentSecrets\":{\
                     \"DATABASE_URL\":\"$DATABASE_URL_SECRET_ARN\"\
