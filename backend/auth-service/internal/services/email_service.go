@@ -42,17 +42,17 @@ func NewEmailService(cfg aws.Config) *EmailService {
 // SendVerificationCode sends a verification code email for admin
 func (e *EmailService) SendVerificationCode(email string, data models.EmailVerificationData) error {
 	subject := "EXPO to World Admin - Verification Code"
-	body := e.generateEmailHTML(data)
-
-	return e.sendEmail(email, subject, body)
+	html := e.generateEmailHTML(data)
+	text := e.generateEmailText(data)
+	return e.sendEmailWithText(email, subject, html, text)
 }
 
 // SendUserVerificationCode sends a verification code email for users
 func (e *EmailService) SendUserVerificationCode(email string, data models.EmailVerificationData) error {
 	subject := "EXPO to World - Login Verification Code"
-	body := e.generateUserEmailHTML(data)
-
-	return e.sendEmail(email, subject, body)
+	html := e.generateUserEmailHTML(data)
+	text := e.generateUserEmailText(data)
+	return e.sendEmailWithText(email, subject, html, text)
 }
 
 // generateRandomID generates a random string for Message-ID
@@ -84,6 +84,59 @@ func (e *EmailService) sendEmail(toEmail, subject, htmlBody string) error {
 		return fmt.Errorf("failed to send email: %w", err)
 	}
 	return nil
+}
+
+// sendEmailWithText sends an email with both HTML and plain-text bodies via AWS SESv2
+func (e *EmailService) sendEmailWithText(toEmail, subject, htmlBody, textBody string) error {
+	replyTo := "expotobsrl@gmail.com"
+	input := &sesv2.SendEmailInput{
+		FromEmailAddress: aws.String(e.fromEmail),
+		Destination:      &sestypes.Destination{ToAddresses: []string{toEmail}},
+		ReplyToAddresses: []string{replyTo},
+		Content: &sestypes.EmailContent{
+			Simple: &sestypes.Message{
+				Subject: &sestypes.Content{Data: aws.String(subject)},
+				Body: &sestypes.Body{
+					Html: &sestypes.Content{Data: aws.String(htmlBody)},
+					Text: &sestypes.Content{Data: aws.String(textBody)},
+				},
+			},
+		},
+	}
+	if _, err := e.sesClient.SendEmail(context.Background(), input); err != nil {
+		return fmt.Errorf("failed to send email: %w", err)
+	}
+	return nil
+}
+
+// generateEmailText creates a plain-text alternative for admin verification emails
+func (e *EmailService) generateEmailText(data models.EmailVerificationData) string {
+	return fmt.Sprintf(
+		"EXPO to World Admin - Verification Code\n\n"+
+			"Your verification code is: %s\n"+
+			"This code expires in %d minutes.\n\n"+
+			"Email: %s\n"+
+			"IP Address: %s\n"+
+			"User Agent: %s\n"+
+			"Sent from: no-reply@expotoworld.com\n\n"+
+			"Security: This code can be used once. Max 3 attempts. If you did not request this code, ignore this email.",
+		data.Code, data.ExpiresInMin, data.Email, data.IPAddress, data.UserAgent,
+	)
+}
+
+// generateUserEmailText creates a plain-text alternative for user verification emails
+func (e *EmailService) generateUserEmailText(data models.EmailVerificationData) string {
+	return fmt.Sprintf(
+		"EXPO to World - Login Verification\n\n"+
+			"Your verification code is: %s\n"+
+			"This code expires in %d minutes.\n\n"+
+			"Email: %s\n"+
+			"IP Address: %s\n"+
+			"Device: %s\n"+
+			"Sent from: no-reply@expotoworld.com\n\n"+
+			"If you did not request this code, you can ignore this email.",
+		data.Code, data.ExpiresInMin, data.Email, data.IPAddress, data.UserAgent,
+	)
 }
 
 // generateEmailHTML creates the HTML email template
