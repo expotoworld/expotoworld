@@ -99,7 +99,7 @@ const LoginPage: React.FC = () => {
                 mb: 1
               }}
             >
-              Made in World
+              EXPO to WORLD
             </Typography>
             <Typography
               variant="h6"
@@ -180,7 +180,7 @@ const LoginPage: React.FC = () => {
           {/* Footer */}
           <Box sx={{ textAlign: 'center', mt: 3 }}>
             <Typography variant="body2" color="text.secondary">
-              Made in World Admin Panel v1.0
+              EXPO to WORLD Admin Panel v1.0
             </Typography>
           </Box>
         </Paper>

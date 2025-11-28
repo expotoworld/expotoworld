@@ -6,6 +6,7 @@ import '../../../data/models/store.dart';
 import '../../../core/enums/store_type.dart';
 import '../../../data/services/api_service.dart';
 import '../../../data/services/location_service.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../providers/location_provider.dart';
 
 class StoreLocatorHeader extends StatefulWidget implements PreferredSizeWidget {
@@ -345,10 +346,10 @@ class _StoreLocatorHeaderState extends State<StoreLocatorHeader> with WidgetsBin
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    widget.selectedStore?.name ?? '选择门店',
+                    widget.selectedStore?.name ?? AppLocalizations.of(context)!.selectStore,
                     style: AppTextStyles.body.copyWith(
-                      color: widget.selectedStore != null 
-                          ? AppColors.primaryText 
+                      color: widget.selectedStore != null
+                          ? AppColors.primaryText
                           : AppColors.secondaryText,
                       fontWeight: FontWeight.w500,
                     ),

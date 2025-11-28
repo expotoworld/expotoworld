@@ -4,6 +4,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 
 import '../../../../data/models/category.dart';
 import '../../../../data/models/subcategory.dart';
@@ -112,7 +113,7 @@ class _ExhibitionSalesScreenState extends State<ExhibitionSalesScreen> {
   // Store locator header for exhibition sales (ETWtoC)
   PreferredSizeWidget _buildAppBar() {
     return StoreLocatorHeader(
-      miniAppName: '展销展消',
+      miniAppName: 'ETW to C',
       allowedStoreTypes: const [StoreType.etwMega, StoreType.etwMarket],
       selectedStore: _selectedStore,
       onStoreSelected: _onStoreSelected,
@@ -461,7 +462,7 @@ class _ProductsTabState extends State<_ProductsTab> {
                     color: AppColors.secondaryText,
                   ),
                   const SizedBox(height: 16),
-                  Text('加载失败', style: AppTextStyles.body),
+                  Text(AppLocalizations.of(context)!.loadingFailed, style: AppTextStyles.body),
                   const SizedBox(height: 8),
                   Text(
                     '${snapshot.error}',
@@ -471,7 +472,7 @@ class _ProductsTabState extends State<_ProductsTab> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: fetchData,
-                    child: const Text('重试'),
+                    child: Text(AppLocalizations.of(context)!.retry),
                   ),
                 ],
               ),
@@ -521,7 +522,7 @@ class _ProductsTabState extends State<_ProductsTab> {
               ],
             );
           } else {
-            return const Center(child: Text('暂无数据'));
+            return Center(child: Text(AppLocalizations.of(context)!.noData));
           }
         },
       ),
@@ -598,7 +599,7 @@ class _ProductsTabState extends State<_ProductsTab> {
               category: category,
               subcategory: subcategory,
               allProducts: allProducts,
-              miniAppName: '展销展消',
+              miniAppName: 'ETW to C',
               miniAppType: 'exhibition_sales',
               selectedStore: _selectedStore, // Pass the selected store context
               instanceId: widget.instanceId,
@@ -837,7 +838,7 @@ class _MessagesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('消息功能开发中...'));
+    return Center(child: Text(AppLocalizations.of(context)!.messagingInDevelopment));
   }
 }
 
@@ -846,6 +847,6 @@ class _ProfileTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('个人中心功能开发中...'));
+    return Center(child: Text(AppLocalizations.of(context)!.profileInDevelopment));
   }
 }

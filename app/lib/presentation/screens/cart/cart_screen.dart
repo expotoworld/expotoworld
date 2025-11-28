@@ -14,6 +14,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../widgets/common/product_tag.dart';
+import '../../../l10n/app_localizations.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -361,7 +362,7 @@ class _CartScreenState extends State<CartScreen> {
                       onPressed: () {
                         _showCheckoutDialog(context, cartProvider, filteredItems: filteredItems);
                       },
-                      child: const Text('结算'),
+                      child: Text(AppLocalizations.of(context)!.checkout),
                     ),
                   ),
                 ],
@@ -385,14 +386,14 @@ class _CartScreenState extends State<CartScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            '购物车是空的',
+            AppLocalizations.of(context)!.cartEmpty,
             style: AppTextStyles.cardTitle.copyWith(
               color: AppColors.secondaryText,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            '快去添加一些商品吧！',
+            AppLocalizations.of(context)!.addSomeProducts,
             style: AppTextStyles.bodySmall,
           ),
           const SizedBox(height: 24),
@@ -400,7 +401,7 @@ class _CartScreenState extends State<CartScreen> {
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: const Text('去购物'),
+            child: Text(AppLocalizations.of(context)!.goShopping),
           ),
         ],
       ),
@@ -575,7 +576,7 @@ class _CartScreenState extends State<CartScreen> {
                       onPressed: () {
                         _showCheckoutDialog(context, cartProvider);
                       },
-                      child: const Text('结算'),
+                      child: Text(AppLocalizations.of(context)!.checkout),
                     ),
                   ),
                 ],
@@ -603,12 +604,12 @@ class _CartScreenState extends State<CartScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('清空购物车'),
-        content: const Text('确定要清空购物车中的所有商品吗？'),
+        title: Text(AppLocalizations.of(context)!.clearCartTitle),
+        content: Text(AppLocalizations.of(context)!.clearCartConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () {
@@ -616,7 +617,7 @@ class _CartScreenState extends State<CartScreen> {
               Navigator.of(context).pop();
             },
             child: Text(
-              '确定',
+              AppLocalizations.of(context)!.confirm,
               style: TextStyle(color: AppColors.themeRed),
             ),
           ),
@@ -631,15 +632,15 @@ class _CartScreenState extends State<CartScreen> {
       builder: (context) => FutureBuilder<Store?>(
         future: _getStoreInfo(_selectedStoreId!),
         builder: (context, snapshot) {
-          final storeName = snapshot.data?.name ?? '当前门店';
+          final storeName = snapshot.data?.name ?? AppLocalizations.of(context)!.currentStore;
 
           return AlertDialog(
-            title: const Text('清空购物车'),
-            content: Text('确定要清空 $storeName 购物车中的商品吗？'),
+            title: Text(AppLocalizations.of(context)!.clearCartTitle),
+            content: Text(AppLocalizations.of(context)!.clearStoreCartConfirm(storeName)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('取消'),
+                child: Text(AppLocalizations.of(context)!.cancel),
               ),
               TextButton(
                 onPressed: () async {
@@ -649,7 +650,7 @@ class _CartScreenState extends State<CartScreen> {
                   }
                 },
                 child: Text(
-                  '确定',
+                  AppLocalizations.of(context)!.confirm,
                   style: TextStyle(color: AppColors.themeRed),
                 ),
               ),
@@ -694,12 +695,12 @@ class _CartScreenState extends State<CartScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('结算'),
-        content: Text('总金额：€${totalPrice.toStringAsFixed(2)}'),
+        title: Text(AppLocalizations.of(context)!.checkout),
+        content: Text(AppLocalizations.of(context)!.totalAmountValue(totalPrice.toStringAsFixed(2))),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -707,7 +708,7 @@ class _CartScreenState extends State<CartScreen> {
               await _processCheckout(context, cartProvider, filteredItems: filteredItems);
             },
             child: Text(
-              '确认支付',
+              AppLocalizations.of(context)!.confirmPayment,
               style: TextStyle(color: AppColors.themeRed),
             ),
           ),
@@ -719,7 +720,7 @@ class _CartScreenState extends State<CartScreen> {
   /// Process checkout by creating order through order service
   Future<void> _processCheckout(BuildContext context, CartProvider cartProvider, {List<CartItem>? filteredItems}) async {
     if (cartProvider.currentMiniAppType == null) {
-      _showErrorMessage(context, '购物车状态异常，请重试');
+      _showErrorMessage(context, AppLocalizations.of(context)!.cartStateError);
       return;
     }
 
@@ -769,8 +770,8 @@ class _CartScreenState extends State<CartScreen> {
 
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('订单创建成功！'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.orderCreatedSuccess),
             backgroundColor: AppColors.success,
           ),
         );
@@ -779,7 +780,7 @@ class _CartScreenState extends State<CartScreen> {
       // Hide loading indicator
       if (context.mounted) {
         Navigator.of(context).pop();
-        _showErrorMessage(context, '订单创建失败：${e.toString()}');
+        _showErrorMessage(context, AppLocalizations.of(context)!.orderCreationFailed(e.toString()));
       }
     }
   }
@@ -917,7 +918,7 @@ class _CartScreenState extends State<CartScreen> {
         if (dataInfo?.categoryName != null || dataInfo?.subcategoryName != null)
           _buildCategoryTags(dataInfo),
 
-        // Store Information (only for location-based mini-apps: 无人商店 and 展销展消)
+        // Store Information (only for location-based mini-apps: ETW to U and ETW to C)
         if (isLocationBased && dataInfo?.storeName != null) ...[
           const SizedBox(height: 6),
           _buildStoreInfo(product, dataInfo!.storeName!),
@@ -1094,16 +1095,16 @@ class _CartScreenState extends State<CartScreen> {
                 width: 1,
               ),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
-                SizedBox(width: 8),
-                Text('加载中...'),
+                const SizedBox(width: 8),
+                Text(AppLocalizations.of(context)!.loading),
               ],
             ),
           );
@@ -1136,7 +1137,7 @@ class _CartScreenState extends State<CartScreen> {
             width: 1,
           ),
         ),
-        child: const Text('无门店'),
+        child: Text(AppLocalizations.of(context)!.noStore),
       );
     }
 
@@ -1167,7 +1168,7 @@ class _CartScreenState extends State<CartScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                store?.name ?? '加载中...',
+                store?.name ?? AppLocalizations.of(context)!.loading,
                 style: AppTextStyles.body.copyWith(
                   color: store != null ? AppColors.primaryText : AppColors.secondaryText,
                   fontWeight: FontWeight.w500,
@@ -1587,14 +1588,14 @@ class _HeaderStoreSelectorState extends State<_HeaderStoreSelector> {
                   builder: (context, snapshot) {
                     final store = snapshot.data;
                     if (store == null) {
-                      return const ListTile(
-                        title: Text('加载中...'),
+                      return ListTile(
+                        title: Text(AppLocalizations.of(context)!.loading),
                       );
                     }
 
                     // Get formatted distance using LocationProvider
                     final locationProvider = Provider.of<LocationProvider>(context, listen: false);
-                    final formattedDistance = locationProvider.getFormattedDistanceToStore(store) ?? '距离未知';
+                    final formattedDistance = locationProvider.getFormattedDistanceToStore(store) ?? AppLocalizations.of(context)!.distanceUnknown;
 
                     return ListTile(
                       onTap: () {

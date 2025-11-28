@@ -4,6 +4,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 
 import '../../../../data/models/category.dart';
 import '../../../../data/models/subcategory.dart';
@@ -81,7 +82,7 @@ class _GroupBuyingScreenState extends State<GroupBuyingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('团购团批', style: AppTextStyles.majorHeader),
+        title: Text('ETW to G', style: AppTextStyles.majorHeader),
         backgroundColor: AppColors.lightBackground,
         elevation: 0,
         automaticallyImplyLeading: false,
@@ -250,7 +251,7 @@ class _ProductsTabState extends State<_ProductsTab> {
                     color: AppColors.secondaryText,
                   ),
                   const SizedBox(height: 16),
-                  Text('加载失败', style: AppTextStyles.body),
+                  Text(AppLocalizations.of(context)!.loadingFailed, style: AppTextStyles.body),
                   const SizedBox(height: 8),
                   Text(
                     '${snapshot.error}',
@@ -260,7 +261,7 @@ class _ProductsTabState extends State<_ProductsTab> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: _fetchData,
-                    child: const Text('重试'),
+                    child: Text(AppLocalizations.of(context)!.retry),
                   ),
                 ],
               ),
@@ -311,7 +312,7 @@ class _ProductsTabState extends State<_ProductsTab> {
               ],
             );
           } else {
-            return const Center(child: Text('暂无数据'));
+            return Center(child: Text(AppLocalizations.of(context)!.noData));
           }
         },
       ),
@@ -390,7 +391,7 @@ class _ProductsTabState extends State<_ProductsTab> {
               category: category,
               subcategory: subcategory,
               allProducts: allProducts,
-              miniAppName: '团购团批',
+              miniAppName: 'ETW to G',
               onProductTap: widget.onProductTap,
             ),
             routeKey: 'group_subcategory_${subcategory.id}_${DateTime.now().millisecondsSinceEpoch}',
@@ -609,7 +610,7 @@ class _MessagesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('消息功能开发中...'));
+    return Center(child: Text(AppLocalizations.of(context)!.messagingInDevelopment));
   }
 }
 
@@ -618,6 +619,6 @@ class _ProfileTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('个人中心功能开发中...'));
+    return Center(child: Text(AppLocalizations.of(context)!.profileInDevelopment));
   }
 }

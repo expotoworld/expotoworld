@@ -16,6 +16,7 @@ import '../mini_apps/retail_store/retail_store_screen.dart';
 import '../mini_apps/unmanned_store/unmanned_store_screen.dart';
 import '../mini_apps/exhibition_sales/exhibition_sales_screen.dart';
 import '../mini_apps/group_buying/group_buying_screen.dart';
+import '../../../l10n/app_localizations.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -504,13 +505,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('热门推荐', style: AppTextStyles.responsiveMajorHeader(context)),
+              Text(AppLocalizations.of(context)!.featuredProducts, style: AppTextStyles.responsiveMajorHeader(context)),
               GestureDetector(
                 onTap: () {
                   // Navigate to see all products
                 },
                 child: Text(
-                  '查看全部',
+                  AppLocalizations.of(context)!.viewAll,
                   style: AppTextStyles.responsiveBodySmall(context).copyWith(
                     color: AppColors.secondaryText,
                     fontWeight: FontWeight.w600,
@@ -663,7 +664,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text('重试'),
+                  child: Text(AppLocalizations.of(context)!.retry),
                 ),
               ],
             ),
@@ -682,7 +683,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             horizontal: ResponsiveUtils.getResponsiveSpacing(context, 16),
           ),
           child: Text(
-            '热门推荐',
+            AppLocalizations.of(context)!.featuredProducts,
             style: AppTextStyles.responsiveMajorHeader(context),
           ),
         ),

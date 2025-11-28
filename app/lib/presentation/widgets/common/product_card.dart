@@ -7,6 +7,7 @@ import '../../../data/models/product.dart';
 import '../../../core/enums/store_type.dart';
 import '../../../core/utils/mini_app_navigation.dart';
 import '../../../data/services/product_data_resolver.dart';
+import '../../../l10n/app_localizations.dart';
 import 'add_to_cart_button.dart';
 import 'product_tag.dart';
 
@@ -93,7 +94,7 @@ class ProductCard extends StatelessWidget {
               if (product.storeType == StoreType.etwToGo || product.storeType == StoreType.etwXpress) ...[
                 SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, 4)),
                 Text(
-                  '剩余 ${product.displayStock ?? 0} 件', // Use ?? 0 to handle null gracefully
+                  AppLocalizations.of(context)!.stockRemaining(product.displayStock ?? 0),
                   style: AppTextStyles.responsiveBodySmall(context).copyWith(
                     color: AppColors.themeRed,
                   ),
@@ -232,7 +233,7 @@ class ProductCard extends StatelessWidget {
 
     // Store location and store type tags (only for location-dependent mini-apps)
     if (_shouldShowStoreTag() && storeName != null && storeName!.isNotEmpty) {
-      // Extract store name from formatted string (e.g., "无人门店: MANOR Lugano" -> "MANOR Lugano")
+      // Extract store name from formatted string (e.g., "ETW to U: MANOR Lugano" -> "MANOR Lugano")
       String storeLocationName = storeName!;
       if (storeName!.contains(': ')) {
         storeLocationName = storeName!.split(': ').last;

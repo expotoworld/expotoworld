@@ -12,6 +12,7 @@ import '../../../../data/models/store.dart';
 import '../../../../data/services/api_service.dart';
 import '../../../../core/enums/store_type.dart';
 import '../../../providers/location_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class UnmannedStoreLocationsScreen extends StatefulWidget {
   const UnmannedStoreLocationsScreen({super.key});
@@ -156,8 +157,8 @@ class _UnmannedStoreLocationsScreenState extends State<UnmannedStoreLocationsScr
         final stores = _filteredStores;
         
         if (stores.isEmpty) {
-          return const Center(
-            child: Text('暂无无人商店数据'),
+          return Center(
+            child: Text(AppLocalizations.of(context)!.noEtwToUData),
           );
         }
 
@@ -261,7 +262,7 @@ class _UnmannedStoreLocationsScreenState extends State<UnmannedStoreLocationsScr
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: '搜索无人商店...', // Customized hint text
+          hintText: '搜索 ETW to U 门店...', // Customized hint text
           hintStyle: AppTextStyles.body.copyWith(
             color: AppColors.secondaryText,
           ),
@@ -578,8 +579,8 @@ class _UnmannedStoreLocationsScreenState extends State<UnmannedStoreLocationsScr
       if (!locationProvider.hasLocationPermission) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('需要位置权限才能显示您的位置'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.locationPermissionNeeded),
               backgroundColor: AppColors.themeRed,
             ),
           );
@@ -603,8 +604,8 @@ class _UnmannedStoreLocationsScreenState extends State<UnmannedStoreLocationsScr
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('无法获取当前位置'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.unableToGetLocation),
               backgroundColor: AppColors.themeRed,
             ),
           );
@@ -614,8 +615,8 @@ class _UnmannedStoreLocationsScreenState extends State<UnmannedStoreLocationsScr
       debugPrint('Error getting location: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('获取位置失败'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.getLocationFailed),
             backgroundColor: AppColors.themeRed,
           ),
         );

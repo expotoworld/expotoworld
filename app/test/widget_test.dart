@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 
 void main() {
-  testWidgets('Made in World app smoke test', (WidgetTester tester) async {
+  testWidgets('EXPO to WORLD app smoke test', (WidgetTester tester) async {
     // Build a minimal scaffold containing the expected bottom nav labels.
     // This avoids provider and network dependencies while still validating
     // the key localized strings we rely on across the app.

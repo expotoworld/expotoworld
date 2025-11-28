@@ -1,37 +1,39 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../l10n/app_localizations.dart';
 
 class MessagesScreen extends StatelessWidget {
   const MessagesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final placeholderMessages = [
       {
-        'title': '订单更新',
-        'message': '您的订单 #12345 已发货',
-        'time': '2分钟前',
+        'title': l10n.orderUpdate,
+        'message': l10n.orderShippedMessage('12345'),
+        'time': l10n.minutesAgo(2),
         'unread': true,
       },
       {
-        'title': '促销活动',
-        'message': '新品上架，限时优惠！',
-        'time': '1小时前',
+        'title': l10n.promotion,
+        'message': l10n.newArrivalsPromo,
+        'time': l10n.hoursAgo(1),
         'unread': true,
       },
       {
-        'title': '系统通知',
-        'message': '欢迎使用Expo to World应用',
-        'time': '昨天',
+        'title': l10n.systemNotification,
+        'message': l10n.welcomeMessage,
+        'time': l10n.yesterday,
         'unread': false,
       },
     ];
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '消息',
+          l10n.messages,
           style: AppTextStyles.majorHeader,
         ),
         backgroundColor: AppColors.lightBackground,

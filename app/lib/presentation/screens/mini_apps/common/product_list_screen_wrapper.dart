@@ -6,6 +6,7 @@ import '../../../../data/models/category.dart';
 import '../../../../data/models/subcategory.dart';
 import '../../../../data/models/product.dart';
 import '../../../../data/models/store.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../providers/cart_provider.dart';
 import '../../cart/cart_screen_wrapper.dart';
 import 'product_list_screen.dart';
@@ -65,20 +66,25 @@ class _ProductListScreenWrapperState extends State<ProductListScreenWrapper> {
             children: [
               // Left nav items
               Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildNavItem(
-                      icon: Icons.home,
-                      label: '首页',
-                      onTap: () => _navigateToHome(),
-                    ),
-                    _buildNavItem(
-                      icon: Icons.location_on,
-                      label: '地点',
-                      onTap: () => _navigateToLocation(),
-                    ),
-                  ],
+                child: Builder(
+                  builder: (context) {
+                    final l10n = AppLocalizations.of(context)!;
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildNavItem(
+                          icon: Icons.home,
+                          label: l10n.navHome,
+                          onTap: () => _navigateToHome(),
+                        ),
+                        _buildNavItem(
+                          icon: Icons.location_on,
+                          label: l10n.navLocations,
+                          onTap: () => _navigateToLocation(),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
 
@@ -145,20 +151,25 @@ class _ProductListScreenWrapperState extends State<ProductListScreenWrapper> {
 
               // Right nav items
               Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildNavItem(
-                      icon: Icons.message,
-                      label: '消息',
-                      onTap: () => _navigateToMessages(),
-                    ),
-                    _buildNavItem(
-                      icon: Icons.person,
-                      label: '我的',
-                      onTap: () => _navigateToProfile(),
-                    ),
-                  ],
+                child: Builder(
+                  builder: (context) {
+                    final l10n = AppLocalizations.of(context)!;
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildNavItem(
+                          icon: Icons.message,
+                          label: l10n.navMessages,
+                          onTap: () => _navigateToMessages(),
+                        ),
+                        _buildNavItem(
+                          icon: Icons.person,
+                          label: l10n.navProfile,
+                          onTap: () => _navigateToProfile(),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ],

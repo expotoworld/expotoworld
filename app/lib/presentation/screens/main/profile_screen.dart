@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -13,14 +14,14 @@ class ProfileScreen extends StatelessWidget {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         final user = authProvider.user;
-        final userName = user?.displayName ?? '尊贵的用户';
+        final userName = user?.displayName ?? AppLocalizations.of(context)!.valuedUser;
         final userEmail = user?.email ?? 'user.name@email.com';
         const userAvatarUrl = 'https://i.pravatar.cc/96';
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '我的',
+          AppLocalizations.of(context)!.profile,
           style: AppTextStyles.majorHeader,
         ),
         backgroundColor: AppColors.lightBackground,
@@ -121,26 +122,26 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 24),
             
             // Menu Items
-            _buildMenuSection('订单管理', [
-              _buildMenuItem(Icons.shopping_bag, '我的订单', () {}),
-              _buildMenuItem(Icons.favorite, '我的收藏', () {}),
-              _buildMenuItem(Icons.history, '浏览历史', () {}),
+            _buildMenuSection(AppLocalizations.of(context)!.orderManagementSection, [
+              _buildMenuItem(Icons.shopping_bag, AppLocalizations.of(context)!.myOrders, () {}),
+              _buildMenuItem(Icons.favorite, AppLocalizations.of(context)!.myFavorites, () {}),
+              _buildMenuItem(Icons.history, AppLocalizations.of(context)!.browsingHistory, () {}),
             ]),
-            
+
             const SizedBox(height: 16),
-            
-            _buildMenuSection('账户设置', [
-              _buildMenuItem(Icons.location_on, '收货地址', () {}),
-              _buildMenuItem(Icons.payment, '支付方式', () {}),
-              _buildMenuItem(Icons.security, '账户安全', () {}),
+
+            _buildMenuSection(AppLocalizations.of(context)!.accountSettings, [
+              _buildMenuItem(Icons.location_on, AppLocalizations.of(context)!.shippingAddress, () {}),
+              _buildMenuItem(Icons.payment, AppLocalizations.of(context)!.paymentMethods, () {}),
+              _buildMenuItem(Icons.security, AppLocalizations.of(context)!.accountSecurity, () {}),
             ]),
-            
+
             const SizedBox(height: 16),
-            
-            _buildMenuSection('帮助与支持', [
-              _buildMenuItem(Icons.help, '帮助中心', () {}),
-              _buildMenuItem(Icons.feedback, '意见反馈', () {}),
-              _buildMenuItem(Icons.info, '关于我们', () {}),
+
+            _buildMenuSection(AppLocalizations.of(context)!.helpAndSupport, [
+              _buildMenuItem(Icons.help, AppLocalizations.of(context)!.helpCenter, () {}),
+              _buildMenuItem(Icons.feedback, AppLocalizations.of(context)!.feedback, () {}),
+              _buildMenuItem(Icons.info, AppLocalizations.of(context)!.aboutUs, () {}),
             ]),
             
             const SizedBox(height: 32),
@@ -156,7 +157,7 @@ class ProfileScreen extends StatelessWidget {
                   elevation: 0,
                 ),
                 child: Text(
-                  '退出登录',
+                  AppLocalizations.of(context)!.logout,
                   style: AppTextStyles.button.copyWith(
                     color: AppColors.themeRed,
                   ),
@@ -174,21 +175,21 @@ class ProfileScreen extends StatelessWidget {
   void _handleLogout(BuildContext context, AuthProvider authProvider) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: Text(
-            '确认退出',
+            AppLocalizations.of(context)!.confirmLogout,
             style: AppTextStyles.cardTitle,
           ),
           content: Text(
-            '您确定要退出登录吗？',
+            AppLocalizations.of(context)!.logoutConfirmMessage,
             style: AppTextStyles.body,
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(
-                '取消',
+                AppLocalizations.of(context)!.cancel,
                 style: AppTextStyles.body.copyWith(
                   color: AppColors.secondaryText,
                 ),
@@ -196,11 +197,11 @@ class ProfileScreen extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(dialogContext).pop();
                 authProvider.logout();
               },
               child: Text(
-                '退出',
+                AppLocalizations.of(context)!.exit,
                 style: AppTextStyles.body.copyWith(
                   color: AppColors.themeRed,
                   fontWeight: FontWeight.w600,

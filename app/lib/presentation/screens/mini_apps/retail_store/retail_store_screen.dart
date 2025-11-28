@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 
 import '../../../../data/models/category.dart';
 import '../../../../data/models/subcategory.dart';
@@ -83,7 +84,7 @@ class _RetailStoreScreenState extends State<RetailStoreScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '零售门店',
+          'ETW to B',
           style: AppTextStyles.majorHeader,
         ),
         backgroundColor: AppColors.lightBackground,
@@ -290,7 +291,7 @@ class _ProductsTabState extends State<_ProductsTab> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  '加载失败',
+                  AppLocalizations.of(context)!.loadingFailed,
                   style: AppTextStyles.responsiveBodySmall(context).copyWith(
                     color: AppColors.primaryText,
                     fontWeight: FontWeight.w600,
@@ -299,7 +300,7 @@ class _ProductsTabState extends State<_ProductsTab> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '请检查网络连接后重试',
+                  AppLocalizations.of(context)!.checkNetworkAndRetry,
                   style: AppTextStyles.responsiveBodySmall(context).copyWith(
                     color: AppColors.secondaryText,
                   ),
@@ -325,7 +326,7 @@ class _ProductsTabState extends State<_ProductsTab> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('重试'),
+                  child: Text(AppLocalizations.of(context)!.retry),
                 ),
               ],
             ),
@@ -369,8 +370,8 @@ class _ProductsTabState extends State<_ProductsTab> {
             ],
           );
         } else {
-          return const Center(
-            child: Text('暂无数据'),
+          return Center(
+            child: Text(AppLocalizations.of(context)!.noData),
           );
         }
       },
@@ -416,7 +417,7 @@ class _ProductsTabState extends State<_ProductsTab> {
     }).toList();
 
     if (subcategoriesWithProducts.isEmpty) {
-      return _buildEmptyState('该分类暂无商品');
+      return _buildEmptyState(AppLocalizations.of(context)!.noCategoryProducts);
     }
 
     return Padding(
@@ -449,7 +450,7 @@ class _ProductsTabState extends State<_ProductsTab> {
               category: category,
               subcategory: subcategory,
               allProducts: allProducts,
-              miniAppName: '零售门店',
+              miniAppName: 'ETW to B',
               onProductTap: widget.onProductTap,
             ),
             routeKey: 'retail_subcategory_${subcategory.id}_${DateTime.now().millisecondsSinceEpoch}',
@@ -580,7 +581,7 @@ class _ProductsTabState extends State<_ProductsTab> {
   /// Builds the product grid
   Widget _buildProductGrid(List<Product> products) {
     if (products.isEmpty) {
-      return _buildEmptyState('暂无商品');
+      return _buildEmptyState(AppLocalizations.of(context)!.noProducts);
     }
 
     return Padding(
@@ -674,8 +675,8 @@ class _MessagesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('消息功能开发中...'),
+    return Center(
+      child: Text(AppLocalizations.of(context)!.messagingInDevelopment),
     );
   }
 }
@@ -694,8 +695,8 @@ class _ProfileTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('个人中心功能开发中...'),
+    return Center(
+      child: Text(AppLocalizations.of(context)!.profileInDevelopment),
     );
   }
 }

@@ -5,6 +5,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/responsive_utils.dart';
 import '../../../data/models/product.dart';
 import '../../../core/enums/store_type.dart';
+import '../../../l10n/app_localizations.dart';
 import 'product_tag.dart';
 import 'product_action_bar.dart';
 
@@ -281,7 +282,7 @@ class _ProductDetailsModalState extends State<ProductDetailsModal>
           ),
         ),
         
-        // Stock Information (right-aligned, for 无人商店 only)
+        // Stock Information (right-aligned, for ETW to U only)
         if (_shouldShowStock()) _buildStockInfo(),
       ],
     );
@@ -309,7 +310,7 @@ class _ProductDetailsModalState extends State<ProductDetailsModal>
         ),
       ),
       child: Text(
-        '库存: $displayStock',
+        AppLocalizations.of(context)!.stock(displayStock),
         style: AppTextStyles.responsiveBodySmall(context).copyWith(
           color: AppColors.themeRed,
           fontWeight: FontWeight.w600,
@@ -352,7 +353,7 @@ class _ProductDetailsModalState extends State<ProductDetailsModal>
 
     // Store location and store type tags (only for location-dependent mini-apps)
     if (_shouldShowStoreTag() && widget.storeName != null && widget.storeName!.isNotEmpty) {
-      // Extract store name from formatted string (e.g., "无人门店: MANOR Lugano" -> "MANOR Lugano")
+      // Extract store name from formatted string (e.g., "ETW to U: MANOR Lugano" -> "MANOR Lugano")
       String storeLocationName = widget.storeName!;
       if (widget.storeName!.contains(': ')) {
         storeLocationName = widget.storeName!.split(': ').last;
