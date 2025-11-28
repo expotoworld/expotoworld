@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../l10n/app_localizations.dart';
 import 'home_screen.dart';
 import 'locations_screen.dart';
 import 'messages_screen.dart';
@@ -47,30 +48,35 @@ class _MainScreenState extends State<MainScreen> {
           // We remove the fixed-height container and use Padding for spacing.
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 1.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(
-                  index: 0,
-                  icon: Icons.home,
-                  label: '首页',
-                ),
-                _buildNavItem(
-                  index: 1,
-                  icon: Icons.location_on,
-                  label: '地点',
-                ),
-                _buildNavItem(
-                  index: 2,
-                  icon: Icons.message,
-                  label: '消息',
-                ),
-                _buildNavItem(
-                  index: 3,
-                  icon: Icons.person,
-                  label: '我的',
-                ),
-              ],
+            child: Builder(
+              builder: (context) {
+                final l10n = AppLocalizations.of(context)!;
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem(
+                      index: 0,
+                      icon: Icons.home,
+                      label: l10n.navHome,
+                    ),
+                    _buildNavItem(
+                      index: 1,
+                      icon: Icons.location_on,
+                      label: l10n.navLocations,
+                    ),
+                    _buildNavItem(
+                      index: 2,
+                      icon: Icons.message,
+                      label: l10n.navMessages,
+                    ),
+                    _buildNavItem(
+                      index: 3,
+                      icon: Icons.person,
+                      label: l10n.navProfile,
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),

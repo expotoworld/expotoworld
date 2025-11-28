@@ -11,6 +11,7 @@ import '../../../../data/models/store.dart';
 import '../../../../data/services/api_service.dart';
 import '../../../../core/enums/store_type.dart';
 import '../../../providers/location_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ExhibitionSalesLocationsScreen extends StatefulWidget {
   const ExhibitionSalesLocationsScreen({super.key});
@@ -155,8 +156,8 @@ class _ExhibitionSalesLocationsScreenState extends State<ExhibitionSalesLocation
         final stores = _filteredStores;
         
         if (stores.isEmpty) {
-          return const Center(
-            child: Text('暂无展销展消数据'),
+          return Center(
+            child: Text(AppLocalizations.of(context)!.noEtwToCData),
           );
         }
 
@@ -260,7 +261,7 @@ class _ExhibitionSalesLocationsScreenState extends State<ExhibitionSalesLocation
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: '搜索展销展消...', // Customized hint text
+          hintText: '搜索 ETW to C 门店...', // Customized hint text
           hintStyle: AppTextStyles.body.copyWith(
             color: AppColors.secondaryText,
           ),
@@ -577,8 +578,8 @@ class _ExhibitionSalesLocationsScreenState extends State<ExhibitionSalesLocation
       if (!locationProvider.hasLocationPermission) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('需要位置权限才能显示您的位置'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.locationPermissionNeeded),
               backgroundColor: AppColors.themeRed,
             ),
           );
@@ -602,8 +603,8 @@ class _ExhibitionSalesLocationsScreenState extends State<ExhibitionSalesLocation
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('无法获取当前位置'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.unableToGetLocation),
               backgroundColor: AppColors.themeRed,
             ),
           );
@@ -613,8 +614,8 @@ class _ExhibitionSalesLocationsScreenState extends State<ExhibitionSalesLocation
       debugPrint('Error getting location: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('获取位置失败'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.getLocationFailed),
             backgroundColor: AppColors.themeRed,
           ),
         );

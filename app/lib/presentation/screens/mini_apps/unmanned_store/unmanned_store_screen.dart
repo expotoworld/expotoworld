@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 
 import '../../../../data/models/category.dart';
 import '../../../../data/models/subcategory.dart';
@@ -113,7 +114,7 @@ class _UnmannedStoreScreenState extends State<UnmannedStoreScreen> {
   // Store locator header for ETWtoU (unmanned store)
   PreferredSizeWidget _buildAppBar(LocationProvider locationProvider) {
     return StoreLocatorHeader(
-      miniAppName: '无人商店',
+      miniAppName: 'ETW to U',
       allowedStoreTypes: const [StoreType.etwToGo, StoreType.etwXpress],
       selectedStore: _selectedStore,
       onStoreSelected: _onStoreSelected,
@@ -495,7 +496,7 @@ class __ProductsTabState extends State<_ProductsTab>
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  '加载失败',
+                  AppLocalizations.of(context)!.loadingFailed,
                   style: AppTextStyles.responsiveBodySmall(context).copyWith(
                     color: AppColors.primaryText,
                     fontWeight: FontWeight.w600,
@@ -504,7 +505,7 @@ class __ProductsTabState extends State<_ProductsTab>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '请检查网络连接后重试',
+                  AppLocalizations.of(context)!.checkNetworkAndRetry,
                   style: AppTextStyles.responsiveBodySmall(
                     context,
                   ).copyWith(color: AppColors.secondaryText),
@@ -520,7 +521,7 @@ class __ProductsTabState extends State<_ProductsTab>
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('重试'),
+                  child: Text(AppLocalizations.of(context)!.retry),
                 ),
               ],
             ),
@@ -620,7 +621,7 @@ class __ProductsTabState extends State<_ProductsTab>
             ),
           );
         } else {
-          return const Center(child: Text('暂无数据'));
+          return Center(child: Text(AppLocalizations.of(context)!.noData));
         }
       },
     );
@@ -696,7 +697,7 @@ class __ProductsTabState extends State<_ProductsTab>
               category: category,
               subcategory: subcategory,
               allProducts: allProducts,
-              miniAppName: '无人商店',
+              miniAppName: 'ETW to U',
               miniAppType: 'unmanned_store',
               selectedStore: _selectedStore, // Pass the selected store context
               instanceId: widget.instanceId,
@@ -936,7 +937,7 @@ class _MessagesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('消息功能开发中...'));
+    return Center(child: Text(AppLocalizations.of(context)!.messagingInDevelopment));
   }
 }
 
@@ -945,6 +946,6 @@ class _ProfileTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('个人中心功能开发中...'));
+    return Center(child: Text(AppLocalizations.of(context)!.profileInDevelopment));
   }
 }

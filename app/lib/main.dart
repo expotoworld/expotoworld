@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_text_styles.dart';
+import 'l10n/app_localizations.dart';
 import 'presentation/providers/cart_provider.dart';
 import 'presentation/providers/location_provider.dart';
 import 'presentation/providers/auth_provider.dart';
@@ -37,10 +39,22 @@ class ExpoToWorldApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LocationProvider()),
       ],
       child: MaterialApp(
-        title: 'Expo to World',
+        title: 'EXPO to WORLD',
         theme: AppTheme.lightTheme,
         home: const AuthWrapper(),
         debugShowCheckedModeBanner: false,
+        // Localization configuration
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('en'), // English (default)
+          Locale('zh'), // Chinese
+        ],
+        locale: const Locale('en'), // Default locale
       ),
     );
   }
@@ -161,7 +175,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                   CircularProgressIndicator(color: AppColors.themeRed),
                   SizedBox(height: 16),
                   Text(
-                    'Expo to World',
+                    'EXPO to WORLD',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
@@ -170,7 +184,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    '正在加载...',
+                    'Loading...',
                     style: TextStyle(color: AppColors.secondaryText),
                   ),
                 ],

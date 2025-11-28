@@ -868,7 +868,7 @@ func (h *Handler) UserSendPhoneVerification(c *gin.Context) {
 		fmt.Printf("Failed to increment user rate limit: %v\n", err)
 	}
 
-	message := fmt.Sprintf("Your Made in World verification code is: %s. This code expires in %d minutes. If you didn't request this, please ignore.", code, expirationMinutes)
+	message := fmt.Sprintf("Your EXPO to WORLD verification code is: %s. This code expires in %d minutes. If you didn't request this, please ignore.", code, expirationMinutes)
 	if err := h.SMS.SendSMS(ctx, phone, message); err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to send SMS", Message: err.Error()})
 		return

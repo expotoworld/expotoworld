@@ -5,6 +5,7 @@ import '../../../../data/models/category.dart';
 import '../../../../data/models/subcategory.dart';
 import '../../../../data/models/product.dart';
 import '../../../../core/navigation/custom_page_transitions.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'product_list_screen.dart';
 
 class SubcategoryGridScreen extends StatelessWidget {
@@ -42,12 +43,12 @@ class SubcategoryGridScreen extends StatelessWidget {
         ),
       ),
       body: subcategoriesWithProducts.isEmpty
-          ? _buildEmptyState()
+          ? _buildEmptyState(context)
           : _buildSubcategoryGrid(context, subcategoriesWithProducts),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -59,7 +60,7 @@ class SubcategoryGridScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            '暂无子分类',
+            AppLocalizations.of(context)!.noSubcategories,
             style: AppTextStyles.body.copyWith(
               color: AppColors.secondaryText,
             ),
@@ -165,7 +166,7 @@ class SubcategoryGridScreen extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      '$productCount 个商品',
+                      AppLocalizations.of(context)!.productCount(productCount),
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.secondaryText,
                       ),

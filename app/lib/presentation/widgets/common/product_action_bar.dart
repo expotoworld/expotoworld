@@ -5,6 +5,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/responsive_utils.dart';
 import '../../../core/enums/mini_app_type.dart';
 import '../../../data/models/product.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/auth_provider.dart';
 
@@ -54,8 +55,8 @@ class ProductActionBar extends StatelessWidget {
       text: TextSpan(
         style: AppTextStyles.responsiveBody(context),
         children: [
-          const TextSpan(
-            text: '最小起订量: ',
+          TextSpan(
+            text: AppLocalizations.of(context)!.minimumOrderQuantity,
           ),
           TextSpan(
             text: product.minimumOrderQuantity.toString(),
@@ -112,7 +113,7 @@ class ProductActionBar extends StatelessWidget {
           debugPrint('🛒 ProductActionBar: Error adding to cart: $e');
           // Check if context is still mounted before using it
           if (context.mounted) {
-            _showErrorFeedback(context, '添加到购物车失败，请重试');
+            _showErrorFeedback(context, AppLocalizations.of(context)!.addToCartFailed);
           }
         }
       },
@@ -133,7 +134,7 @@ class ProductActionBar extends StatelessWidget {
           ],
         ),
         child: Text(
-          '加入购物车',
+          AppLocalizations.of(context)!.addToCart,
           style: AppTextStyles.responsiveButton(context),
         ),
       ),
@@ -247,14 +248,14 @@ class ProductActionBar extends StatelessWidget {
     // Check authentication first
     if (!authProvider.isAuthenticated) {
       debugPrint('🛒 ProductActionBar: User not authenticated');
-      _showErrorFeedback(context, '请先登录后再添加商品到购物车');
+      _showErrorFeedback(context, AppLocalizations.of(context)!.pleaseLoginFirst);
       return false;
     }
 
     // Check if mini-app context is set
     if (cartProvider.currentMiniAppType == null) {
       debugPrint('🛒 ProductActionBar: Mini-app context not set');
-      _showErrorFeedback(context, '购物车初始化失败，请重试');
+      _showErrorFeedback(context, AppLocalizations.of(context)!.cartInitFailed);
       return false;
     }
 
@@ -263,7 +264,7 @@ class ProductActionBar extends StatelessWidget {
          product.miniAppType == MiniAppType.exhibitionSales) &&
         (product.storeId == null || product.storeId!.isEmpty)) {
       debugPrint('🛒 ProductActionBar: Location-based mini-app requires store selection');
-      _showErrorFeedback(context, '请先选择门店位置');
+      _showErrorFeedback(context, AppLocalizations.of(context)!.pleaseSelectStoreFirst);
       return false;
     }
 

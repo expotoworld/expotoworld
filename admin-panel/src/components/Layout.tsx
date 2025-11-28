@@ -147,7 +147,7 @@ const Layout = ({ children }: LayoutProps) => {
             fontSize: '18px',
           }}
         >
-          Made in World
+          EXPO to WORLD
         </Typography>
       </Toolbar>
 

@@ -6,6 +6,7 @@ import '../../../core/enums/mini_app_type.dart';
 import '../../../data/models/product.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../../l10n/app_localizations.dart';
 
 class AddToCartButton extends StatelessWidget {
   final Product product;
@@ -147,7 +148,7 @@ class AddToCartButton extends StatelessWidget {
 
   /// Check if more items can be added based on stock availability
   bool _canAddMore(int currentQuantity) {
-    // Only 无人商店 (UnmannedStore) mini-app validates stock
+    // Only ETW to U (UnmannedStore) mini-app validates stock
     // All other mini-apps have infinite stock
     if (product.miniAppType != MiniAppType.unmannedStore) {
       return true;
@@ -233,7 +234,7 @@ class AddToCartButton extends StatelessWidget {
         // Show error feedback to user
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('添加到购物车失败: ${e.toString()}'),
+            content: Text(AppLocalizations.of(context)!.addToCartError(e.toString())),
             backgroundColor: AppColors.error,
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,

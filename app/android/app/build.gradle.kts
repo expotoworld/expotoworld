@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -6,7 +8,7 @@ plugins {
 }
 
 // Read properties from local.properties
-val properties = java.util.Properties()
+val properties = Properties()
 val localPropertiesFile = project.rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     properties.load(localPropertiesFile.inputStream())
@@ -15,7 +17,7 @@ if (localPropertiesFile.exists()) {
 android {
     namespace = "com.expotoworld.app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

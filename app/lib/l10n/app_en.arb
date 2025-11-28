@@ -1,0 +1,988 @@
+{
+  "@@locale": "en",
+  "@@author": "EXPO to WORLD Team",
+  "@@last_modified": "2025-11-28",
+  
+  "appTitle": "EXPO to WORLD",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Generic loading message"
+  },
+  
+  "retry": "Retry",
+  "@retry": {
+    "description": "Retry button text"
+  },
+  
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button text"
+  },
+  
+  "confirm": "Confirm",
+  "@confirm": {
+    "description": "Confirm button text"
+  },
+  
+  "close": "Close",
+  "@close": {
+    "description": "Close button text"
+  },
+  
+  "loadingFailed": "Loading failed",
+  "@loadingFailed": {
+    "description": "Generic loading failed message"
+  },
+  
+  "noData": "No data available",
+  "@noData": {
+    "description": "Message when there is no data"
+  },
+  
+  "noProducts": "No products available",
+  "@noProducts": {
+    "description": "Message when there are no products"
+  },
+  
+  "noStores": "No stores available",
+  "@noStores": {
+    "description": "Message when there are no stores"
+  },
+  
+  "processing": "Processing...",
+  "@processing": {
+    "description": "Processing state message"
+  },
+
+  "email": "Email",
+  "@email": {
+    "description": "Email label"
+  },
+  
+  "phone": "Phone",
+  "@phone": {
+    "description": "Phone label"
+  },
+  
+  "emailLabel": "Email",
+  "@emailLabel": {
+    "description": "Email input label"
+  },
+  
+  "emailHint": "Enter your email address",
+  "@emailHint": {
+    "description": "Email input hint"
+  },
+  
+  "phoneLabel": "Phone Number",
+  "@phoneLabel": {
+    "description": "Phone input label"
+  },
+  
+  "phoneHint": "Enter your phone number",
+  "@phoneHint": {
+    "description": "Phone input hint"
+  },
+  
+  "verificationCodeHint": "000000",
+  "@verificationCodeHint": {
+    "description": "Verification code input hint"
+  },
+
+  "cart": "Cart",
+  "@cart": {
+    "description": "Cart screen title"
+  },
+  
+  "checkout": "Checkout",
+  "@checkout": {
+    "description": "Checkout button text"
+  },
+  
+  "goShopping": "Go Shopping",
+  "@goShopping": {
+    "description": "Go shopping button when cart is empty"
+  },
+  
+  "clearCart": "Clear Cart",
+  "@clearCart": {
+    "description": "Clear cart dialog title"
+  },
+  
+  "clearCartConfirm": "Are you sure you want to clear all items from your cart?",
+  "@clearCartConfirm": {
+    "description": "Clear cart confirmation message"
+  },
+  
+  "clearStoreCartConfirm": "Are you sure you want to clear all items from {storeName} cart?",
+  "@clearStoreCartConfirm": {
+    "description": "Clear specific store cart confirmation message",
+    "placeholders": {
+      "storeName": {
+        "type": "String",
+        "example": "MANOR Lugano"
+      }
+    }
+  },
+  
+  "totalAmount": "Total: €{amount}",
+  "@totalAmount": {
+    "description": "Total amount display",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "123.45"
+      }
+    }
+  },
+  
+  "orderCreatedSuccess": "Order created successfully!",
+  "@orderCreatedSuccess": {
+    "description": "Order creation success message"
+  },
+  
+  "cartLoadingFailed": "Failed to load cart: {error}",
+  "@cartLoadingFailed": {
+    "description": "Cart loading error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "noStore": "No Store",
+  "@noStore": {
+    "description": "Text shown when no store is selected"
+  },
+
+  "hotRecommendations": "Hot Recommendations",
+  "@hotRecommendations": {
+    "description": "Hot recommendations section title"
+  },
+
+  "location": "Location",
+  "@location": {
+    "description": "Location label"
+  },
+
+  "lugano": "Lugano",
+  "@lugano": {
+    "description": "Default city name"
+  },
+
+  "searchProducts": "Search products...",
+  "@searchProducts": {
+    "description": "Product search hint"
+  },
+
+  "searchStores": "Search stores...",
+  "@searchStores": {
+    "description": "Store search hint"
+  },
+
+  "searchEtwToCStores": "Search ETW to C stores...",
+  "@searchEtwToCStores": {
+    "description": "ETW to C store search hint"
+  },
+
+  "searchEtwToUStores": "Search ETW to U stores...",
+  "@searchEtwToUStores": {
+    "description": "ETW to U store search hint"
+  },
+
+  "noEtwToCData": "No ETW to C data",
+  "@noEtwToCData": {
+    "description": "Message when no ETW to C data available"
+  },
+
+  "noEtwToUData": "No ETW to U data",
+  "@noEtwToUData": {
+    "description": "Message when no ETW to U data available"
+  },
+
+  "noStoreData": "No store data",
+  "@noStoreData": {
+    "description": "Message when no store data available"
+  },
+
+  "nearbyEtwStores": "Nearby ETW Stores ({count})",
+  "@nearbyEtwStores": {
+    "description": "Nearby ETW stores section title",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "showNearbyEtwLocations": "Show nearby ETW store locations",
+  "@showNearbyEtwLocations": {
+    "description": "Map fallback text for showing nearby stores"
+  },
+
+  "viewFullMapOnMobile": "Please view full map functionality on mobile device",
+  "@viewFullMapOnMobile": {
+    "description": "Message shown on web for map functionality"
+  },
+
+  "locationPermissionRequired": "Location permission is required to show your location",
+  "@locationPermissionRequired": {
+    "description": "Location permission dialog message"
+  },
+
+  "unableToGetLocation": "Unable to get current location",
+  "@unableToGetLocation": {
+    "description": "Error message when location cannot be retrieved"
+  },
+
+  "locationError": "Location error",
+  "@locationError": {
+    "description": "Generic location error message"
+  },
+
+  "locationErrorDetails": "Failed to get location: {error}",
+  "@locationErrorDetails": {
+    "description": "Detailed location error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "navigate": "Navigate",
+  "@navigate": {
+    "description": "Navigation button text"
+  },
+
+  "unableToOpenMaps": "Unable to open maps app",
+  "@unableToOpenMaps": {
+    "description": "Error when maps app cannot be opened"
+  },
+
+  "navigationFailed": "Navigation failed: {error}",
+  "@navigationFailed": {
+    "description": "Navigation error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "enableLocationInSettings": "Please enable location permission in settings, then reopen the app",
+  "@enableLocationInSettings": {
+    "description": "Message to guide user to enable location in settings"
+  },
+
+  "mapLocationFailed": "Map location failed",
+  "@mapLocationFailed": {
+    "description": "Map location error message"
+  },
+
+  "messagingInDevelopment": "Messaging feature in development...",
+  "@messagingInDevelopment": {
+    "description": "Placeholder for messaging feature"
+  },
+
+  "profileInDevelopment": "Profile feature in development...",
+  "@profileInDevelopment": {
+    "description": "Placeholder for profile feature"
+  },
+
+  "orderManagement": "Order Management",
+  "@orderManagement": {
+    "description": "Order management section title"
+  },
+
+  "myOrders": "My Orders",
+  "@myOrders": {
+    "description": "My orders menu item"
+  },
+
+  "myFavorites": "My Favorites",
+  "@myFavorites": {
+    "description": "My favorites menu item"
+  },
+
+  "browsingHistory": "Browsing History",
+  "@browsingHistory": {
+    "description": "Browsing history menu item"
+  },
+
+  "addToCartFailed": "Failed to add to cart, please retry",
+  "@addToCartFailed": {
+    "description": "Add to cart error message"
+  },
+
+  "addToCartError": "Failed to add to cart: {error}",
+  "@addToCartError": {
+    "description": "Detailed add to cart error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "noProductsInSubcategory": "No products available in this subcategory",
+  "@noProductsInSubcategory": {
+    "description": "Message when subcategory has no products"
+  },
+
+  "navHome": "Home",
+  "@navHome": {
+    "description": "Home navigation label"
+  },
+
+  "navLocations": "Locations",
+  "@navLocations": {
+    "description": "Locations navigation label"
+  },
+
+  "navMessages": "Messages",
+  "@navMessages": {
+    "description": "Messages navigation label"
+  },
+
+  "navProfile": "Profile",
+  "@navProfile": {
+    "description": "Profile navigation label"
+  },
+
+  "appInitError": "App Initialization Error",
+  "@appInitError": {
+    "description": "App initialization error title"
+  },
+
+  "failedToInitApp": "Failed to initialize the app: {error}",
+  "@failedToInitApp": {
+    "description": "Failed to init app error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "checkNetworkAndRetry": "Please check your network connection and retry",
+  "@checkNetworkAndRetry": {
+    "description": "Network error suggestion"
+  },
+
+  "noCategoryProducts": "No products in this category",
+  "@noCategoryProducts": {
+    "description": "Message when category has no products"
+  },
+
+  "noEtwToCData": "No ETW to C data available",
+  "@noEtwToCData": {
+    "description": "No ETW to C data message"
+  },
+
+  "noEtwToUData": "No ETW to U data available",
+  "@noEtwToUData": {
+    "description": "No ETW to U data message"
+  },
+
+  "locationPermissionNeeded": "Location permission is required to show your location",
+  "@locationPermissionNeeded": {
+    "description": "Location permission needed message"
+  },
+
+  "unableToGetLocation": "Unable to get current location",
+  "@unableToGetLocation": {
+    "description": "Unable to get location message"
+  },
+
+  "getLocationFailed": "Failed to get location",
+  "@getLocationFailed": {
+    "description": "Get location failed message"
+  },
+
+  "noStoreData": "No store data available",
+  "@noStoreData": {
+    "description": "No store data message"
+  },
+
+  "close": "Close",
+  "@close": {
+    "description": "Close button label"
+  },
+
+  "navigate": "Navigate",
+  "@navigate": {
+    "description": "Navigate button label"
+  },
+
+  "unableToOpenMaps": "Unable to open maps app",
+  "@unableToOpenMaps": {
+    "description": "Unable to open maps message"
+  },
+
+  "navigationFailed": "Navigation failed: {error}",
+  "@navigationFailed": {
+    "description": "Navigation failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "allowLocationInSettings": "Please allow location permission in settings, then reopen the app",
+  "@allowLocationInSettings": {
+    "description": "Allow location in settings message"
+  },
+
+  "mapLocationFailed": "Map location failed",
+  "@mapLocationFailed": {
+    "description": "Map location failed message"
+  },
+
+  "featuredProducts": "Featured",
+  "@featuredProducts": {
+    "description": "Featured products label"
+  },
+
+  "processing": "Processing...",
+  "@processing": {
+    "description": "Processing message"
+  },
+
+  "email": "Email",
+  "@email": {
+    "description": "Email label"
+  },
+
+  "phone": "Phone",
+  "@phone": {
+    "description": "Phone label"
+  },
+
+  "verificationCodeSentEmail": "Verification code sent to email",
+  "@verificationCodeSentEmail": {
+    "description": "Verification code sent to email message"
+  },
+
+  "verificationCodeSentPhone": "Verification code sent via SMS",
+  "@verificationCodeSentPhone": {
+    "description": "Verification code sent via SMS message"
+  },
+
+  "checkout": "Checkout",
+  "@checkout": {
+    "description": "Checkout button label"
+  },
+
+  "goShopping": "Go Shopping",
+  "@goShopping": {
+    "description": "Go shopping button label"
+  },
+
+  "clearCartTitle": "Clear Cart",
+  "@clearCartTitle": {
+    "description": "Clear cart dialog title"
+  },
+
+  "clearCartConfirm": "Are you sure you want to clear all items from the cart?",
+  "@clearCartConfirm": {
+    "description": "Clear cart confirmation message"
+  },
+
+  "clearStoreCartConfirm": "Are you sure you want to clear items from {storeName} cart?",
+  "@clearStoreCartConfirm": {
+    "description": "Clear store cart confirmation message",
+    "placeholders": {
+      "storeName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "checkoutTitle": "Checkout",
+  "@checkoutTitle": {
+    "description": "Checkout dialog title"
+  },
+
+  "totalAmount": "Total: €{amount}",
+  "@totalAmount": {
+    "description": "Total amount message",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+
+  "orderCreatedSuccess": "Order created successfully!",
+  "@orderCreatedSuccess": {
+    "description": "Order created success message"
+  },
+
+  "noStore": "No Store",
+  "@noStore": {
+    "description": "No store label"
+  },
+
+  "enterSmsCode": "Enter SMS verification code",
+  "@enterSmsCode": {
+    "description": "Enter SMS code prompt"
+  },
+
+  "enterEmailCode": "Enter email verification code",
+  "@enterEmailCode": {
+    "description": "Enter email code prompt"
+  },
+
+  "selectLoginMethod": "Please select login method",
+  "@selectLoginMethod": {
+    "description": "Select login method prompt"
+  },
+
+  "cartEmpty": "Your cart is empty",
+  "@cartEmpty": {
+    "description": "Cart empty message"
+  },
+
+  "addSomeProducts": "Add some products!",
+  "@addSomeProducts": {
+    "description": "Add products prompt"
+  },
+
+  "currentStore": "Current Store",
+  "@currentStore": {
+    "description": "Current store label"
+  },
+
+  "clearStoreCartConfirm": "Are you sure you want to clear all items from {storeName} cart?",
+  "@clearStoreCartConfirm": {
+    "description": "Clear store cart confirmation",
+    "placeholders": {
+      "storeName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "totalAmountValue": "Total: €{amount}",
+  "@totalAmountValue": {
+    "description": "Total amount with value",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+
+  "confirmPayment": "Confirm Payment",
+  "@confirmPayment": {
+    "description": "Confirm payment button"
+  },
+
+  "cartStateError": "Cart state error, please try again",
+  "@cartStateError": {
+    "description": "Cart state error message"
+  },
+
+  "orderCreatedSuccess": "Order created successfully!",
+  "@orderCreatedSuccess": {
+    "description": "Order created success message"
+  },
+
+  "orderCreationFailed": "Order creation failed: {error}",
+  "@orderCreationFailed": {
+    "description": "Order creation failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "distanceUnknown": "Distance unknown",
+  "@distanceUnknown": {
+    "description": "Distance unknown label"
+  },
+
+  "noStoreData": "No store data available",
+  "@noStoreData": {
+    "description": "No store data message"
+  },
+
+  "unableToOpenMaps": "Unable to open maps app",
+  "@unableToOpenMaps": {
+    "description": "Unable to open maps error"
+  },
+
+  "navigationFailed": "Navigation failed: {error}",
+  "@navigationFailed": {
+    "description": "Navigation failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "enableLocationInSettings": "Please enable location permission in settings, then reopen the app",
+  "@enableLocationInSettings": {
+    "description": "Enable location permission message"
+  },
+
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings label"
+  },
+
+  "mapLocationFailed": "Map location failed",
+  "@mapLocationFailed": {
+    "description": "Map location failed message"
+  },
+
+  "featuredProducts": "Featured Products",
+  "@featuredProducts": {
+    "description": "Featured products section header"
+  },
+
+  "viewAll": "View All",
+  "@viewAll": {
+    "description": "View all link text"
+  },
+
+  "stockRemaining": "{count} left",
+  "@stockRemaining": {
+    "description": "Stock remaining count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "stock": "Stock: {count}",
+  "@stock": {
+    "description": "Stock count label",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "profile": "Profile",
+  "@profile": {
+    "description": "Profile screen title"
+  },
+
+  "valuedUser": "Valued User",
+  "@valuedUser": {
+    "description": "Default user name placeholder"
+  },
+
+  "orderManagementSection": "Order Management",
+  "@orderManagementSection": {
+    "description": "Order management section title"
+  },
+
+  "myFavorites": "My Favorites",
+  "@myFavorites": {
+    "description": "My favorites menu item"
+  },
+
+  "browsingHistory": "Browsing History",
+  "@browsingHistory": {
+    "description": "Browsing history menu item"
+  },
+
+  "accountSettings": "Account Settings",
+  "@accountSettings": {
+    "description": "Account settings section title"
+  },
+
+  "shippingAddress": "Shipping Address",
+  "@shippingAddress": {
+    "description": "Shipping address menu item"
+  },
+
+  "paymentMethods": "Payment Methods",
+  "@paymentMethods": {
+    "description": "Payment methods menu item"
+  },
+
+  "accountSecurity": "Account Security",
+  "@accountSecurity": {
+    "description": "Account security menu item"
+  },
+
+  "helpAndSupport": "Help & Support",
+  "@helpAndSupport": {
+    "description": "Help and support section title"
+  },
+
+  "helpCenter": "Help Center",
+  "@helpCenter": {
+    "description": "Help center menu item"
+  },
+
+  "feedback": "Feedback",
+  "@feedback": {
+    "description": "Feedback menu item"
+  },
+
+  "aboutUs": "About Us",
+  "@aboutUs": {
+    "description": "About us menu item"
+  },
+
+  "logout": "Log Out",
+  "@logout": {
+    "description": "Logout button text"
+  },
+
+  "confirmLogout": "Confirm Logout",
+  "@confirmLogout": {
+    "description": "Confirm logout dialog title"
+  },
+
+  "logoutConfirmMessage": "Are you sure you want to log out?",
+  "@logoutConfirmMessage": {
+    "description": "Logout confirmation message"
+  },
+
+  "exit": "Exit",
+  "@exit": {
+    "description": "Exit button text"
+  },
+
+  "messages": "Messages",
+  "@messages": {
+    "description": "Messages screen title"
+  },
+
+  "orderUpdate": "Order Update",
+  "@orderUpdate": {
+    "description": "Order update notification title"
+  },
+
+  "orderShippedMessage": "Your order #{orderId} has been shipped",
+  "@orderShippedMessage": {
+    "description": "Order shipped notification message",
+    "placeholders": {
+      "orderId": {
+        "type": "String"
+      }
+    }
+  },
+
+  "minutesAgo": "{count} minutes ago",
+  "@minutesAgo": {
+    "description": "Time ago in minutes",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "hoursAgo": "{count} hours ago",
+  "@hoursAgo": {
+    "description": "Time ago in hours",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "yesterday": "Yesterday",
+  "@yesterday": {
+    "description": "Yesterday time label"
+  },
+
+  "promotion": "Promotion",
+  "@promotion": {
+    "description": "Promotion notification title"
+  },
+
+  "newArrivalsPromo": "New arrivals, limited time offer!",
+  "@newArrivalsPromo": {
+    "description": "New arrivals promotion message"
+  },
+
+  "systemNotification": "System Notification",
+  "@systemNotification": {
+    "description": "System notification title"
+  },
+
+  "welcomeMessage": "Welcome to EXPO to WORLD app",
+  "@welcomeMessage": {
+    "description": "Welcome message"
+  },
+
+  "noSubcategories": "No subcategories",
+  "@noSubcategories": {
+    "description": "No subcategories message"
+  },
+
+  "productCount": "{count} products",
+  "@productCount": {
+    "description": "Product count label",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "selectStore": "Select Store",
+  "@selectStore": {
+    "description": "Select store placeholder text"
+  },
+
+  "minimumOrderQuantity": "Min Order Qty: ",
+  "@minimumOrderQuantity": {
+    "description": "Minimum order quantity label"
+  },
+
+  "addToCart": "Add to Cart",
+  "@addToCart": {
+    "description": "Add to cart button text"
+  },
+
+  "pleaseLoginFirst": "Please login first to add items to cart",
+  "@pleaseLoginFirst": {
+    "description": "Login required message for cart"
+  },
+
+  "cartInitFailed": "Cart initialization failed, please try again",
+  "@cartInitFailed": {
+    "description": "Cart initialization error message"
+  },
+
+  "pleaseSelectStoreFirst": "Please select a store location first",
+  "@pleaseSelectStoreFirst": {
+    "description": "Store selection required message"
+  },
+
+  "defaultCity": "Lugano",
+  "@defaultCity": {
+    "description": "Default city name"
+  },
+
+  "defaultStoreName": "Via Nassa Store",
+  "@defaultStoreName": {
+    "description": "Default store name"
+  },
+
+  "noCategoryProducts": "No products in this category",
+  "@noCategoryProducts": {
+    "description": "No products in category message"
+  },
+
+  "noProducts": "No products",
+  "@noProducts": {
+    "description": "No products message"
+  },
+
+  "featured": "Featured",
+  "@featured": {
+    "description": "Featured category name"
+  },
+
+  "searchEtwToCStores": "Search ETW to C stores...",
+  "@searchEtwToCStores": {
+    "description": "Search hint for ETW to C stores"
+  },
+
+  "searchEtwToUStores": "Search ETW to U stores...",
+  "@searchEtwToUStores": {
+    "description": "Search hint for ETW to U stores"
+  },
+
+  "navigate": "Navigate",
+  "@navigate": {
+    "description": "Navigate button text"
+  },
+
+  "noSubcategoryProducts": "No products in this subcategory",
+  "@noSubcategoryProducts": {
+    "description": "No products in subcategory message"
+  },
+
+  "enterSixDigitCode": "Please enter 6-digit verification code",
+  "@enterSixDigitCode": {
+    "description": "Enter 6-digit code prompt"
+  },
+
+  "sendVerificationCode": "Send Verification Code",
+  "@sendVerificationCode": {
+    "description": "Send verification code button"
+  },
+
+  "verifyAndLogin": "Verify and Login",
+  "@verifyAndLogin": {
+    "description": "Verify and login button"
+  },
+
+  "resendInSeconds": "Resend in {seconds}s",
+  "@resendInSeconds": {
+    "description": "Resend countdown text",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+
+  "resendVerificationCode": "Resend Verification Code",
+  "@resendVerificationCode": {
+    "description": "Resend verification code button"
+  },
+
+  "email": "Email",
+  "@email": {
+    "description": "Email label"
+  },
+
+  "cart": "Cart",
+  "@cart": {
+    "description": "Cart navigation label"
+  },
+
+  "enterEmailAddress": "Please enter your email address",
+  "@enterEmailAddress": {
+    "description": "Email input hint"
+  },
+
+  "pleaseEnterEmail": "Please enter email address",
+  "@pleaseEnterEmail": {
+    "description": "Email required validation"
+  },
+
+  "pleaseEnterValidEmail": "Please enter a valid email address",
+  "@pleaseEnterValidEmail": {
+    "description": "Email format validation"
+  },
+
+  "phone": "Phone",
+  "@phone": {
+    "description": "Phone label"
+  },
+
+  "enterPhoneNumber": "Please enter your phone number",
+  "@enterPhoneNumber": {
+    "description": "Phone input hint"
+  },
+
+  "pleaseEnterValidPhone": "Please enter a valid phone number",
+  "@pleaseEnterValidPhone": {
+    "description": "Phone format validation"
+  }
+}
+

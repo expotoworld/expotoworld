@@ -14,6 +14,7 @@ import '../../../data/models/store.dart';
 import '../../../data/services/api_service.dart';
 import '../../../core/enums/store_type.dart';
 import '../../providers/location_provider.dart';
+import '../../../l10n/app_localizations.dart';
 
 
 class LocationsScreen extends StatefulWidget {
@@ -159,8 +160,8 @@ class _LocationsScreenState extends State<LocationsScreen> {
         final stores = _filteredStores;
 
         if (stores.isEmpty) {
-          return const Center(
-            child: Text('暂无门店数据'),
+          return Center(
+            child: Text(AppLocalizations.of(context)!.noStoreData),
           );
         }
 
@@ -660,7 +661,7 @@ class _LocationsScreenState extends State<LocationsScreen> {
                                     });
                                   },
                                   icon: const Icon(Icons.close),
-                                  label: const Text('关闭'),
+                                  label: Text(AppLocalizations.of(context)!.close),
                                   style: OutlinedButton.styleFrom(
                                     padding: EdgeInsets.symmetric(
                                       vertical: ResponsiveUtils.getResponsiveSpacing(context, 14),
@@ -676,7 +677,7 @@ class _LocationsScreenState extends State<LocationsScreen> {
                                     _navigateToStore(_selectedStore!);
                                   },
                                   icon: const Icon(Icons.navigation),
-                                  label: const Text('导航'),
+                                  label: Text(AppLocalizations.of(context)!.navigate),
                                   style: ElevatedButton.styleFrom(
                                     padding: EdgeInsets.symmetric(
                                       vertical: ResponsiveUtils.getResponsiveSpacing(context, 14),
@@ -731,7 +732,7 @@ class _LocationsScreenState extends State<LocationsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('无法打开地图应用'),
+              content: Text(AppLocalizations.of(context)!.unableToOpenMaps),
               backgroundColor: AppColors.error,
               duration: const Duration(seconds: 2),
             ),
@@ -744,7 +745,7 @@ class _LocationsScreenState extends State<LocationsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('导航失败: ${e.toString()}'),
+            content: Text(AppLocalizations.of(context)!.navigationFailed(e.toString())),
             backgroundColor: AppColors.error,
             duration: const Duration(seconds: 3),
           ),
@@ -767,11 +768,11 @@ class _LocationsScreenState extends State<LocationsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('请在设置中允许位置权限，然后重新打开应用'),
+              content: Text(AppLocalizations.of(context)!.enableLocationInSettings),
               backgroundColor: AppColors.themeRed,
               duration: const Duration(seconds: 4),
               action: SnackBarAction(
-                label: '设置',
+                label: AppLocalizations.of(context)!.settings,
                 textColor: Colors.white,
                 onPressed: () {
                   // This will open the app settings
@@ -811,7 +812,7 @@ class _LocationsScreenState extends State<LocationsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('地图定位失败'),
+              content: Text(AppLocalizations.of(context)!.mapLocationFailed),
               backgroundColor: AppColors.themeRed,
               duration: const Duration(seconds: 2),
             ),
@@ -825,7 +826,7 @@ class _LocationsScreenState extends State<LocationsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('无法获取当前位置'),
+            content: Text(AppLocalizations.of(context)!.unableToGetLocation),
             backgroundColor: AppColors.themeRed,
             duration: const Duration(seconds: 2),
           ),

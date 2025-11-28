@@ -60,10 +60,10 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
   String? get errorMessage => _errorMessage;
 
   // Display city with fallback
-  String get displayCity => _currentCity ?? '卢加诺';
+  String get displayCity => _currentCity ?? 'Lugano';
 
   // Display store name with fallback
-  String get displayStoreName => _nearestStore?.name ?? 'Via Nassa 店';
+  String get displayStoreName => _nearestStore?.name ?? 'Via Nassa Store';
 
   // Automatically initialize location services (called from constructor)
   void _autoInitialize() {
@@ -103,7 +103,7 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
         } else {
           debugPrint('LocationProvider: Permission denied, using fallback values');
           // Use fallback values when permission is denied
-          _currentCity = '卢加诺';
+          _currentCity = 'Lugano';
           // Try to load saved main store even without location permission
           _nearestStore = await StorageService.loadMainStore();
         }
@@ -111,7 +111,7 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
     } catch (e) {
       debugPrint('Location initialization failed: $e');
       // Use fallback values on any error
-      _currentCity = '卢加诺';
+      _currentCity = 'Lugano';
       _nearestStore = await StorageService.loadMainStore();
     } finally {
       _setLoading(false);
@@ -276,7 +276,7 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
       if (_hasLocationPermission) {
         await _updateLocation();
       } else {
-        _currentCity = '卢加诺';
+        _currentCity = 'Lugano';
         _nearestStore = await StorageService.loadMainStore();
       }
     } catch (e) {

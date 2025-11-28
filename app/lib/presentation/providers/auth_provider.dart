@@ -156,11 +156,11 @@ class AuthProvider extends ChangeNotifier {
       if (e is AuthException && e.isInvalidCredentials) {
         _verifyAttempts += 1;
         if (_verifyAttempts >= 3) {
-          _updateState(const AuthState.unauthenticated(errorMessage: '验证码错误次数过多，请确认您的邮箱地址是否正确'));
+          _updateState(const AuthState.unauthenticated(errorMessage: 'Too many incorrect verification codes. Please verify your email address is correct.'));
         } else {
           _updateState(_state.copyWith(
             status: AuthStatus.awaitingVerification,
-            errorMessage: '验证码错误，请重试 (' '$_verifyAttempts/3' ')',
+            errorMessage: 'Incorrect verification code. Please try again ($_verifyAttempts/3)',
             pendingEmail: effectiveEmail,
           ));
         }
@@ -205,11 +205,11 @@ class AuthProvider extends ChangeNotifier {
       if (e is AuthException && e.isInvalidCredentials) {
         _verifyAttempts += 1;
         if (_verifyAttempts >= 3) {
-          _updateState(const AuthState.unauthenticated(errorMessage: '验证码错误次数过多，请确认您的手机号是否正确'));
+          _updateState(const AuthState.unauthenticated(errorMessage: 'Too many incorrect verification codes. Please verify your phone number is correct.'));
         } else {
           _updateState(_state.copyWith(
             status: AuthStatus.awaitingVerification,
-            errorMessage: '验证码错误，请重试 (' '$_verifyAttempts/3' ')',
+            errorMessage: 'Incorrect verification code. Please try again ($_verifyAttempts/3)',
             pendingPhone: effectivePhone,
           ));
         }

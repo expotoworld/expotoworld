@@ -53,9 +53,9 @@ class MapFallback extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    kIsWeb 
+                    kIsWeb
                         ? '请在移动设备上查看完整地图功能'
-                        : '显示附近的无人门店位置',
+                        : '显示附近的 ETW 门店位置',
                     style: AppTextStyles.bodySmall,
                     textAlign: TextAlign.center,
                   ),
@@ -72,7 +72,7 @@ class MapFallback extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '附近的无人商店 (${stores.length})',
+                    '附近的 ETW 门店 (${stores.length})',
                     style: AppTextStyles.cardTitle,
                   ),
                   const SizedBox(height: 12),

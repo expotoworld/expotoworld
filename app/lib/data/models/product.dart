@@ -51,7 +51,7 @@ class Product {
   }
 
   bool get hasStock {
-    // Only 无人商店 (UnmannedStore) mini-app validates stock
+    // Only ETW to U (UnmannedStore) mini-app validates stock
     // All other mini-apps have infinite stock
     if (miniAppType != MiniAppType.unmannedStore) {
       return true;

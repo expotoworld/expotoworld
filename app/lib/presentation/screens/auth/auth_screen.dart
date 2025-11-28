@@ -6,6 +6,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/responsive_utils.dart';
 import '../../providers/auth_provider.dart';
 import '../../../data/models/auth_models.dart';
+import '../../../l10n/app_localizations.dart';
 
 import 'my_countries.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
@@ -68,7 +69,9 @@ class _AuthScreenState extends State<AuthScreen> {
       _codeFocus.requestFocus();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_usePhone ? '验证码已通过短信发送' : '验证码已发送到邮箱'),
+          content: Text(_usePhone
+            ? AppLocalizations.of(context)!.verificationCodeSentPhone
+            : AppLocalizations.of(context)!.verificationCodeSentEmail),
           backgroundColor: AppColors.themeRed,
         ),
       );
@@ -80,7 +83,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _verifyCode(AuthProvider auth) async {
     if (_codeController.text.trim().length != 6) {
-      setState(() => _errorMessage = '请输入6位验证码');
+      setState(() => _errorMessage = AppLocalizations.of(context)!.enterSixDigitCode);
       return;
     }
     setState(() { _isLoading = true; _errorMessage = null; });
@@ -140,13 +143,13 @@ class _AuthScreenState extends State<AuthScreen> {
           child: Consumer<AuthProvider>(
             builder: (context, auth, _) {
               if (auth.isLoading || _isLoading) {
-                return const Center(
+                return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      CircularProgressIndicator(color: AppColors.themeRed),
-                      SizedBox(height: 16),
-                      Text('处理中...', style: TextStyle(color: AppColors.secondaryText)),
+                      const CircularProgressIndicator(color: AppColors.themeRed),
+                      const SizedBox(height: 16),
+                      Text(AppLocalizations.of(context)!.processing, style: const TextStyle(color: AppColors.secondaryText)),
                     ],
                   ),
                 );
@@ -166,18 +169,18 @@ class _AuthScreenState extends State<AuthScreen> {
                         SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, 16)),
                         if (_usePhone) _buildPhoneInput(context, auth) else _buildEmailInput(context, auth),
                         SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, 24)),
-                        _buildPrimaryButton(context, label: '发送验证码', onPressed: () => _sendCode(auth)),
+                        _buildPrimaryButton(context, label: AppLocalizations.of(context)!.sendVerificationCode, onPressed: () => _sendCode(auth)),
                       ] else ...[
                         _buildCodeHeader(context),
                         SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, 16)),
                         _buildCodeField(context),
                         SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, 24)),
-                        _buildPrimaryButton(context, label: '验证并登录', onPressed: () => _verifyCode(auth)),
+                        _buildPrimaryButton(context, label: AppLocalizations.of(context)!.verifyAndLogin, onPressed: () => _verifyCode(auth)),
                         SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, 16)),
                         TextButton(
                           onPressed: _countdown == 0 ? () => _resendCode(auth) : null,
                           child: Text(
-                            _countdown > 0 ? '重新发送 $_countdown秒' : '重新发送验证码',
+                            _countdown > 0 ? AppLocalizations.of(context)!.resendInSeconds(_countdown) : AppLocalizations.of(context)!.resendVerificationCode,
                             style: AppTextStyles.bodySmall.copyWith(
                               color: _countdown > 0 ? AppColors.secondaryText : AppColors.themeRed,
                               fontSize: 14,
@@ -210,14 +213,16 @@ class _AuthScreenState extends State<AuthScreen> {
           child: const Icon(Icons.shopping_bag, color: Colors.white, size: 40),
         ),
         SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, 16)),
-        Text('Expo to World', style: AppTextStyles.responsiveMajorHeader(context).copyWith(
+        Text('EXPO to WORLD', style: AppTextStyles.responsiveMajorHeader(context).copyWith(
           fontSize: ResponsiveUtils.getResponsiveFontSize(context, 28), fontWeight: FontWeight.w800,
         )),
         SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, 8)),
         Text(
           (context.watch<AuthProvider>().state.status == AuthStatus.awaitingVerification)
-              ? (_usePhone ? '输入短信验证码' : '输入邮箱验证码')
-              : '请选择登录方式',
+              ? (_usePhone
+                  ? AppLocalizations.of(context)!.enterSmsCode
+                  : AppLocalizations.of(context)!.enterEmailCode)
+              : AppLocalizations.of(context)!.selectLoginMethod,
           style: AppTextStyles.responsiveBody(context).copyWith(
             color: AppColors.secondaryText,
             fontSize: ResponsiveUtils.getResponsiveFontSize(context, 16),
@@ -246,7 +251,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   color: _usePhone ? Colors.white : AppColors.themeRed.withValues(alpha: 0.08),
                   borderRadius: const BorderRadius.only(topLeft: Radius.circular(10), bottomLeft: Radius.circular(10)),
                 ),
-                child: Text('邮箱', style: AppTextStyles.responsiveBody(context).copyWith(
+                child: Text(AppLocalizations.of(context)!.email, style: AppTextStyles.responsiveBody(context).copyWith(
                   color: _usePhone ? AppColors.primaryText : AppColors.themeRed,
                   fontWeight: _usePhone ? FontWeight.w500 : FontWeight.w700,
                 )),
@@ -263,7 +268,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   color: _usePhone ? AppColors.themeRed.withValues(alpha: 0.08) : Colors.white,
                   borderRadius: const BorderRadius.only(topRight: Radius.circular(10), bottomRight: Radius.circular(10)),
                 ),
-                child: Text('手机', style: AppTextStyles.responsiveBody(context).copyWith(
+                child: Text(AppLocalizations.of(context)!.phone, style: AppTextStyles.responsiveBody(context).copyWith(
                   color: _usePhone ? AppColors.themeRed : AppColors.primaryText,
                   fontWeight: _usePhone ? FontWeight.w700 : FontWeight.w500,
                 )),
@@ -276,23 +281,24 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Widget _buildEmailInput(BuildContext context, AuthProvider auth) {
+    final l10n = AppLocalizations.of(context)!;
     return TextFormField(
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
       textInputAction: TextInputAction.done,
-      decoration: const InputDecoration(
-        labelText: '邮箱',
-        hintText: '请输入您的邮箱地址',
-        prefixIcon: Icon(Icons.email_outlined),
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: InputDecoration(
+        labelText: l10n.email,
+        hintText: l10n.enterEmailAddress,
+        prefixIcon: const Icon(Icons.email_outlined),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
       validator: (value) {
-        if (value == null || value.isEmpty) return '请输入邮箱地址';
+        if (value == null || value.isEmpty) return l10n.pleaseEnterEmail;
         // Simple, robust check: contains one '@' and a dot after it
         final at = value.indexOf('@');
         final dot = value.lastIndexOf('.');
         if (at <= 0 || dot <= at + 1 || dot == value.length - 1) {
-          return '请输入有效的邮箱地址';
+          return l10n.pleaseEnterValidEmail;
         }
         return null;
       },
@@ -302,14 +308,15 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Widget _buildPhoneInput(BuildContext context, AuthProvider auth) {
+    final l10n = AppLocalizations.of(context)!;
     return IntlPhoneField(
       countries: patchedCountries(),
       disableLengthCheck: true,
-      decoration: const InputDecoration(
-        labelText: '手机号',
-        hintText: '请输入您的手机号',
-        prefixIcon: Icon(Icons.phone_outlined),
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: InputDecoration(
+        labelText: l10n.phone,
+        hintText: l10n.enterPhoneNumber,
+        prefixIcon: const Icon(Icons.phone_outlined),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
       dropdownIconPosition: IconPosition.trailing,
       dropdownIcon: const Icon(Icons.arrow_drop_down),
@@ -341,7 +348,7 @@ class _AuthScreenState extends State<AuthScreen> {
         auth.clearError();
       },
       validator: (phone) {
-        if (_usePhone && (phone == null || phone.number.isEmpty)) return '请输入有效的手机号';
+        if (_usePhone && (phone == null || phone.number.isEmpty)) return l10n.pleaseEnterValidPhone;
         return null;
       },
     );
