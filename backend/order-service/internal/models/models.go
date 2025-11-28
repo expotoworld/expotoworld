@@ -4,20 +4,21 @@ import (
 	"time"
 )
 
-// MiniAppType represents the type of mini-app
+// MiniAppType represents the ETW mini-app type (ETWtoB, ETWtoC, ETWtoU, ETWtoG)
+// This is the primary and only supported type after the ETW migration.
 type MiniAppType string
 
 const (
-	MiniAppTypeRetailStore     MiniAppType = "RetailStore"
-	MiniAppTypeUnmannedStore   MiniAppType = "UnmannedStore"
-	MiniAppTypeExhibitionSales MiniAppType = "ExhibitionSales"
-	MiniAppTypeGroupBuying     MiniAppType = "GroupBuying"
+	MiniAppTypeETWtoB MiniAppType = "ETWtoB" // B2B / Retail Store
+	MiniAppTypeETWtoC MiniAppType = "ETWtoC" // B2C / Exhibition Sales
+	MiniAppTypeETWtoU MiniAppType = "ETWtoU" // Unmanned Store
+	MiniAppTypeETWtoG MiniAppType = "ETWtoG" // Group Buying
 )
 
 // IsValid checks if the mini-app type is valid
 func (m MiniAppType) IsValid() bool {
 	switch m {
-	case MiniAppTypeRetailStore, MiniAppTypeUnmannedStore, MiniAppTypeExhibitionSales, MiniAppTypeGroupBuying:
+	case MiniAppTypeETWtoB, MiniAppTypeETWtoC, MiniAppTypeETWtoU, MiniAppTypeETWtoG:
 		return true
 	default:
 		return false
@@ -25,8 +26,26 @@ func (m MiniAppType) IsValid() bool {
 }
 
 // RequiresStore returns true if the mini-app type requires a store_id
+// ETWtoU (Unmanned Store) and ETWtoC (Exhibition Sales) require a store
 func (m MiniAppType) RequiresStore() bool {
-	return m == MiniAppTypeUnmannedStore || m == MiniAppTypeExhibitionSales
+	return m == MiniAppTypeETWtoU || m == MiniAppTypeETWtoC
+}
+
+// ParseMiniAppTypeFromString parses an ETW mini-app type string.
+// Only ETW values are accepted (ETWtoB, ETWtoC, ETWtoU, ETWtoG).
+func ParseMiniAppTypeFromString(raw string) (MiniAppType, bool) {
+	switch raw {
+	case string(MiniAppTypeETWtoB):
+		return MiniAppTypeETWtoB, true
+	case string(MiniAppTypeETWtoC):
+		return MiniAppTypeETWtoC, true
+	case string(MiniAppTypeETWtoU):
+		return MiniAppTypeETWtoU, true
+	case string(MiniAppTypeETWtoG):
+		return MiniAppTypeETWtoG, true
+	default:
+		return "", false
+	}
 }
 
 // OrderStatus represents the status of an order
@@ -48,7 +67,7 @@ type Cart struct {
 	UserID      string      `json:"user_id" db:"user_id"`
 	ProductID   string      `json:"product_id" db:"product_id"`
 	Quantity    int         `json:"quantity" db:"quantity"`
-	MiniAppType MiniAppType `json:"mini_app_type" db:"mini_app_type"`
+	MiniAppType MiniAppType `json:"etw_mini_app_type" db:"etw_mini_app_type"`
 	Product     *Product    `json:"product,omitempty"` // Populated when needed
 	CreatedAt   time.Time   `json:"created_at" db:"created_at"`
 	UpdatedAt   time.Time   `json:"updated_at" db:"updated_at"`
@@ -72,7 +91,7 @@ type CartItem struct {
 type Order struct {
 	ID          string      `json:"id" db:"id"`
 	UserID      string      `json:"user_id" db:"user_id"`
-	MiniAppType MiniAppType `json:"mini_app_type" db:"mini_app_type"`
+	MiniAppType MiniAppType `json:"etw_mini_app_type" db:"etw_mini_app_type"`
 	TotalAmount float64     `json:"total_amount" db:"total_amount"`
 	Status      OrderStatus `json:"status" db:"status"`
 	Items       []OrderItem `json:"items"`
@@ -184,7 +203,7 @@ type AdminOrderResponse struct {
 	UserID      string      `json:"user_id"`
 	UserEmail   string      `json:"user_email"`
 	UserName    string      `json:"user_name"`
-	MiniAppType MiniAppType `json:"mini_app_type"`
+	MiniAppType MiniAppType `json:"etw_mini_app_type"`
 	StoreID     *int        `json:"store_id,omitempty"`
 	StoreName   string      `json:"store_name,omitempty"`
 	TotalAmount float64     `json:"total_amount"`
@@ -282,7 +301,7 @@ type AdminCartResponse struct {
 	UserID      string      `json:"user_id"`
 	UserEmail   string      `json:"user_email"`
 	UserName    string      `json:"user_name"`
-	MiniAppType MiniAppType `json:"mini_app_type"`
+	MiniAppType MiniAppType `json:"etw_mini_app_type"`
 	StoreID     *int        `json:"store_id,omitempty"`
 	StoreName   string      `json:"store_name,omitempty"`
 	ItemCount   int         `json:"item_count"`

@@ -40,28 +40,43 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ open, onClose
     }).format(price);
   };
 
-  // Helper function to get the correct type display for a product
+  // Helper function to get the correct type display for a product (ETW naming)
   const getProductTypeDisplay = (product: Product): string | null | undefined => {
-    // For RetailStore and GroupBuying, use mini_app_type as the primary identifier
-    if (product.mini_app_type === 'RetailStore') {
-      return '零售商店';
-    } else if (product.mini_app_type === 'GroupBuying') {
-      return '团购团批';
-    } else if (product.mini_app_type === 'UnmannedStore' || product.mini_app_type === 'ExhibitionSales') {
-      // For location-dependent mini-apps, use store_type from the associated store
-      // The backend should populate this correctly via JOIN with stores table
-      return product.store_type;
+    // Prefer etw_mini_app_type field
+    const miniAppType = product.etw_mini_app_type || product.mini_app_type;
+
+    if (miniAppType === 'ETWtoB') {
+      return 'ETW to B';
+    } else if (miniAppType === 'ETWtoG') {
+      return 'ETW to G';
+    } else if (miniAppType === 'ETWtoU') {
+      // For ETW to U, show store type
+      return product.etw_store_type || 'ETW to U';
+    } else if (miniAppType === 'ETWtoC') {
+      // For ETW to C, show store type
+      return product.etw_store_type || 'ETW to C';
     }
-    // Fallback to store_type
-    return product.store_type;
+    // Fallback to ETW store type
+    return product.etw_store_type;
   };
 
   const getStoreTypeChip = (product: Product): JSX.Element => {
     const typeDisplay = getProductTypeDisplay(product);
 
-    // Color mapping for store/mini-app types
+    // Color mapping for store/mini-app types (ETW primary, legacy fallback)
     const getTypeColor = (type: string | null | undefined): { bg: string; hover: string } => {
       const colorMap: Record<string, { bg: string; hover: string }> = {
+        // ETW Mini-App Types
+        'ETW to B': { bg: '#520ee6', hover: '#4a0dd1' }, // purple
+        'ETW to U': { bg: '#2196f3', hover: '#1976d2' }, // blue
+        'ETW to C': { bg: '#ffd556', hover: '#ffcc33' }, // yellow
+        'ETW to G': { bg: '#076200', hover: '#054d00' }, // dark green
+        // ETW Store Types
+        'ETWMega': { bg: '#9c27b0', hover: '#7b1fa2' }, // purple
+        'ETWMarket': { bg: '#673ab7', hover: '#512da8' }, // deep purple
+        'ETWtoGO': { bg: '#3f51b5', hover: '#303f9f' }, // indigo
+        'ETWXpress': { bg: '#2196f3', hover: '#1976d2' }, // blue
+        // Legacy store types (for backward compatibility)
         零售商店: { bg: '#520ee6', hover: '#4a0dd1' }, // purple
         无人门店: { bg: '#2196f3', hover: '#1976d2' }, // blue
         无人仓店: { bg: '#4caf50', hover: '#388e3c' }, // green
@@ -165,8 +180,8 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ open, onClose
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 {getStoreTypeChip(product)}
                 {getStatusChip(Boolean(product.is_active))}
-                {/* 热门推荐 tag - Only for 无人商店 and 展销展消 mini-apps */}
-                {['UnmannedStore', 'ExhibitionSales'].includes(product.mini_app_type) && product.is_featured && (
+                {/* Featured tag - Only for ETWtoU and ETWtoC mini-apps */}
+                {['ETWtoU', 'ETWtoC'].includes(product.etw_mini_app_type || product.mini_app_type || '') && product.is_featured && (
                   <Chip
                     label="热门推荐"
                     size="medium"

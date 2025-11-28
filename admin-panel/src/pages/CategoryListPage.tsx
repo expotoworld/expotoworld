@@ -51,7 +51,8 @@ import { useToast } from '../contexts/ToastContext';
 import { CATALOG_BASE } from '../services/api';
 import type { Store } from '../types/domain';
 
-type MiniAppKey = 'RetailStore' | 'UnmannedStore' | 'ExhibitionSales' | 'GroupBuying';
+// ETW Mini-App Types (primary identifiers)
+type ETWMiniAppKey = 'ETWtoB' | 'ETWtoC' | 'ETWtoU' | 'ETWtoG';
 
 interface StoreTypeInfo {
   value?: string;
@@ -72,7 +73,8 @@ interface CategoryWithSubcategories {
   id: number;
   name: string;
   image_url?: string | null;
-  mini_app_association?: string[];
+  etw_mini_app_type?: string | null;
+  etw_store_type?: string | null;
   store_id?: number | null;
   store_name?: string | null;
   store_city?: string | null;
@@ -83,7 +85,8 @@ interface CategoryWithSubcategories {
 
 interface CategoryFormState {
   name: string;
-  mini_app_association: string[];
+  etw_mini_app_type: string | null;
+  etw_store_type: string | null;
   store_id: number | null;
   display_order: number;
   is_active: boolean;
@@ -107,7 +110,7 @@ interface PreviewContext {
 }
 
 interface MiniAppTab {
-  value: MiniAppKey;
+  value: ETWMiniAppKey;
   label: string;
   icon: React.ReactElement;
   color: string;
@@ -134,7 +137,8 @@ const CategoryListPage: React.FC = () => {
 
   const [categoryForm, setCategoryForm] = useState<CategoryFormState>({
     name: '',
-    mini_app_association: [],
+    etw_mini_app_type: null,
+    etw_store_type: null,
     store_id: null,
     display_order: 1,
     is_active: true,
@@ -148,12 +152,18 @@ const CategoryListPage: React.FC = () => {
   });
   const [subcategoryImageFile, setSubcategoryImageFile] = useState<File | null>(null);
 
-  // Store type color mapping for consistent color coding across admin panel
-  const storeTypeOptions: StoreTypeInfo[] = [
-    { value: '无人门店', label: '无人门店', color: '#2196f3', miniApp: '无人商店' },
-    { value: '无人仓店', label: '无人仓店', color: '#4caf50', miniApp: '无人商店' },
-    { value: '展销商店', label: '展销商店', color: '#ffd556', miniApp: '展销展消' },
-    { value: '展销商城', label: '展销商城', color: '#f38900', miniApp: '展销展消' },
+  // ETW store type color mapping (primary) with legacy fallback
+  const etwStoreTypeOptions: StoreTypeInfo[] = [
+    // ETW Store Types (primary)
+    { value: 'ETWMega', label: 'ETW Mega', color: '#d32f2f', miniApp: 'ETWtoB' },
+    { value: 'ETWMarket', label: 'ETW Market', color: '#7b1fa2', miniApp: 'ETWtoC' },
+    { value: 'ETWtoGO', label: 'ETW to GO', color: '#1976d2', miniApp: 'ETWtoU' },
+    { value: 'ETWXpress', label: 'ETW Xpress', color: '#00796b', miniApp: 'ETWtoU' },
+    // Legacy store types (fallback)
+    { value: '无人门店', label: '无人门店', color: '#2196f3', miniApp: 'ETWtoU' },
+    { value: '无人仓店', label: '无人仓店', color: '#4caf50', miniApp: 'ETWtoU' },
+    { value: '展销商店', label: '展销商店', color: '#ffd556', miniApp: 'ETWtoC' },
+    { value: '展销商城', label: '展销商城', color: '#f38900', miniApp: 'ETWtoC' },
   ];
 
   const resolveImageUrl = (url: string | null | undefined): string => {
@@ -162,43 +172,56 @@ const CategoryListPage: React.FC = () => {
     return `${CATALOG_BASE}${url}`;
   };
 
-  const getStoreTypeInfo = (type: string): StoreTypeInfo => {
-    return storeTypeOptions.find(opt => opt.value === type) || { color: '#666', miniApp: 'Unknown' };
+  // Get store type info - prioritize ETW type, fall back to legacy type
+  const getStoreTypeInfo = (store: Store): StoreTypeInfo => {
+    // First try ETW store type
+    if (store.etw_store_type) {
+      const etwInfo = etwStoreTypeOptions.find(opt => opt.value === store.etw_store_type);
+      if (etwInfo) return etwInfo;
+    }
+    // Fall back to legacy type
+    return etwStoreTypeOptions.find(opt => opt.value === store.type) || { color: '#666', miniApp: 'Unknown' };
+  };
+
+  // Get store type display label - prioritize ETW type
+  const getStoreTypeLabel = (store: Store): string => {
+    if (store.etw_store_type) return store.etw_store_type;
+    return store.type || 'Unknown';
   };
 
   const miniAppTabs: MiniAppTab[] = useMemo(
     () => [
       {
-        value: 'RetailStore',
-        label: '零售门店',
+        value: 'ETWtoB',
+        label: 'EXPO to WORLD to B',
         icon: <RetailIcon />,
         color: '#d32f2f',
         requiresStore: false,
-        description: 'Direct category management without store location',
+        description: 'B2B exposition categories for wholesale/retail partners',
       },
       {
-        value: 'UnmannedStore',
-        label: '无人商店',
-        icon: <UnmannedIcon />,
-        color: '#1976d2',
-        requiresStore: true,
-        description: 'Categories scoped by store location (无人门店 + 无人仓店)',
-      },
-      {
-        value: 'ExhibitionSales',
-        label: '展销展消',
+        value: 'ETWtoC',
+        label: 'EXPO to WORLD to C',
         icon: <ExhibitionIcon />,
         color: '#7b1fa2',
         requiresStore: true,
-        description: 'Categories scoped by store location (展销商店 + 展销商城)',
+        description: 'B2C exposition categories (ETW Mega + ETW Market)',
       },
       {
-        value: 'GroupBuying',
-        label: '团购团批',
+        value: 'ETWtoU',
+        label: 'EXPO to WORLD to U',
+        icon: <UnmannedIcon />,
+        color: '#1976d2',
+        requiresStore: true,
+        description: 'Automated unstaffed store categories (ETW to GO + ETW Xpress)',
+      },
+      {
+        value: 'ETWtoG',
+        label: 'EXPO to WORLD to GATHER',
         icon: <GroupBuyingIcon />,
         color: '#f57c00',
         requiresStore: false,
-        description: 'Direct category management without store location',
+        description: 'Group buying categories for service offerings',
       },
     ],
     [],
@@ -288,8 +311,7 @@ const CategoryListPage: React.FC = () => {
       const currentMiniApp = miniAppTabs[currentTab];
       const categoryData = {
         ...categoryForm,
-        mini_app_association: [currentMiniApp.value],
-        store_type_association: 'All',
+        etw_mini_app_type: currentMiniApp.value,
         store_id: currentMiniApp.requiresStore ? selectedStore?.id ?? null : null,
       };
 
@@ -336,8 +358,7 @@ const CategoryListPage: React.FC = () => {
       const currentMiniApp = miniAppTabs[currentTab];
       const categoryData = {
         ...categoryForm,
-        mini_app_association: [currentMiniApp.value],
-        store_type_association: 'All',
+        etw_mini_app_type: currentMiniApp.value,
         store_id: currentMiniApp.requiresStore ? selectedStore?.id ?? null : null,
       };
 
@@ -563,7 +584,8 @@ const CategoryListPage: React.FC = () => {
   const resetCategoryForm = (): void => {
     setCategoryForm({
       name: '',
-      mini_app_association: [],
+      etw_mini_app_type: null,
+      etw_store_type: null,
       store_id: null,
       display_order: 1,
       is_active: true,
@@ -575,7 +597,8 @@ const CategoryListPage: React.FC = () => {
       setEditingCategory(category);
       setCategoryForm({
         name: category.name,
-        mini_app_association: category.mini_app_association || [],
+        etw_mini_app_type: category.etw_mini_app_type ?? null,
+        etw_store_type: category.etw_store_type ?? null,
         store_id: category.store_id ?? null,
         display_order: category.display_order || 1,
         is_active: category.is_active ?? true,
@@ -666,7 +689,7 @@ const CategoryListPage: React.FC = () => {
                   }}
                 >
                   {stores.map((store) => {
-                    const typeInfo = getStoreTypeInfo(store.type);
+                    const typeInfo = getStoreTypeInfo(store);
                     return (
                       <MenuItem key={store.id} value={store.id}>
                         <Box display="flex" alignItems="center" width="100%">
@@ -694,7 +717,7 @@ const CategoryListPage: React.FC = () => {
                               {store.name}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
-                              {store.city} • {store.type}
+                              {store.city} • {getStoreTypeLabel(store)}
                             </Typography>
                           </Box>
                         </Box>

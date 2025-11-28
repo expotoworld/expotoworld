@@ -167,7 +167,12 @@ func (h *Handler) getManufacturerOrders(ctx context.Context, req *models.AdminOr
 		add(fmt.Sprintf("o.user_id = $%d", argIdx), req.UserID)
 	}
 	if req.MiniAppType != "" {
-		add(fmt.Sprintf("o.mini_app_type = $%d", argIdx), req.MiniAppType)
+		// Accept both legacy and ETW mini-app identifiers; map ETW to legacy when possible.
+		if parsed, ok := models.ParseMiniAppTypeFromString(req.MiniAppType); ok {
+			add(fmt.Sprintf("o.mini_app_type = $%d", argIdx), string(parsed))
+		} else {
+			add(fmt.Sprintf("o.mini_app_type = $%d", argIdx), req.MiniAppType)
+		}
 	}
 	if req.Status != "" {
 		add(fmt.Sprintf("o.status = $%d", argIdx), req.Status)
@@ -225,7 +230,8 @@ func (h *Handler) getManufacturerOrders(ctx context.Context, req *models.AdminOr
 	listQ := fmt.Sprintf(`
 		SELECT o.id, o.user_id, COALESCE(u.email, '') as user_email,
 		COALESCE(TRIM(COALESCE(u.first_name,'')||' '||COALESCE(u.last_name,'')), u.username) as user_name,
-		o.mini_app_type, o.total_amount, o.status,
+		o.etw_mini_app_type::text,
+		o.total_amount, o.status,
 		(SELECT COUNT(*) FROM app_order_items oi WHERE oi.order_id = o.id) as item_count,
 		o.created_at, o.updated_at
 		FROM app_orders o
@@ -241,9 +247,21 @@ func (h *Handler) getManufacturerOrders(ctx context.Context, req *models.AdminOr
 	var orders []models.AdminOrderResponse
 	for rows.Next() {
 		var o models.AdminOrderResponse
-		if err := rows.Scan(&o.ID, &o.UserID, &o.UserEmail, &o.UserName, &o.MiniAppType, &o.TotalAmount, &o.Status, &o.ItemCount, &o.CreatedAt, &o.UpdatedAt); err != nil {
+		if err := rows.Scan(
+			&o.ID,
+			&o.UserID,
+			&o.UserEmail,
+			&o.UserName,
+			&o.MiniAppType,
+			&o.TotalAmount,
+			&o.Status,
+			&o.ItemCount,
+			&o.CreatedAt,
+			&o.UpdatedAt,
+		); err != nil {
 			return nil, 0, fmt.Errorf("scan failed: %w", err)
 		}
+
 		orders = append(orders, o)
 	}
 	return orders, total, rows.Err()

@@ -28,10 +28,11 @@ class _UnmannedStoreLocationsScreenState extends State<UnmannedStoreLocationsScr
   List<Store> _allStores = [];
   List<Store> _filteredStores = [];
 
-  // Legend filtering state - only unmanned store types
+  // Legend filtering state - ETWtoU store types
   final Map<StoreType, bool> _storeTypeVisibility = {
-    StoreType.unmannedStore: true,
-    StoreType.unmannedWarehouse: true,
+    // ETW Store Types for EXPO to WORLD to U
+    StoreType.etwToGo: true,
+    StoreType.etwXpress: true,
   };
 
   // Cache for custom markers
@@ -45,30 +46,30 @@ class _UnmannedStoreLocationsScreenState extends State<UnmannedStoreLocationsScr
   }
 
   void _initializeMarkers() async {
-    // Pre-load standard markers for unmanned store types
-    for (final storeType in [StoreType.unmannedStore, StoreType.unmannedWarehouse]) {
+    // Pre-load standard markers for ETWtoU store types
+    for (final storeType in [StoreType.etwToGo, StoreType.etwXpress]) {
       _markerCache[storeType] = await MapMarkerUtils.getStoreMarkerIcon(storeType);
     }
     if (mounted) setState(() {});
   }
 
-  Future<List<Store>> _loadUnmannedStores() async {
+  Future<List<Store>> _loadETWtoUStores() async {
     try {
       final stores = await _apiService.fetchStores();
-      // Filter for unmanned stores only (无人商店 and 无人仓店)
+      // Filter for ETWtoU stores only (ETWtoGO and ETWXpress)
       return stores.where((store) =>
-        store.type == StoreType.unmannedStore ||
-        store.type == StoreType.unmannedWarehouse
+        store.type == StoreType.etwToGo ||
+        store.type == StoreType.etwXpress
       ).toList();
     } catch (e) {
-      debugPrint('Error loading unmanned stores: $e');
+      debugPrint('Error loading ETWtoU stores: $e');
       return [];
     }
   }
 
   void _loadStores() async {
     try {
-      final stores = await _loadUnmannedStores();
+      final stores = await _loadETWtoUStores();
       setState(() {
         _allStores = stores;
         _filteredStores = stores;
@@ -334,15 +335,16 @@ class _UnmannedStoreLocationsScreenState extends State<UnmannedStoreLocationsScr
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '店铺类型',
+            'Store Types',
             style: AppTextStyles.responsiveBodySmall(context).copyWith(
               fontWeight: FontWeight.w600,
               color: AppColors.primaryText,
             ),
           ),
           const SizedBox(height: 8),
-          _buildLegendItem('无人门店', MapMarkerUtils.unmannedStoreColor, StoreType.unmannedStore),
-          _buildLegendItem('无人仓店', MapMarkerUtils.unmannedWarehouseColor, StoreType.unmannedWarehouse),
+          // ETW Store Types for EXPO to WORLD to U
+          _buildLegendItem('ETW to GO', MapMarkerUtils.getStoreTypeColor(StoreType.etwToGo), StoreType.etwToGo),
+          _buildLegendItem('ETW Xpress', MapMarkerUtils.getStoreTypeColor(StoreType.etwXpress), StoreType.etwXpress),
         ],
       ),
     );

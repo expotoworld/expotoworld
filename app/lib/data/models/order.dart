@@ -87,7 +87,8 @@ class Order {
     return Order(
       id: json['id'] ?? '',
       userId: json['user_id'] ?? '',
-      miniAppType: json['mini_app_type'] ?? 'RetailStore',
+      // Prefer etw_mini_app_type, fall back to mini_app_type for legacy data
+      miniAppType: json['etw_mini_app_type'] ?? json['mini_app_type'] ?? 'ETWtoB',
       totalAmount: (json['total_amount'] ?? 0).toDouble(),
       status: OrderStatusExtension.fromString(json['status'] ?? 'pending'),
       createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
@@ -179,7 +180,8 @@ class OrderWithItems {
     return OrderWithItems(
       id: json['id'] ?? '',
       userId: json['user_id'] ?? '',
-      miniAppType: json['mini_app_type'] ?? 'RetailStore',
+      // Prefer etw_mini_app_type, fall back to mini_app_type for legacy data
+      miniAppType: json['etw_mini_app_type'] ?? json['mini_app_type'] ?? 'ETWtoB',
       totalAmount: (json['total_amount'] ?? 0).toDouble(),
       status: OrderStatusExtension.fromString(json['status'] ?? 'pending'),
       createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),

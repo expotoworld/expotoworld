@@ -76,18 +76,20 @@ const CartListPage: React.FC = () => {
 
   const { showToast } = useToast();
 
-  const miniAppTypeLabels = {
-    RetailStore: '零售商店',
-    UnmannedStore: '无人商店',
-    ExhibitionSales: '展销展消',
-    GroupBuying: '团购团批',
+  // ETW Mini-App Type Labels (primary naming)
+  const miniAppTypeLabels: Record<string, string> = {
+    // ETW types
+    ETWtoB: 'ETW to B',
+    ETWtoU: 'ETW to U',
+    ETWtoC: 'ETW to C',
+    ETWtoG: 'ETW to G',
   };
 
-  const miniAppTypeColors = {
-    RetailStore: '#520ee6',
-    UnmannedStore: '#2196f3',
-    ExhibitionSales: '#ffd556',
-    GroupBuying: '#076200',
+  const miniAppTypeColors: Record<string, string> = {
+    ETWtoB: '#520ee6',
+    ETWtoU: '#2196f3',
+    ETWtoC: '#ffd556',
+    ETWtoG: '#076200',
   };
 
 

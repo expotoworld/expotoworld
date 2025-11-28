@@ -62,27 +62,22 @@ class Product {
 
   // Helper method to safely parse store type from API response
   static StoreType _parseStoreType(dynamic storeTypeValue) {
-    if (storeTypeValue == null) return StoreType.exhibitionStore; // Default fallback
+    if (storeTypeValue == null) return StoreType.etwMarket; // Default fallback
 
     final storeTypeStr = storeTypeValue.toString();
 
-    // Try to parse Chinese values from backend
+    // Try to parse ETW API values
     try {
-      return StoreTypeExtension.fromChineseValue(storeTypeStr);
+      return StoreTypeExtension.fromApiValue(storeTypeStr);
     } catch (e) {
-      // Fallback: try English enum values
+      // Fallback: try enum name matching
       try {
-        return StoreTypeExtension.fromApiValue(storeTypeStr);
+        return StoreType.values.firstWhere(
+          (e) => e.toString().split('.').last.toLowerCase() == storeTypeStr.toLowerCase(),
+        );
       } catch (e) {
-        // Final fallback: try enum name matching
-        try {
-          return StoreType.values.firstWhere(
-            (e) => e.toString().split('.').last.toLowerCase() == storeTypeStr.toLowerCase(),
-          );
-        } catch (e) {
-          // Ultimate fallback
-          return StoreType.exhibitionStore;
-        }
+        // Ultimate fallback
+        return StoreType.etwMarket;
       }
     }
   }
@@ -141,7 +136,7 @@ class Product {
       descriptionShort: '', // Not available in backend response
       descriptionLong: '', // Not available in backend response
       manufacturerId: '', // Not available in backend response
-      storeType: StoreType.exhibitionStore, // Default, will be resolved from context
+      storeType: StoreType.etwMarket, // Default, will be resolved from context
       miniAppType: MiniAppType.retailStore, // Default, will be resolved from context
       storeId: null, // Not available in backend response
       mainPrice: (json['main_price'] ?? 0.0).toDouble(),

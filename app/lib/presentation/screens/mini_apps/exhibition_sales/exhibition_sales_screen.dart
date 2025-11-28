@@ -87,11 +87,11 @@ class _ExhibitionSalesScreenState extends State<ExhibitionSalesScreen> {
       _ProfileTab(key: ValueKey('exhibition_profile_$instanceId')),
     ];
 
-    // Initialize cart context for exhibition sales mini-app
+    // Initialize cart context for exhibition sales mini-app (ETW to C)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final cartProvider = Provider.of<CartProvider>(context, listen: false);
-      cartProvider.setMiniAppContext('ExhibitionSales');
-      debugPrint('🛒 ExhibitionSalesScreen: Cart context initialized for ExhibitionSales');
+      cartProvider.setMiniAppContext('ETWtoC');
+      debugPrint('🛒 ExhibitionSalesScreen: Cart context initialized for ETWtoC');
     });
   }
 
@@ -105,15 +105,15 @@ class _ExhibitionSalesScreenState extends State<ExhibitionSalesScreen> {
     // Update cart context with store_id
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
     final storeId = store?.id != null ? int.tryParse(store!.id) : null;
-    cartProvider.setMiniAppContext('ExhibitionSales', storeId: storeId);
+    cartProvider.setMiniAppContext('ETWtoC', storeId: storeId);
     debugPrint('🛒 ExhibitionSalesScreen: Updated cart context with store ID: $storeId');
   }
 
-  // Store locator header for exhibition sales
+  // Store locator header for exhibition sales (ETWtoC)
   PreferredSizeWidget _buildAppBar() {
     return StoreLocatorHeader(
       miniAppName: '展销展消',
-      allowedStoreTypes: const [StoreType.exhibitionStore, StoreType.exhibitionMall],
+      allowedStoreTypes: const [StoreType.etwMega, StoreType.etwMarket],
       selectedStore: _selectedStore,
       onStoreSelected: _onStoreSelected,
       onClose: () => Navigator.of(context).pop(),
@@ -184,7 +184,7 @@ class _ExhibitionSalesScreenState extends State<ExhibitionSalesScreen> {
                         Navigator.of(context).push(
                           PageRouteBuilder(
                             pageBuilder: (context, animation, secondaryAnimation) => CartScreenWrapper(
-                              miniAppType: 'ExhibitionSales',
+                              miniAppType: 'ETWtoC',
                               instanceId: widget.instanceId,
                               storeId: _selectedStore?.id != null ? int.tryParse(_selectedStore!.id) : null,
                             ),
@@ -338,36 +338,36 @@ class _ProductsTabState extends State<_ProductsTab> {
 
   void _initializeStore() async {
     try {
-      // Get exhibition sales stores from API using mini_app_type filter
+      // Get ETWtoC stores from API using mini_app_type filter
       final stores = await _apiService.fetchStores();
       debugPrint('DEBUG: Exhibition Sales - Total stores fetched: ${stores.length}');
 
-      // Filter for exhibition sales stores (展销商店 and 展销商城)
-      final exhibitionStores = stores
+      // Filter for ETWtoC stores (ETWMega and ETWMarket)
+      final etwToCStores = stores
           .where(
             (store) =>
-                store.type == StoreType.exhibitionStore ||
-                store.type == StoreType.exhibitionMall,
+                store.type == StoreType.etwMega ||
+                store.type == StoreType.etwMarket,
           )
           .toList();
 
-      debugPrint('DEBUG: Exhibition Sales - Exhibition stores found: ${exhibitionStores.length}');
-      for (final store in exhibitionStores) {
-        debugPrint('DEBUG: Exhibition store: ${store.name} (${store.type.displayName})');
+      debugPrint('DEBUG: Exhibition Sales - ETWtoC stores found: ${etwToCStores.length}');
+      for (final store in etwToCStores) {
+        debugPrint('DEBUG: ETWtoC store: ${store.name} (${store.type.displayName})');
       }
 
-      if (exhibitionStores.isNotEmpty && _selectedStore == null) {
+      if (etwToCStores.isNotEmpty && _selectedStore == null) {
         // Auto-select first store if none selected
         setState(() {
-          _selectedStore = exhibitionStores.first;
+          _selectedStore = etwToCStores.first;
         });
         debugPrint('DEBUG: Exhibition Sales - Selected store: ${_selectedStore!.name}');
         // Notify parent about the selected store
         widget.onStoreSelected(_selectedStore);
         // Fetch data after store is initialized
         fetchData();
-      } else if (exhibitionStores.isEmpty) {
-        debugPrint('DEBUG: Exhibition Sales - No exhibition stores found! Please create exhibition stores in the admin panel.');
+      } else if (etwToCStores.isEmpty) {
+        debugPrint('DEBUG: Exhibition Sales - No ETWtoC stores found! Please create ETWtoC stores in the admin panel.');
         // Still fetch data without store filter to show any available data
         fetchData();
       }

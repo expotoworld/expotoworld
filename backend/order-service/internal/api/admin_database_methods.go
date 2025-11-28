@@ -29,9 +29,12 @@ func (h *Handler) getAdminOrders(ctx context.Context, req *models.AdminOrderList
 	}
 
 	if req.MiniAppType != "" {
-		whereConditions = append(whereConditions, fmt.Sprintf("o.mini_app_type = $%d", argIndex))
-		args = append(args, req.MiniAppType)
-		argIndex++
+		// Only accept ETW mini-app identifiers
+		if parsed, ok := models.ParseMiniAppTypeFromString(req.MiniAppType); ok {
+			whereConditions = append(whereConditions, fmt.Sprintf("o.etw_mini_app_type = $%d", argIndex))
+			args = append(args, string(parsed))
+			argIndex++
+		}
 	}
 
 	if req.Status != "" {
@@ -123,17 +126,8 @@ func (h *Handler) getAdminOrders(ctx context.Context, req *models.AdminOrderList
 			o.id,
 			o.user_id,
 			COALESCE(u.email, '') as user_email,
-
-
 			TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')) as user_name,
-
-
-
-
-			TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')) as user_name,
-
-			o.mini_app_type,
-
+			o.etw_mini_app_type::text,
 			o.total_amount,
 			o.status,
 			(SELECT COUNT(*) FROM app_order_items oi WHERE oi.order_id = o.id) as item_count,
@@ -209,53 +203,16 @@ func (h *Handler) getAdminOrderByID(ctx context.Context, orderID string) (*model
 			o.id,
 			o.user_id,
 			COALESCE(u.email, '') as user_email,
-
-
 			TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')) as user_name,
-
-
-
-
-
-
-			o.mini_app_type,
+			o.etw_mini_app_type::text,
 			o.total_amount,
 			o.status,
 			(SELECT COUNT(*) FROM app_order_items oi WHERE oi.order_id = o.id) as item_count,
 			o.created_at,
 			o.updated_at
 		FROM app_orders o
-
-
 		LEFT JOIN app_users u ON o.user_id = u.id
-
-
-
-
-
-
-
-
 		WHERE o.id = $1
-
-
-
-
-
-
-		WHERE o.id = $1
-
-
-
-
-
-
-
-
-
-
-		WHERE o.id = $1
-
 	`
 
 	var order models.AdminOrderResponse
@@ -391,8 +348,8 @@ func (h *Handler) getOrderStatistics(ctx context.Context, dateFrom, dateTo strin
 		stats.OrdersByStatus[status] = count
 	}
 
-	// Get orders and revenue by mini-app
-	miniAppQuery := fmt.Sprintf("SELECT mini_app_type, COUNT(*), COALESCE(SUM(total_amount), 0) FROM app_orders %s GROUP BY mini_app_type", dateFilter)
+	// Get orders and revenue by ETW mini-app type
+	miniAppQuery := fmt.Sprintf("SELECT etw_mini_app_type::text, COUNT(*), COALESCE(SUM(total_amount), 0) FROM app_orders %s GROUP BY etw_mini_app_type", dateFilter)
 	rows, err = h.db.Pool.Query(ctx, miniAppQuery, dateArgs...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get mini-app statistics: %w", err)
@@ -436,9 +393,12 @@ func (h *Handler) getAdminCarts(ctx context.Context, req *models.AdminCartListRe
 	}
 
 	if req.MiniAppType != "" {
-		whereConditions = append(whereConditions, fmt.Sprintf("c.mini_app_type = $%d", argIndex))
-		args = append(args, req.MiniAppType)
-		argIndex++
+		// Only accept ETW mini-app identifiers
+		if parsed, ok := models.ParseMiniAppTypeFromString(req.MiniAppType); ok {
+			whereConditions = append(whereConditions, fmt.Sprintf("c.etw_mini_app_type = $%d", argIndex))
+			args = append(args, string(parsed))
+			argIndex++
+		}
 	}
 
 	if req.DateFrom != "" {
@@ -484,9 +444,9 @@ func (h *Handler) getAdminCarts(ctx context.Context, req *models.AdminCartListRe
 		orderBy += " DESC"
 	}
 
-	// Get total count - count unique combinations of user_id and mini_app_type
+	// Get total count - count unique combinations of user_id and etw_mini_app_type
 	countQuery := fmt.Sprintf(`
-		SELECT COUNT(DISTINCT CONCAT(c.user_id::text, '-', c.mini_app_type))
+		SELECT COUNT(DISTINCT CONCAT(c.user_id::text, '-', c.etw_mini_app_type::text))
 		FROM app_carts c
 		LEFT JOIN app_users u ON c.user_id = u.id
 		LEFT JOIN admin_products p ON c.product_id = p.product_uuid
@@ -499,15 +459,15 @@ func (h *Handler) getAdminCarts(ctx context.Context, req *models.AdminCartListRe
 		return nil, 0, fmt.Errorf("failed to count carts: %w", err)
 	}
 
-	// Get paginated results - group by user_id and mini_app_type to get unique carts
+	// Get paginated results - group by user_id and etw_mini_app_type to get unique carts
 	offset := (req.Page - 1) * req.Limit
 	query := fmt.Sprintf(`
 		SELECT
-			CONCAT(c.user_id::text, '-', c.mini_app_type) as cart_id,
+			CONCAT(c.user_id::text, '-', c.etw_mini_app_type::text) as cart_id,
 			c.user_id,
 			COALESCE(u.email, '') as user_email,
 			COALESCE(CONCAT(u.first_name, ' ', u.last_name), u.username) as user_name,
-			c.mini_app_type,
+			c.etw_mini_app_type::text,
 			COUNT(c.id) as item_count,
 			COALESCE(SUM(p.main_price * c.quantity), 0) as total_value,
 			MIN(c.created_at) as created_at,
@@ -516,7 +476,7 @@ func (h *Handler) getAdminCarts(ctx context.Context, req *models.AdminCartListRe
 		LEFT JOIN app_users u ON c.user_id = u.id
 		LEFT JOIN admin_products p ON c.product_id = p.product_uuid
 		%s
-		GROUP BY c.user_id, c.mini_app_type, u.email, u.first_name, u.last_name, u.username
+		GROUP BY c.user_id, c.etw_mini_app_type, u.email, u.first_name, u.last_name, u.username
 		%s
 		LIMIT $%d OFFSET $%d
 	`, whereClause, orderBy, argIndex, argIndex+1)
@@ -556,24 +516,23 @@ func (h *Handler) getAdminCarts(ctx context.Context, req *models.AdminCartListRe
 
 // getAdminCartByID retrieves a specific cart by ID for admin with full details
 func (h *Handler) getAdminCartByID(ctx context.Context, cartID string) (*models.AdminCartDetailResponse, error) {
-	// Parse cart ID (format: user_id-mini_app_type where user_id is a UUID with hyphens)
+	// Parse cart ID (format: user_id-etw_mini_app_type where user_id is a UUID with hyphens)
 	// Find the last hyphen to split correctly
 	lastHyphenIndex := strings.LastIndex(cartID, "-")
 	if lastHyphenIndex == -1 {
 		return nil, fmt.Errorf("invalid cart ID format")
 	}
 	userID := cartID[:lastHyphenIndex]
-	miniAppType := cartID[lastHyphenIndex+1:]
+	etwMiniAppType := cartID[lastHyphenIndex+1:]
 
 	// Get cart summary
 	query := `
 		SELECT
-			CONCAT(c.user_id::text, '-', c.mini_app_type) as cart_id,
+			CONCAT(c.user_id::text, '-', c.etw_mini_app_type::text) as cart_id,
 			c.user_id,
 			COALESCE(u.email, '') as user_email,
 			COALESCE(CONCAT(u.first_name, ' ', u.last_name), u.username) as user_name,
-			c.mini_app_type,
-
+			c.etw_mini_app_type::text,
 			COUNT(c.id) as item_count,
 			COALESCE(SUM(p.main_price * c.quantity), 0) as total_value,
 			MIN(c.created_at) as created_at,
@@ -581,14 +540,13 @@ func (h *Handler) getAdminCartByID(ctx context.Context, cartID string) (*models.
 		FROM app_carts c
 		LEFT JOIN app_users u ON c.user_id = u.id
 		LEFT JOIN admin_products p ON c.product_id = p.product_uuid
-
-		WHERE c.user_id = $1 AND c.mini_app_type = $2
-		GROUP BY c.user_id, c.mini_app_type, u.email, u.first_name, u.last_name, u.username
+		WHERE c.user_id = $1 AND c.etw_mini_app_type = $2
+		GROUP BY c.user_id, c.etw_mini_app_type, u.email, u.first_name, u.last_name, u.username
 	`
 
 	var cart models.AdminCartResponse
 
-	err := h.db.Pool.QueryRow(ctx, query, userID, miniAppType).Scan(
+	err := h.db.Pool.QueryRow(ctx, query, userID, etwMiniAppType).Scan(
 		&cart.ID,
 		&cart.UserID,
 		&cart.UserEmail,
@@ -622,11 +580,11 @@ func (h *Handler) getAdminCartByID(ctx context.Context, cartID string) (*models.
 			p.is_active
 		FROM app_carts c
 		JOIN admin_products p ON c.product_id = p.product_uuid
-		WHERE c.user_id = $1 AND c.mini_app_type = $2
+		WHERE c.user_id = $1 AND c.etw_mini_app_type = $2
 		ORDER BY c.created_at DESC
 	`
 
-	rows, err := h.db.Pool.Query(ctx, itemsQuery, userID, miniAppType)
+	rows, err := h.db.Pool.Query(ctx, itemsQuery, userID, etwMiniAppType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cart items: %w", err)
 	}
@@ -672,12 +630,12 @@ func (h *Handler) updateAdminCartItem(ctx context.Context, cartID, productID str
 		return fmt.Errorf("invalid cart ID format")
 	}
 	userID := cartID[:lastHyphenIndex]
-	miniAppType := cartID[lastHyphenIndex+1:]
+	etwMiniAppType := cartID[lastHyphenIndex+1:]
 
 	if quantity == 0 {
 		// Remove item from cart
-		query := `DELETE FROM app_carts WHERE user_id = $1 AND mini_app_type = $2 AND product_id = $3`
-		_, err := h.db.Pool.Exec(ctx, query, userID, miniAppType, productID)
+		query := `DELETE FROM app_carts WHERE user_id = $1 AND etw_mini_app_type = $2 AND product_id = $3`
+		_, err := h.db.Pool.Exec(ctx, query, userID, etwMiniAppType, productID)
 		if err != nil {
 			return fmt.Errorf("failed to remove cart item: %w", err)
 		}
@@ -686,9 +644,9 @@ func (h *Handler) updateAdminCartItem(ctx context.Context, cartID, productID str
 		query := `
 			UPDATE app_carts
 			SET quantity = $4, updated_at = CURRENT_TIMESTAMP
-			WHERE user_id = $1 AND mini_app_type = $2 AND product_id = $3
+			WHERE user_id = $1 AND etw_mini_app_type = $2 AND product_id = $3
 		`
-		result, err := h.db.Pool.Exec(ctx, query, userID, miniAppType, productID, quantity)
+		result, err := h.db.Pool.Exec(ctx, query, userID, etwMiniAppType, productID, quantity)
 		if err != nil {
 			return fmt.Errorf("failed to update cart item: %w", err)
 		}
@@ -703,16 +661,16 @@ func (h *Handler) updateAdminCartItem(ctx context.Context, cartID, productID str
 
 // deleteAdminCart deletes a cart for admin
 func (h *Handler) deleteAdminCart(ctx context.Context, cartID string) error {
-	// Parse cart ID (format: user_id-mini_app_type where user_id is a UUID with hyphens)
+	// Parse cart ID (format: user_id-etw_mini_app_type where user_id is a UUID with hyphens)
 	lastHyphenIndex := strings.LastIndex(cartID, "-")
 	if lastHyphenIndex == -1 {
 		return fmt.Errorf("invalid cart ID format")
 	}
 	userID := cartID[:lastHyphenIndex]
-	miniAppType := cartID[lastHyphenIndex+1:]
+	etwMiniAppType := cartID[lastHyphenIndex+1:]
 
-	query := `DELETE FROM app_carts WHERE user_id = $1 AND mini_app_type = $2`
-	result, err := h.db.Pool.Exec(ctx, query, userID, miniAppType)
+	query := `DELETE FROM app_carts WHERE user_id = $1 AND etw_mini_app_type = $2`
+	result, err := h.db.Pool.Exec(ctx, query, userID, etwMiniAppType)
 	if err != nil {
 		return fmt.Errorf("failed to delete cart: %w", err)
 	}
@@ -753,7 +711,7 @@ func (h *Handler) getCartStatistics(ctx context.Context, dateFrom, dateTo string
 	// Get total carts and total value
 	totalQuery := fmt.Sprintf(`
 		SELECT
-			COUNT(DISTINCT CONCAT(c.user_id, '-', c.mini_app_type)) as total_carts,
+			COUNT(DISTINCT CONCAT(c.user_id, '-', c.etw_mini_app_type::text)) as total_carts,
 			COALESCE(SUM(p.main_price * c.quantity), 0) as total_value
 		FROM app_carts c
 		JOIN admin_products p ON c.product_id = p.product_uuid
@@ -770,16 +728,16 @@ func (h *Handler) getCartStatistics(ctx context.Context, dateFrom, dateTo string
 		stats.AverageCartValue = stats.TotalCartValue / float64(stats.TotalCarts)
 	}
 
-	// Get statistics by mini-app type
+	// Get statistics by ETW mini-app type
 	miniAppQuery := fmt.Sprintf(`
 		SELECT
-			c.mini_app_type,
-			COUNT(DISTINCT CONCAT(c.user_id, '-', c.mini_app_type)) as cart_count,
+			c.etw_mini_app_type::text,
+			COUNT(DISTINCT CONCAT(c.user_id, '-', c.etw_mini_app_type::text)) as cart_count,
 			COALESCE(SUM(p.main_price * c.quantity), 0) as total_value
 		FROM app_carts c
 		JOIN admin_products p ON c.product_id = p.product_uuid
 		%s
-		GROUP BY c.mini_app_type
+		GROUP BY c.etw_mini_app_type
 	`, dateFilter)
 
 	rows, err := h.db.Pool.Query(ctx, miniAppQuery, args...)
@@ -801,7 +759,7 @@ func (h *Handler) getCartStatistics(ctx context.Context, dateFrom, dateTo string
 
 	// Get abandoned carts (older than 7 days)
 	abandonedQuery := `
-		SELECT COUNT(DISTINCT CONCAT(c.user_id, '-', c.mini_app_type))
+		SELECT COUNT(DISTINCT CONCAT(c.user_id, '-', c.etw_mini_app_type::text))
 		FROM app_carts c
 		WHERE c.updated_at < CURRENT_TIMESTAMP - INTERVAL '7 days'
 	`

@@ -20,15 +20,14 @@ func (h *Handler) getCartItemsWithStore(ctx context.Context, userID string, mini
 
 	if storeID != nil && miniAppType.RequiresStore() {
 		// For location-based mini-apps with store filter
-		// Include items with matching store_id OR NULL store_id (for backward compatibility)
 		query = `
 			SELECT
-				c.id, c.user_id, c.product_id, c.quantity, c.mini_app_type, c.created_at, c.updated_at,
+				c.id, c.user_id, c.product_id, c.quantity, c.etw_mini_app_type::text, c.created_at, c.updated_at,
 				p.product_uuid, p.sku, p.title, p.main_price, p.stock_left,
 				p.minimum_order_quantity, p.is_active
 			FROM app_carts c
 			JOIN admin_products p ON c.product_id = p.product_uuid
-			WHERE c.user_id = $1 AND c.mini_app_type = $2 AND (c.store_id = $3 OR c.store_id IS NULL)
+			WHERE c.user_id = $1 AND c.etw_mini_app_type = $2 AND (c.store_id = $3 OR c.store_id IS NULL)
 			ORDER BY c.created_at DESC
 		`
 		args = []interface{}{userID, string(miniAppType), *storeID}
@@ -36,12 +35,12 @@ func (h *Handler) getCartItemsWithStore(ctx context.Context, userID string, mini
 		// For non-location mini-apps or when no store filter needed
 		query = `
 			SELECT
-				c.id, c.user_id, c.product_id, c.quantity, c.mini_app_type, c.created_at, c.updated_at,
+				c.id, c.user_id, c.product_id, c.quantity, c.etw_mini_app_type::text, c.created_at, c.updated_at,
 				p.product_uuid, p.sku, p.title, p.main_price, p.stock_left,
 				p.minimum_order_quantity, p.is_active
 			FROM app_carts c
 			JOIN admin_products p ON c.product_id = p.product_uuid
-			WHERE c.user_id = $1 AND c.mini_app_type = $2
+			WHERE c.user_id = $1 AND c.etw_mini_app_type = $2
 			ORDER BY c.created_at DESC
 		`
 		args = []interface{}{userID, string(miniAppType)}
@@ -91,8 +90,8 @@ func (h *Handler) getCartItemsWithStore(ctx context.Context, userID string, mini
 
 // updateProductStock reduces product stock levels after order creation
 func (h *Handler) updateProductStock(ctx context.Context, orderItems []models.Cart, miniAppType models.MiniAppType) error {
-	// Only update stock for UnmannedStore mini-app
-	if miniAppType != models.MiniAppTypeUnmannedStore {
+	// Only update stock for ETWtoU (Unmanned Store) mini-app
+	if miniAppType != models.MiniAppTypeETWtoU {
 		return nil
 	}
 
@@ -155,19 +154,19 @@ func (h *Handler) addItemToCart(ctx context.Context, userID string, miniAppType 
 		// For location-based mini-apps, include store_id in all operations
 		checkQuery = `
 			SELECT quantity FROM app_carts
-			WHERE user_id = $1 AND mini_app_type = $2 AND product_id = $3 AND store_id = $4
+			WHERE user_id = $1 AND etw_mini_app_type = $2 AND product_id = $3 AND store_id = $4
 		`
 		checkArgs = []interface{}{userID, string(miniAppType), productID, *storeID}
 
 		updateQuery = `
 			UPDATE app_carts
 			SET quantity = quantity + $1, updated_at = CURRENT_TIMESTAMP
-			WHERE user_id = $2 AND mini_app_type = $3 AND product_id = $4 AND store_id = $5
+			WHERE user_id = $2 AND etw_mini_app_type = $3 AND product_id = $4 AND store_id = $5
 		`
 		updateArgs = []interface{}{quantity, userID, string(miniAppType), productID, *storeID}
 
 		insertQuery = `
-			INSERT INTO app_carts (user_id, mini_app_type, product_id, quantity, store_id)
+			INSERT INTO app_carts (user_id, etw_mini_app_type, product_id, quantity, store_id)
 			VALUES ($1, $2, $3, $4, $5)
 		`
 		insertArgs = []interface{}{userID, string(miniAppType), productID, quantity, *storeID}
@@ -175,19 +174,19 @@ func (h *Handler) addItemToCart(ctx context.Context, userID string, miniAppType 
 		// For non-location mini-apps, don't include store_id
 		checkQuery = `
 			SELECT quantity FROM app_carts
-			WHERE user_id = $1 AND mini_app_type = $2 AND product_id = $3
+			WHERE user_id = $1 AND etw_mini_app_type = $2 AND product_id = $3
 		`
 		checkArgs = []interface{}{userID, string(miniAppType), productID}
 
 		updateQuery = `
 			UPDATE app_carts
 			SET quantity = quantity + $1, updated_at = CURRENT_TIMESTAMP
-			WHERE user_id = $2 AND mini_app_type = $3 AND product_id = $4
+			WHERE user_id = $2 AND etw_mini_app_type = $3 AND product_id = $4
 		`
 		updateArgs = []interface{}{quantity, userID, string(miniAppType), productID}
 
 		insertQuery = `
-			INSERT INTO app_carts (user_id, mini_app_type, product_id, quantity)
+			INSERT INTO app_carts (user_id, etw_mini_app_type, product_id, quantity)
 			VALUES ($1, $2, $3, $4)
 		`
 		insertArgs = []interface{}{userID, string(miniAppType), productID, quantity}
@@ -219,7 +218,7 @@ func (h *Handler) updateCartItemQuantity(ctx context.Context, userID string, min
 	updateQuery := `
 		UPDATE app_carts
 		SET quantity = $1, updated_at = CURRENT_TIMESTAMP
-		WHERE user_id = $2 AND mini_app_type = $3 AND product_id = $4
+		WHERE user_id = $2 AND etw_mini_app_type = $3 AND product_id = $4
 	`
 
 	result, err := h.db.Pool.Exec(ctx, updateQuery, quantity, userID, string(miniAppType), productID)
@@ -238,7 +237,7 @@ func (h *Handler) updateCartItemQuantity(ctx context.Context, userID string, min
 func (h *Handler) removeItemFromCart(ctx context.Context, userID string, miniAppType models.MiniAppType, productID string) error {
 	deleteQuery := `
 		DELETE FROM app_carts
-		WHERE user_id = $1 AND mini_app_type = $2 AND product_id = $3
+		WHERE user_id = $1 AND etw_mini_app_type = $2 AND product_id = $3
 	`
 
 	result, err := h.db.Pool.Exec(ctx, deleteQuery, userID, string(miniAppType), productID)
@@ -259,7 +258,7 @@ func (h *Handler) validateStockForCartAddition(ctx context.Context, userID strin
 	var currentQuantity int
 	checkQuery := `
 		SELECT COALESCE(quantity, 0) FROM app_carts
-		WHERE user_id = $1 AND mini_app_type = $2 AND product_id = $3
+		WHERE user_id = $1 AND etw_mini_app_type = $2 AND product_id = $3
 	`
 
 	err := h.db.Pool.QueryRow(ctx, checkQuery, userID, string(miniAppType), productID).Scan(&currentQuantity)
@@ -303,12 +302,11 @@ func (h *Handler) clearCartWithStore(ctx context.Context, userID string, miniApp
 
 	if storeID != nil && miniAppType.RequiresStore() {
 		// For location-based mini-apps with store filter
-		// Clear items with matching store_id OR NULL store_id (for backward compatibility)
-		deleteQuery = `DELETE FROM app_carts WHERE user_id = $1 AND mini_app_type = $2 AND (store_id = $3 OR store_id IS NULL)`
+		deleteQuery = `DELETE FROM app_carts WHERE user_id = $1 AND etw_mini_app_type = $2 AND (store_id = $3 OR store_id IS NULL)`
 		args = []interface{}{userID, string(miniAppType), *storeID}
 	} else {
 		// For non-location mini-apps or when no store filter needed
-		deleteQuery = `DELETE FROM app_carts WHERE user_id = $1 AND mini_app_type = $2`
+		deleteQuery = `DELETE FROM app_carts WHERE user_id = $1 AND etw_mini_app_type = $2`
 		args = []interface{}{userID, string(miniAppType)}
 	}
 
@@ -358,9 +356,9 @@ func (h *Handler) createOrder(ctx context.Context, userID string, miniAppType mo
 	// Create order
 	var order models.Order
 	orderQuery := `
-		INSERT INTO app_orders (user_id, mini_app_type, total_amount, status)
+		INSERT INTO app_orders (user_id, etw_mini_app_type, total_amount, status)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, user_id, mini_app_type, total_amount, status, created_at, updated_at
+		RETURNING id, user_id, etw_mini_app_type::text, total_amount, status, created_at, updated_at
 	`
 
 	err = tx.QueryRow(ctx, orderQuery, userID, string(miniAppType), totalAmount, string(models.OrderStatusPending)).Scan(
@@ -469,9 +467,9 @@ func (h *Handler) createOrder(ctx context.Context, userID string, miniAppType mo
 // getUserOrders retrieves all orders for a user and mini-app type
 func (h *Handler) getUserOrders(ctx context.Context, userID string, miniAppType models.MiniAppType) ([]models.Order, error) {
 	query := `
-		SELECT id, user_id, mini_app_type, total_amount, status, created_at, updated_at
+		SELECT id, user_id, etw_mini_app_type::text, total_amount, status, created_at, updated_at
 		FROM app_orders
-		WHERE user_id = $1 AND mini_app_type = $2
+		WHERE user_id = $1 AND etw_mini_app_type = $2
 		ORDER BY created_at DESC
 	`
 
@@ -518,7 +516,7 @@ func (h *Handler) getUserOrders(ctx context.Context, userID string, miniAppType 
 func (h *Handler) getOrderByID(ctx context.Context, orderID string, userID string) (*models.Order, error) {
 	var order models.Order
 	query := `
-		SELECT id, user_id, mini_app_type, total_amount, status, created_at, updated_at
+		SELECT id, user_id, etw_mini_app_type::text, total_amount, status, created_at, updated_at
 		FROM app_orders
 		WHERE id = $1 AND user_id = $2
 	`

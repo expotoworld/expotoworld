@@ -97,12 +97,24 @@ const StoreListPage: React.FC = () => {
   const [partnersByStore, setPartnersByStore] = useState<Record<number, StorePartner | null>>({});
 
 
-  const storeTypeOptions = [
+  // Legacy store type options (Chinese)
+  const legacyStoreTypeOptions = [
     { value: '无人门店', label: '无人门店', color: '#2196f3', miniApp: '无人商店' },
     { value: '无人仓店', label: '无人仓店', color: '#4caf50', miniApp: '无人商店' },
     { value: '展销商店', label: '展销商店', color: '#ffd556', miniApp: '展销展消' },
     { value: '展销商城', label: '展销商城', color: '#f38900', miniApp: '展销展消' },
   ];
+
+  // ETW store type options (new naming scheme)
+  const etwStoreTypeOptions = [
+    { value: 'ETWMega', label: 'ETW Mega', color: '#9c27b0', miniApp: 'ETWtoB' },
+    { value: 'ETWMarket', label: 'ETW Market', color: '#673ab7', miniApp: 'ETWtoC' },
+    { value: 'ETWtoGO', label: 'ETW to GO', color: '#3f51b5', miniApp: 'ETWtoU' },
+    { value: 'ETWXpress', label: 'ETW Xpress', color: '#2196f3', miniApp: 'ETWtoU' },
+  ];
+
+  // Combined options for form dropdown (prefer ETW types)
+  const storeTypeOptions = [...etwStoreTypeOptions, ...legacyStoreTypeOptions];
 
 
 
@@ -391,8 +403,26 @@ const StoreListPage: React.FC = () => {
     setSelectedImage(null);
   };
 
-  const getStoreTypeInfo = (type: string): { value?: string; label?: string; color: string; miniApp: string } => {
-    return storeTypeOptions.find((opt) => opt.value === type) || { color: '#666', miniApp: 'Unknown' };
+  // Get store type info - prefer ETW types, fall back to legacy types
+  const getStoreTypeInfo = (store: Store): { value?: string; label?: string; color: string; miniApp: string } => {
+    // First check ETW store type
+    if (store.etw_store_type) {
+      const etwInfo = etwStoreTypeOptions.find((opt) => opt.value === store.etw_store_type);
+      if (etwInfo) return etwInfo;
+    }
+    // Fall back to legacy type
+    if (store.type) {
+      const legacyInfo = legacyStoreTypeOptions.find((opt) => opt.value === store.type);
+      if (legacyInfo) return legacyInfo;
+    }
+    return { color: '#666', miniApp: 'Unknown' };
+  };
+
+  // Get display label for store type - prefer ETW, fall back to legacy
+  const getStoreTypeLabel = (store: Store): string => {
+    if (store.etw_store_type) return store.etw_store_type;
+    if (store.type) return store.type;
+    return 'Unknown';
   };
 
   const openInMaps = (latitude: number, longitude: number): void => {
@@ -430,7 +460,8 @@ const StoreListPage: React.FC = () => {
       ) : (
         <Grid container spacing={3}>
           {stores.map((store) => {
-            const typeInfo = getStoreTypeInfo(store.type);
+            const typeInfo = getStoreTypeInfo(store);
+            const typeLabel = getStoreTypeLabel(store);
             return (
               <Grid item xs={12} md={6} lg={4} key={store.id}>
                 <Card>
@@ -460,7 +491,7 @@ const StoreListPage: React.FC = () => {
                           {store.name}
                         </Typography>
                         <Chip
-                          label={store.type}
+                          label={typeLabel}
                           size="small"
                           sx={{
                             bgcolor: typeInfo.color,
@@ -469,7 +500,7 @@ const StoreListPage: React.FC = () => {
                           }}
                         />
                         <Typography variant="caption" display="block" color="text.secondary">
-                          {typeInfo.miniApp}
+                          {store.etw_mini_app_type || typeInfo.miniApp}
                         </Typography>
                       </Box>
                     </Box>

@@ -288,8 +288,9 @@ class _ProductDetailsModalState extends State<ProductDetailsModal>
   }
 
   bool _shouldShowStock() {
-    return widget.product.storeType == StoreType.unmannedStore ||
-           widget.product.storeType == StoreType.unmannedWarehouse;
+    // Show stock for ETWtoU stores (ETWtoGO and ETWXpress)
+    return widget.product.storeType == StoreType.etwToGo ||
+           widget.product.storeType == StoreType.etwXpress;
   }
 
   Widget _buildStockInfo() {
@@ -387,10 +388,11 @@ class _ProductDetailsModalState extends State<ProductDetailsModal>
   }
 
   bool _shouldShowStoreTag() {
-    return widget.product.storeType == StoreType.unmannedStore ||
-           widget.product.storeType == StoreType.unmannedWarehouse ||
-           widget.product.storeType == StoreType.exhibitionStore ||
-           widget.product.storeType == StoreType.exhibitionMall;
+    // All ETW store types are location-dependent
+    return widget.product.storeType == StoreType.etwToGo ||
+           widget.product.storeType == StoreType.etwXpress ||
+           widget.product.storeType == StoreType.etwMega ||
+           widget.product.storeType == StoreType.etwMarket;
   }
 
   Widget _buildProductDescription() {

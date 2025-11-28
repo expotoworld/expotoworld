@@ -225,7 +225,7 @@ func (db *Database) InitSchema(ctx context.Context) error {
 		return fmt.Errorf("failed to check carts.mini_app_type: %w", err)
 	}
 	if !hasMiniApp {
-		if _, err := db.Pool.Exec(ctx, `ALTER TABLE app_carts ADD COLUMN mini_app_type VARCHAR(50) NOT NULL DEFAULT 'RetailStore';`); err != nil {
+		if _, err := db.Pool.Exec(ctx, `ALTER TABLE app_carts ADD COLUMN mini_app_type VARCHAR(50) NOT NULL DEFAULT 'ETWtoB';`); err != nil {
 			return fmt.Errorf("failed to add carts.mini_app_type: %w", err)
 		}
 		log.Println("[ORDER-DB] Added carts.mini_app_type column")
@@ -242,7 +242,7 @@ func (db *Database) InitSchema(ctx context.Context) error {
 		return fmt.Errorf("failed to check orders.mini_app_type: %w", err)
 	}
 	if !hasOrderMiniApp {
-		if _, err := db.Pool.Exec(ctx, `ALTER TABLE app_orders ADD COLUMN mini_app_type VARCHAR(50) NOT NULL DEFAULT 'RetailStore';`); err != nil {
+		if _, err := db.Pool.Exec(ctx, `ALTER TABLE app_orders ADD COLUMN mini_app_type VARCHAR(50) NOT NULL DEFAULT 'ETWtoB';`); err != nil {
 			return fmt.Errorf("failed to add orders.mini_app_type: %w", err)
 		}
 		log.Println("[ORDER-DB] Added orders.mini_app_type column")

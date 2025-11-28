@@ -4,47 +4,37 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../enums/store_type.dart';
 
 class MapMarkerUtils {
-  // Hex color codes as specified
-  static const Color retailStoreColor = Color(0xFF520EE6);
-  static const Color unmannedStoreColor = Color(0xFF2196F3);
-  static const Color unmannedWarehouseColor = Color(0xFF4CAF50);
-  static const Color exhibitionStoreColor = Color(0xFFFFD556);
-  static const Color exhibitionMallColor = Color(0xFFF38900);
-  static const Color groupBuyingColor = Color(0xFF076200);
+  // ETW Store Type colors
+  static const Color etwMegaColor = Color(0xFF9C27B0);    // Purple - ETWMega
+  static const Color etwMarketColor = Color(0xFF673AB7);  // Deep Purple - ETWMarket
+  static const Color etwToGoColor = Color(0xFF3F51B5);    // Indigo - ETWtoGO
+  static const Color etwXpressColor = Color(0xFF2196F3);  // Blue - ETWXpress
 
   /// Chooses the correct icon for a given store type
   static IconData _getIconForStoreType(StoreType storeType) {
     switch (storeType) {
-      case StoreType.retailStore:
-        return Icons.shopping_cart; // Retail Store Icon
-      case StoreType.unmannedStore:
-        return Icons.store; // Shop/Store Icon
-      case StoreType.unmannedWarehouse:
-        return Icons.warehouse; // Warehouse Icon
-      case StoreType.exhibitionStore:
-        return Icons.shopping_bag; // Store/Shopping Bag Icon
-      case StoreType.exhibitionMall:
-        return Icons.domain; // Mall/Big Building Icon
-      case StoreType.groupBuying:
-        return Icons.group; // Group Buying Icon
+      case StoreType.etwMega:
+        return Icons.business; // ETW Mega - large business icon
+      case StoreType.etwMarket:
+        return Icons.storefront; // ETW Market - storefront icon
+      case StoreType.etwToGo:
+        return Icons.local_convenience_store; // ETW to GO - convenience store
+      case StoreType.etwXpress:
+        return Icons.flash_on; // ETW Xpress - express/fast icon
     }
   }
 
   /// Gets the color for a specific store type
   static Color getStoreTypeColor(StoreType storeType) {
     switch (storeType) {
-      case StoreType.retailStore:
-        return retailStoreColor;
-      case StoreType.unmannedStore:
-        return unmannedStoreColor;
-      case StoreType.unmannedWarehouse:
-        return unmannedWarehouseColor;
-      case StoreType.exhibitionStore:
-        return exhibitionStoreColor;
-      case StoreType.exhibitionMall:
-        return exhibitionMallColor;
-      case StoreType.groupBuying:
-        return groupBuyingColor;
+      case StoreType.etwMega:
+        return etwMegaColor;
+      case StoreType.etwMarket:
+        return etwMarketColor;
+      case StoreType.etwToGo:
+        return etwToGoColor;
+      case StoreType.etwXpress:
+        return etwXpressColor;
     }
   }
 

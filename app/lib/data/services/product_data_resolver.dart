@@ -76,12 +76,14 @@ class ProductDataResolver {
     return result;
   }
 
-  /// Checks if the product belongs to a location-dependent mini-app
+  /// Checks if the product belongs to a location-dependent mini-app (ETWtoU or ETWtoC)
   bool _isLocationDependentProduct(Product product) {
-    return product.storeType == StoreType.unmannedStore ||
-           product.storeType == StoreType.unmannedWarehouse ||
-           product.storeType == StoreType.exhibitionStore ||
-           product.storeType == StoreType.exhibitionMall;
+    // ETWtoGO and ETWXpress are ETWtoU (unmanned) stores
+    // ETWMega and ETWMarket are ETWtoC (exhibition) stores
+    return product.storeType == StoreType.etwToGo ||
+           product.storeType == StoreType.etwXpress ||
+           product.storeType == StoreType.etwMega ||
+           product.storeType == StoreType.etwMarket;
   }
 
   /// Ensures the cache is valid and refreshes if necessary
@@ -208,7 +210,7 @@ class ProductDataResolver {
           address: '',
           latitude: 0.0,
           longitude: 0.0,
-          type: StoreType.exhibitionStore,
+          type: StoreType.etwMarket,
           isActive: false,
         ),
       );

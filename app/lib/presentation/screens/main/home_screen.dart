@@ -388,21 +388,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget _buildServiceModules(BuildContext context) {
     final modules = [
       {
-        'title': '零售门店',
+        'title': 'EXPO to WORLD to B',
         'icon': Icons.shopping_bag,
         'color': AppColors.themeRed,
         'bgColor': AppColors.redModuleBg,
         'onTap': () => _navigateToMiniApp(context, const RetailStoreScreen()),
       },
       {
-        'title': '无人商店',
-        'icon': Icons.store,
-        'color': AppColors.blueModule,
-        'bgColor': AppColors.blueModuleBg,
-        'onTap': () => _navigateToMiniApp(context, UnmannedStoreScreen(instanceId: DateTime.now().millisecondsSinceEpoch.toString())),
-      },
-      {
-        'title': '展销展消',
+        'title': 'EXPO to WORLD to C',
         'icon': Icons.storefront,
         'color': AppColors.purpleModule,
         'bgColor': AppColors.purpleModuleBg,
@@ -410,7 +403,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             _navigateToMiniApp(context, ExhibitionSalesScreen(instanceId: DateTime.now().millisecondsSinceEpoch.toString())),
       },
       {
-        'title': '团购团批',
+        'title': 'EXPO to WORLD to U',
+        'icon': Icons.store,
+        'color': AppColors.blueModule,
+        'bgColor': AppColors.blueModuleBg,
+        'onTap': () => _navigateToMiniApp(
+              context,
+              UnmannedStoreScreen(instanceId: DateTime.now().millisecondsSinceEpoch.toString()),
+            ),
+      },
+      {
+        'title': 'EXPO to WORLD to GATHER',
         'icon': Icons.group,
         'color': AppColors.indigoModule,
         'bgColor': AppColors.indigoModuleBg,

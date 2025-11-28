@@ -31,12 +31,13 @@ class _LocationsScreenState extends State<LocationsScreen> {
   List<Store> _allStores = [];
   List<Store> _filteredStores = [];
 
-  // Legend filtering state - all store types visible by default
+  // Legend filtering state - all ETW store types visible by default
   final Map<StoreType, bool> _storeTypeVisibility = {
-    StoreType.unmannedStore: true,
-    StoreType.unmannedWarehouse: true,
-    StoreType.exhibitionStore: true,
-    StoreType.exhibitionMall: true,
+    // ETW Store Types
+    StoreType.etwMega: true,
+    StoreType.etwMarket: true,
+    StoreType.etwToGo: true,
+    StoreType.etwXpress: true,
   };
 
   // Cache for custom markers
@@ -309,16 +310,17 @@ class _LocationsScreenState extends State<LocationsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '店铺类型',
+            'Store Types',
             style: AppTextStyles.cardTitle.copyWith(
               color: AppColors.primaryText,
             ),
           ),
           const SizedBox(height: 8),
-          _buildLegendItem('无人门店', MapMarkerUtils.unmannedStoreColor, StoreType.unmannedStore),
-          _buildLegendItem('无人仓店', MapMarkerUtils.unmannedWarehouseColor, StoreType.unmannedWarehouse),
-          _buildLegendItem('展销商店', MapMarkerUtils.exhibitionStoreColor, StoreType.exhibitionStore),
-          _buildLegendItem('展销商城', MapMarkerUtils.exhibitionMallColor, StoreType.exhibitionMall),
+          // ETW Store Types
+          _buildLegendItem('ETW Mega', MapMarkerUtils.getStoreTypeColor(StoreType.etwMega), StoreType.etwMega),
+          _buildLegendItem('ETW Market', MapMarkerUtils.getStoreTypeColor(StoreType.etwMarket), StoreType.etwMarket),
+          _buildLegendItem('ETW to GO', MapMarkerUtils.getStoreTypeColor(StoreType.etwToGo), StoreType.etwToGo),
+          _buildLegendItem('ETW Xpress', MapMarkerUtils.getStoreTypeColor(StoreType.etwXpress), StoreType.etwXpress),
         ],
       ),
     );

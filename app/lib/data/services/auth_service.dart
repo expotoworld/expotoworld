@@ -351,6 +351,7 @@ class AuthService {
   }
 
   /// Refresh using a long-lived refresh token. Returns both new access and refresh tokens.
+  /// If the server doesn't return a new refresh token (no rotation), the original is returned.
   Future<Map<String, String>> refreshWithRefreshToken(String refreshToken) async {
     try {
       final uri = Uri.parse('${ApiConfig.baseUrl}/api/auth/token/refresh');
@@ -366,8 +367,13 @@ class AuthService {
       debugPrint('AuthService: Body: ${response.body}');
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
-        final token = (data['token'] ?? data['access_token']) as String;
-        final newRefresh = data['refresh_token'] as String;
+        final token = (data['token'] ?? data['access_token']) as String?;
+        if (token == null || token.isEmpty) {
+          throw AuthException('Server returned empty token', 0);
+        }
+        // If no new refresh token is returned (no rotation), keep the original
+        final newRefresh = data['refresh_token'] as String? ?? refreshToken;
+        debugPrint('AuthService: Token refresh successful, new refresh token: ${newRefresh != refreshToken ? "rotated" : "reused"}');
         return {
           'token': token,
           'refresh_token': newRefresh,

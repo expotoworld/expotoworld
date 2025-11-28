@@ -10,6 +10,8 @@ class Store {
   final double longitude;
   final StoreType type;
   final bool isActive;
+  final String? etwStoreType;    // ETW store type (ETWMega, ETWMarket, ETWtoGO, ETWXpress)
+  final String? etwMiniAppType;  // ETW mini-app type (ETWtoB, ETWtoC, ETWtoU, ETWtoG)
 
   Store({
     required this.id,
@@ -20,9 +22,15 @@ class Store {
     required this.longitude,
     required this.type,
     this.isActive = true,
+    this.etwStoreType,
+    this.etwMiniAppType,
   });
 
   factory Store.fromJson(Map<String, dynamic> json) {
+    // Get ETW types from API response
+    final etwStoreType = json['etw_store_type'] as String?;
+    final etwMiniAppType = json['etw_mini_app_type'] as String?;
+
     return Store(
       id: json['id'].toString(), // Convert int to string for compatibility
       name: json['name'],
@@ -30,33 +38,44 @@ class Store {
       address: json['address'],
       latitude: json['latitude'].toDouble(),
       longitude: json['longitude'].toDouble(),
-      type: _parseStoreType(json['type']),
+      type: _parseStoreType(json['type'], etwStoreType),
       isActive: json['is_active'] ?? true,
+      etwStoreType: etwStoreType,
+      etwMiniAppType: etwMiniAppType,
     );
   }
 
-  /// Parse store type from API response
-  /// Handles both Chinese values from API and enum names for backward compatibility
-  static StoreType _parseStoreType(dynamic typeValue) {
-    if (typeValue == null) {
-      throw ArgumentError('Store type cannot be null');
+  /// Parse store type from API response (ETW types only)
+  static StoreType _parseStoreType(dynamic typeValue, String? etwStoreType) {
+    // First, try to use ETW store type if available
+    if (etwStoreType != null && etwStoreType.isNotEmpty) {
+      try {
+        return StoreTypeExtension.fromApiValue(etwStoreType);
+      } catch (e) {
+        debugPrint('DEBUG: Could not parse ETW store type: $etwStoreType');
+      }
+    }
+
+    // Handle null or empty type
+    if (typeValue == null || typeValue.toString().isEmpty) {
+      debugPrint('DEBUG: Store type is null/empty, defaulting to etwMarket');
+      return StoreType.etwMarket;
     }
 
     final typeString = typeValue.toString();
 
-    // First try to parse as Chinese value (from API)
+    // Try to parse as ETW API value
     try {
-      return StoreTypeExtension.fromChineseValue(typeString);
+      return StoreTypeExtension.fromApiValue(typeString);
     } catch (e) {
-      // If that fails, try to parse as enum name (backward compatibility)
+      // Fallback: try to parse as enum name
       try {
         return StoreType.values.firstWhere(
           (e) => e.toString().split('.').last.toLowerCase() == typeString.toLowerCase(),
         );
       } catch (e2) {
-        // If both fail, log the error and throw with helpful message
-        debugPrint('ERROR: Unknown store type: "$typeString". Expected Chinese values: 无人门店, 无人仓店, 展销商店, 展销商城');
-        throw ArgumentError('Unknown store type: "$typeString"');
+        debugPrint('DEBUG: Unknown store type: "$typeString", defaulting to etwMarket');
+        return StoreType.etwMarket;
       }
     }
   }
@@ -69,8 +88,10 @@ class Store {
       'address': address,
       'latitude': latitude,
       'longitude': longitude,
-      'type': type.toString().split('.').last,
+      'type': type.apiValue,
       'is_active': isActive,
+      'etw_store_type': etwStoreType,
+      'etw_mini_app_type': etwMiniAppType,
     };
   }
 }

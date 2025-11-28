@@ -192,37 +192,59 @@ func (db *Database) CreateProduct(ctx context.Context, product models.Product) (
 		return 0, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
-	// Determine store_type param: NULL for RetailStore and GroupBuying
-	var storeTypeParam interface{}
-	if product.MiniAppType == models.MiniAppTypeRetailStore || product.MiniAppType == models.MiniAppTypeGroupBuying {
-		storeTypeParam = nil
+
+	// Determine ETW store_type param: NULL for ETWtoB and ETWtoG (no physical store)
+	var etwStoreTypeParam interface{}
+	if product.ETWMiniAppType != nil {
+		switch *product.ETWMiniAppType {
+		case models.ETWMiniAppTypeETWtoB, models.ETWMiniAppTypeETWtoG:
+			etwStoreTypeParam = nil
+		default:
+			if product.ETWStoreType != nil {
+				etwStoreTypeParam = *product.ETWStoreType
+			}
+		}
+	} else if product.ETWStoreType != nil {
+		etwStoreTypeParam = *product.ETWStoreType
+	}
+
+	// Determine ETW mini_app_type param
+	var etwMiniAppTypeParam interface{}
+	if product.ETWMiniAppType != nil {
+		etwMiniAppTypeParam = *product.ETWMiniAppType
 	} else {
-		storeTypeParam = product.StoreType
+		// Default to ETWtoB if not specified
+		etwMiniAppTypeParam = models.ETWMiniAppTypeETWtoB
 	}
 
 	// Determine shelf_code param: only for location-based mini-apps with a selected store
 	var shelfCodeParam interface{}
-	if product.StoreID == nil || product.MiniAppType == models.MiniAppTypeRetailStore || product.MiniAppType == models.MiniAppTypeGroupBuying {
-		shelfCodeParam = nil
-	} else if product.ShelfCode != nil && strings.TrimSpace(*product.ShelfCode) != "" {
-		shelfCodeParam = product.ShelfCode
-	} else {
-		shelfCodeParam = nil
+	if product.ETWMiniAppType != nil {
+		switch *product.ETWMiniAppType {
+		case models.ETWMiniAppTypeETWtoB, models.ETWMiniAppTypeETWtoG:
+			shelfCodeParam = nil
+		default:
+			if product.StoreID != nil && product.ShelfCode != nil && strings.TrimSpace(*product.ShelfCode) != "" {
+				shelfCodeParam = product.ShelfCode
+			}
+		}
 	}
 
-	// Determine stock_left param: only Unmanned store types track inventory
+	// Determine stock_left param: only ETWtoU (unmanned) store types track inventory
 	var stockLeftParam interface{}
-	switch product.StoreType {
-	case models.StoreTypeUnmannedStore, models.StoreTypeUnmannedWarehouse:
-		stockLeftParam = product.StockLeft
-	default:
-		stockLeftParam = nil
+	if product.ETWStoreType != nil {
+		switch *product.ETWStoreType {
+		case models.ETWStoreTypeToGO, models.ETWStoreTypeXpress:
+			stockLeftParam = product.StockLeft
+		default:
+			stockLeftParam = nil
+		}
 	}
 
 	var productID int
 	query := `
         INSERT INTO admin_products
-            (sku, title, description, store_type, mini_app_type, store_id, shelf_code, main_price, strikethrough_price, cost_price, weight, stock_left, minimum_order_quantity, is_active, is_featured, is_mini_app_recommendation)
+            (sku, title, description, etw_store_type, etw_mini_app_type, store_id, shelf_code, main_price, strikethrough_price, cost_price, weight, stock_left, minimum_order_quantity, is_active, is_featured, is_mini_app_recommendation)
         VALUES
             ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING product_id
@@ -231,8 +253,8 @@ func (db *Database) CreateProduct(ctx context.Context, product models.Product) (
 		product.SKU,
 		product.Title,
 		product.DescriptionLong,
-		storeTypeParam,
-		product.MiniAppType,
+		etwStoreTypeParam,
+		etwMiniAppTypeParam,
 		product.StoreID,
 		shelfCodeParam,
 		product.MainPrice,
@@ -351,42 +373,63 @@ func (db *Database) ReplaceProductImage(ctx context.Context, productID int, imag
 // UpdateProduct updates an existing product in the database
 func (db *Database) UpdateProduct(ctx context.Context, productID int, product models.Product) error {
 	// Start a transaction to ensure atomicity
-	// Determine store_type param: NULL for RetailStore and GroupBuying
-	var storeTypeParam interface{}
-	if product.MiniAppType == models.MiniAppTypeRetailStore || product.MiniAppType == models.MiniAppTypeGroupBuying {
-		storeTypeParam = nil
-	} else {
-		storeTypeParam = product.StoreType
-	}
-
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
-	// Determine shelf_code param: only for location-based mini-apps with a selected store
-	var shelfCodeParam interface{}
-	if product.StoreID == nil || product.MiniAppType == models.MiniAppTypeRetailStore || product.MiniAppType == models.MiniAppTypeGroupBuying {
-		shelfCodeParam = nil
-	} else if product.ShelfCode != nil && strings.TrimSpace(*product.ShelfCode) != "" {
-		shelfCodeParam = product.ShelfCode
-	} else {
-		shelfCodeParam = nil
+	// Determine ETW store_type param: NULL for ETWtoB and ETWtoG (no physical store)
+	var etwStoreTypeParam interface{}
+	if product.ETWMiniAppType != nil {
+		switch *product.ETWMiniAppType {
+		case models.ETWMiniAppTypeETWtoB, models.ETWMiniAppTypeETWtoG:
+			etwStoreTypeParam = nil
+		default:
+			if product.ETWStoreType != nil {
+				etwStoreTypeParam = *product.ETWStoreType
+			}
+		}
+	} else if product.ETWStoreType != nil {
+		etwStoreTypeParam = *product.ETWStoreType
 	}
 
-	// Determine stock_left param: only Unmanned store types track inventory
+	// Determine ETW mini_app_type param
+	var etwMiniAppTypeParam interface{}
+	if product.ETWMiniAppType != nil {
+		etwMiniAppTypeParam = *product.ETWMiniAppType
+	} else {
+		// Default to ETWtoB if not specified
+		etwMiniAppTypeParam = models.ETWMiniAppTypeETWtoB
+	}
+
+	// Determine shelf_code param: only for location-based mini-apps with a selected store
+	var shelfCodeParam interface{}
+	if product.ETWMiniAppType != nil {
+		switch *product.ETWMiniAppType {
+		case models.ETWMiniAppTypeETWtoB, models.ETWMiniAppTypeETWtoG:
+			shelfCodeParam = nil
+		default:
+			if product.StoreID != nil && product.ShelfCode != nil && strings.TrimSpace(*product.ShelfCode) != "" {
+				shelfCodeParam = product.ShelfCode
+			}
+		}
+	}
+
+	// Determine stock_left param: only ETWtoU (unmanned) store types track inventory
 	var stockLeftParam interface{}
-	switch product.StoreType {
-	case models.StoreTypeUnmannedStore, models.StoreTypeUnmannedWarehouse:
-		stockLeftParam = product.StockLeft
-	default:
-		stockLeftParam = nil
+	if product.ETWStoreType != nil {
+		switch *product.ETWStoreType {
+		case models.ETWStoreTypeToGO, models.ETWStoreTypeXpress:
+			stockLeftParam = product.StockLeft
+		default:
+			stockLeftParam = nil
+		}
 	}
 
 	// Update the basic product fields
-	log.Printf("[DB.UpdateProduct] id=%d sku=%s mini_app_type=%s store_type_param=%v store_id=%v shelf_code=%v stock_left_param=%v",
-		productID, product.SKU, product.MiniAppType, storeTypeParam, product.StoreID, shelfCodeParam, stockLeftParam,
+	log.Printf("[DB.UpdateProduct] id=%d sku=%s etw_mini_app_type=%v etw_store_type=%v store_id=%v shelf_code=%v stock_left_param=%v",
+		productID, product.SKU, etwMiniAppTypeParam, etwStoreTypeParam, product.StoreID, shelfCodeParam, stockLeftParam,
 	)
 	query := `
         UPDATE admin_products
@@ -394,8 +437,8 @@ func (db *Database) UpdateProduct(ctx context.Context, productID int, product mo
             sku = $2,
             title = $3,
             description = $4,
-            store_type = $5,
-            mini_app_type = $6,
+            etw_store_type = $5,
+            etw_mini_app_type = $6,
             store_id = $7,
             shelf_code = $8,
             main_price = $9,
@@ -415,8 +458,8 @@ func (db *Database) UpdateProduct(ctx context.Context, productID int, product mo
 		product.SKU,
 		product.Title,
 		product.DescriptionLong,
-		storeTypeParam,
-		product.MiniAppType,
+		etwStoreTypeParam,
+		etwMiniAppTypeParam,
 		product.StoreID,
 		shelfCodeParam,
 		product.MainPrice,

@@ -85,7 +85,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
     sku: '',
     description_long: '',
     weight: '1',
-    mini_app_type: '零售门店',
+    mini_app_type: 'ETWtoB',
     store_id: null,
     shelf_code: '',
     main_price: '',
@@ -121,12 +121,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
 
   const [loadingSubcategories, setLoadingSubcategories] = useState<boolean>(false);
 
-  // Mini-app type options
+  // ETW Mini-app type options (primary naming)
   const miniAppTypes: MiniAppTypeOption[] = [
-    { value: '零售门店', label: '零售门店', requiresStore: false },
-    { value: '无人商店', label: '无人商店', requiresStore: true },
-    { value: '展销展消', label: '展销展消', requiresStore: true },
-    { value: '团购团批', label: '团购团批', requiresStore: false },
+    { value: 'ETWtoB', label: 'ETW to B', requiresStore: false },
+    { value: 'ETWtoU', label: 'ETW to U', requiresStore: true },
+    { value: 'ETWtoC', label: 'ETW to C', requiresStore: true },
+    { value: 'ETWtoG', label: 'ETW to G', requiresStore: false },
   ];
 
   // Initialize form data when product changes
@@ -135,15 +135,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
       return;
     }
 
-    // Map backend mini_app_type to frontend values
-    const miniAppTypeMap: Record<string, string> = {
-      RetailStore: '零售门店',
-      UnmannedStore: '无人商店',
-      ExhibitionSales: '展销展消',
-      GroupBuying: '团购团批',
-    };
-
-    const miniAppType = miniAppTypeMap[product.mini_app_type] || '零售门店';
+    // Use etw_mini_app_type directly (backend now uses ETW values)
+    const miniAppType = product.etw_mini_app_type || product.mini_app_type || 'ETWtoB';
 
     setFormData(prev => ({
       ...prev,
@@ -241,9 +234,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
 
     try {
       setLoadingStores(true);
-      const storesData = await storeService.getStoresByMiniApp(
-        miniAppType === '无人商店' ? 'UnmannedStore' : 'ExhibitionSales',
-      );
+      // Use ETW mini-app type directly (backend now uses ETW values)
+      const storesData = await storeService.getStoresByMiniApp(miniAppType);
       setStores(storesData || []);
     } catch (error) {
       console.error('Error loading stores:', error);
@@ -254,19 +246,13 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
     }
   };
 
-  // Load categories based on mini-app type and store
+  // Load categories based on ETW mini-app type and store
   const loadCategories = async (miniAppType: string, storeId: number | null = null) => {
     try {
       setLoadingCategories(true);
-      const miniAppTypeMap: Record<string, string> = {
-        零售门店: 'RetailStore',
-        无人商店: 'UnmannedStore',
-        展销展消: 'ExhibitionSales',
-        团购团批: 'GroupBuying',
-      };
-
+      // Use ETW mini-app type directly (backend now uses ETW values)
       const categoriesData = await categoryService.getCategoriesByMiniApp(
-        miniAppTypeMap[miniAppType],
+        miniAppType,
         storeId,
       );
       setCategories(categoriesData.categories || []);
@@ -359,7 +345,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
 
   // Real-time shelf code validation (debounced)
   useEffect(() => {
-    const requiresStore = ['无人商店', '展销展消'].includes(formData.mini_app_type);
+    const requiresStore = ['ETWtoU', 'ETWtoC'].includes(formData.mini_app_type);
     if (!requiresStore || !formData.store_id) {
       setShelfCodeError('');
       return;
@@ -436,21 +422,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
         }
       }
 
-      // Map mini-app type to backend values
-      const miniAppTypeMap: Record<string, string> = {
-        '零售门店': 'RetailStore',
-        '无人商店': 'UnmannedStore',
-        '展销展消': 'ExhibitionSales',
-        '团购团批': 'GroupBuying',
-      };
-
-      // Map mini-app type to store type for backward compatibility
-      const storeTypeMap: Record<string, string> = {
-        '零售门店': '展销商店',
-        '无人商店': '无人门店',
-        '展销展消': '展销商店',
-        '团购团批': '展销商店',
-      };
+      // Determine etw_store_type from selected store for store-based mini-apps
+      let etwStoreType: string | null = null;
+      if (formData.mini_app_type === 'ETWtoU' || formData.mini_app_type === 'ETWtoC') {
+        const selectedStore = stores.find(s => s.id === parseInt(formData.store_id as string, 10));
+        etwStoreType = selectedStore?.etw_store_type ?? null;
+      }
 
       // Prepare data for API
       const requiresStore = miniAppTypes.find(t => t.value === formData.mini_app_type)?.requiresStore;
@@ -465,18 +442,18 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
           : null,
         weight: formData.weight ? parseFloat(formData.weight) : 1,
         stock_left:
-          formData.mini_app_type === '无人商店' ? (parseInt(formData.stock_left, 10) || 0) : undefined,
+          formData.mini_app_type === 'ETWtoU' ? (parseInt(formData.stock_left, 10) || 0) : undefined,
         minimum_order_quantity: parseInt(formData.minimum_order_quantity, 10) || 1,
-        mini_app_type: miniAppTypeMap[formData.mini_app_type],
-        store_type: storeTypeMap[formData.mini_app_type],
+        etw_mini_app_type: formData.mini_app_type, // Use ETW type directly
+        etw_store_type: etwStoreType,
         store_id: formData.store_id ? parseInt(formData.store_id, 10) : null,
         shelf_code:
           requiresStore && formData.store_id ? (formData.shelf_code?.trim() || null) : null,
         is_active: formData.is_active,
         category_ids: formData.category_ids,
         subcategory_ids: formData.subcategory_ids,
-        // Main page featured only for 无人商店 and 展销展消
-        is_featured: ['无人商店', '展销展消'].includes(formData.mini_app_type)
+        // Main page featured only for ETWtoU and ETWtoC
+        is_featured: ['ETWtoU', 'ETWtoC'].includes(formData.mini_app_type)
           ? formData.is_featured
           : false,
         is_mini_app_recommendation: formData.is_mini_app_recommendation,
@@ -808,8 +785,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
                 type="number"
                 inputProps={{ min: '0' }}
                 fullWidth
-                disabled={loading || formData.mini_app_type !== '无人商店'}
-                helperText="Available inventory (only for 无人商店)"
+                disabled={loading || formData.mini_app_type !== 'ETWtoU'}
+                helperText="Available inventory (only for ETW to U)"
               />
 
               <TextField
@@ -893,8 +870,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
               />
             )}
 
-            {/* Main Page Featured Toggle - Only for 无人商店 and 展销展消 */}
-            {['无人商店', '展销展消'].includes(formData.mini_app_type) && (
+            {/* Main Page Featured Toggle - Only for ETWtoU and ETWtoC */}
+            {['ETWtoU', 'ETWtoC'].includes(formData.mini_app_type) && (
               <Box sx={{ mt: 2 }}>
                 <FormControlLabel
                   control={
