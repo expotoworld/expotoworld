@@ -181,24 +181,24 @@ class LocationService {
     return Geolocator.distanceBetween(lat1, lon1, lat2, lon2) / 1000; // Convert to km
   }
 
-  // Get nearest unmanned store to current location
-  static Future<Store?> getNearestUnmannedStore() async {
+  // Get nearest ETWtoU store (ETWtoGO or ETWXpress) to current location
+  static Future<Store?> getNearestETWtoUStore() async {
     try {
       final position = _currentPosition ?? await getCurrentPosition();
       if (position == null) return null;
 
       final apiService = ApiService();
       final allStores = await apiService.fetchStores();
-      final unmannedStores = allStores
-          .where((store) => store.type == StoreType.unmannedStore || store.type == StoreType.unmannedWarehouse)
+      final etwToUStores = allStores
+          .where((store) => store.type == StoreType.etwToGo || store.type == StoreType.etwXpress)
           .toList();
 
-      if (unmannedStores.isEmpty) return null;
+      if (etwToUStores.isEmpty) return null;
 
       Store? nearestStore;
       double minDistance = double.infinity;
 
-      for (final store in unmannedStores) {
+      for (final store in etwToUStores) {
         final distance = calculateDistance(
           position.latitude,
           position.longitude,
@@ -214,26 +214,26 @@ class LocationService {
 
       return nearestStore;
     } catch (e) {
-      debugPrint('Error getting nearest unmanned store: $e');
+      debugPrint('Error getting nearest ETWtoU store: $e');
       return null;
     }
   }
 
-  // Get all unmanned stores with distances
-  static Future<List<StoreWithDistance>> getUnmannedStoresWithDistance() async {
+  // Get all ETWtoU stores (ETWtoGO or ETWXpress) with distances
+  static Future<List<StoreWithDistance>> getETWtoUStoresWithDistance() async {
     try {
       final position = _currentPosition ?? await getCurrentPosition();
       if (position == null) return [];
 
       final apiService = ApiService();
       final allStores = await apiService.fetchStores();
-      final unmannedStores = allStores
-          .where((store) => store.type == StoreType.unmannedStore || store.type == StoreType.unmannedWarehouse)
+      final etwToUStores = allStores
+          .where((store) => store.type == StoreType.etwToGo || store.type == StoreType.etwXpress)
           .toList();
 
       final storesWithDistance = <StoreWithDistance>[];
 
-      for (final store in unmannedStores) {
+      for (final store in etwToUStores) {
         final distance = calculateDistance(
           position.latitude,
           position.longitude,
@@ -252,7 +252,7 @@ class LocationService {
 
       return storesWithDistance;
     } catch (e) {
-      debugPrint('Error getting unmanned stores with distance: $e');
+      debugPrint('Error getting ETWtoU stores with distance: $e');
       return [];
     }
   }

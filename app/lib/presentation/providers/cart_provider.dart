@@ -91,7 +91,7 @@ class CartProvider extends ChangeNotifier {
         descriptionShort: '',
         descriptionLong: '',
         manufacturerId: '',
-        storeType: StoreType.exhibitionStore,
+        storeType: StoreType.etwMarket,
         miniAppType: MiniAppType.retailStore,
         mainPrice: 0,
         imageUrls: [],

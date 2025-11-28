@@ -160,12 +160,12 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
         _nearestStore = savedMainStore;
         debugPrint('Using saved main store: ${_nearestStore?.name}');
       } else {
-        _nearestStore = await LocationService.getNearestUnmannedStore();
+        _nearestStore = await LocationService.getNearestETWtoUStore();
         debugPrint('Using nearest store: ${_nearestStore?.name}');
       }
 
-      // Get all unmanned stores with distances
-      _storesWithDistance = await LocationService.getUnmannedStoresWithDistance();
+      // Get all ETWtoU stores with distances
+      _storesWithDistance = await LocationService.getETWtoUStoresWithDistance();
 
       // Notify listeners after all updates
       notifyListeners();

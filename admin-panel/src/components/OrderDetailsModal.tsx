@@ -58,11 +58,13 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     cancelled: '#f44336',
   };
 
+  // ETW Mini-App Type Labels (primary naming)
   const miniAppTypeLabels: Record<string, string> = {
-    RetailStore: '零售商店',
-    UnmannedStore: '无人商店',
-    ExhibitionSales: '展销展消',
-    GroupBuying: '团购团批',
+    // ETW types
+    ETWtoB: 'ETW to B',
+    ETWtoU: 'ETW to U',
+    ETWtoC: 'ETW to C',
+    ETWtoG: 'ETW to G',
   };
 
   const handleStartEdit = (): void => {

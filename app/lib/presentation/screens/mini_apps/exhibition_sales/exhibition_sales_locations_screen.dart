@@ -27,10 +27,11 @@ class _ExhibitionSalesLocationsScreenState extends State<ExhibitionSalesLocation
   List<Store> _allStores = [];
   List<Store> _filteredStores = [];
 
-  // Legend filtering state - only exhibition store types
+  // Legend filtering state - ETWtoC store types
   final Map<StoreType, bool> _storeTypeVisibility = {
-    StoreType.exhibitionStore: true,
-    StoreType.exhibitionMall: true,
+    // ETW Store Types for EXPO to WORLD to C
+    StoreType.etwMega: true,
+    StoreType.etwMarket: true,
   };
 
   // Cache for custom markers
@@ -44,30 +45,30 @@ class _ExhibitionSalesLocationsScreenState extends State<ExhibitionSalesLocation
   }
 
   void _initializeMarkers() async {
-    // Pre-load standard markers for exhibition store types
-    for (final storeType in [StoreType.exhibitionStore, StoreType.exhibitionMall]) {
+    // Pre-load standard markers for ETWtoC store types
+    for (final storeType in [StoreType.etwMega, StoreType.etwMarket]) {
       _markerCache[storeType] = await MapMarkerUtils.getStoreMarkerIcon(storeType);
     }
     if (mounted) setState(() {});
   }
 
-  Future<List<Store>> _loadExhibitionStores() async {
+  Future<List<Store>> _loadETWtoCStores() async {
     try {
       final stores = await _apiService.fetchStores();
-      // Filter for exhibition stores only (展销商店 and 展销商城)
+      // Filter for ETWtoC stores only (ETWMega and ETWMarket)
       return stores.where((store) =>
-        store.type == StoreType.exhibitionStore ||
-        store.type == StoreType.exhibitionMall
+        store.type == StoreType.etwMega ||
+        store.type == StoreType.etwMarket
       ).toList();
     } catch (e) {
-      debugPrint('Error loading exhibition stores: $e');
+      debugPrint('Error loading ETWtoC stores: $e');
       return [];
     }
   }
 
   void _loadStores() async {
     try {
-      final stores = await _loadExhibitionStores();
+      final stores = await _loadETWtoCStores();
       setState(() {
         _allStores = stores;
         _filteredStores = stores;
@@ -333,15 +334,16 @@ class _ExhibitionSalesLocationsScreenState extends State<ExhibitionSalesLocation
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '店铺类型',
+            'Store Types',
             style: AppTextStyles.responsiveBodySmall(context).copyWith(
               fontWeight: FontWeight.w600,
               color: AppColors.primaryText,
             ),
           ),
           const SizedBox(height: 8),
-          _buildLegendItem('展销商店', MapMarkerUtils.exhibitionStoreColor, StoreType.exhibitionStore),
-          _buildLegendItem('展销商城', MapMarkerUtils.exhibitionMallColor, StoreType.exhibitionMall),
+          // ETW Store Types for EXPO to WORLD to C
+          _buildLegendItem('ETW Mega', MapMarkerUtils.getStoreTypeColor(StoreType.etwMega), StoreType.etwMega),
+          _buildLegendItem('ETW Market', MapMarkerUtils.getStoreTypeColor(StoreType.etwMarket), StoreType.etwMarket),
         ],
       ),
     );

@@ -38,11 +38,11 @@ class _GroupBuyingScreenState extends State<GroupBuyingScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize cart context for group buying mini-app
+    // Initialize cart context for group buying mini-app (ETW to G)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final cartProvider = Provider.of<CartProvider>(context, listen: false);
-      cartProvider.setMiniAppContext('GroupBuying');
-      debugPrint('🛒 GroupBuyingScreen: Cart context initialized for GroupBuying');
+      cartProvider.setMiniAppContext('ETWtoG');
+      debugPrint('🛒 GroupBuyingScreen: Cart context initialized for ETWtoG');
     });
   }
 

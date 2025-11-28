@@ -24,40 +24,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// convertStoreTypeToDBValue converts English API enum values to Chinese database values
-func convertStoreTypeToDBValue(apiValue string) string {
-	switch apiValue {
-	case "RetailStore":
-		return "零售商店"
-	case "UnmannedStore":
-		return "无人门店"
-	case "UnmannedWarehouse":
-		return "无人仓店"
-	case "ExhibitionStore":
-		return "展销商店"
-	case "ExhibitionMall":
-		return "展销商城"
-	case "GroupBuying":
-		return "团购团批"
-	default:
-		// Fallback: try to use the value as-is (for backward compatibility)
-		return apiValue
-	}
-}
-
-// convertStoreTypeToAssociation converts English API enum values to store type association values
-func convertStoreTypeToAssociation(apiValue string) string {
-	switch apiValue {
-	case "UnmannedStore", "UnmannedWarehouse":
-		return "Unmanned"
-	case "ExhibitionStore", "ExhibitionMall":
-		return "Retail"
-	default:
-		// Fallback: try to use the value as-is (for backward compatibility)
-		return apiValue
-	}
-}
-
 // Handler holds the database connection and provides HTTP handlers
 type Handler struct {
 	db *db.Database
@@ -366,8 +332,7 @@ func (h *Handler) GetProducts(c *gin.Context) {
 	isAdminRequest := IsAdmin(c)
 
 	// Build the query - include cost_price only for admin requests
-	// For location-dependent mini-apps (UnmannedStore, ExhibitionSales), we need to JOIN with stores table
-	// to get the actual store type from the associated store
+	// For ETW-aware queries, we prefer ETW columns and fall back to legacy columns when ETW values are NULL
 	var query string
 	if isAdminRequest {
 		// Admin requests show ALL products (active and inactive) for complete management
@@ -378,12 +343,10 @@ func (h *Handler) GetProducts(c *gin.Context) {
                 COALESCE(p.title, '') as title,
                 '' as description_short,
                 COALESCE(p.description, '') as description_long,
-                CASE
-                    WHEN p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales') AND s.type IS NOT NULL
-                    THEN s.type::text
-                    ELSE p.store_type::text
-                END as store_type,
-                COALESCE(p.mini_app_type::text, '') as mini_app_type,
+                COALESCE(p.etw_store_type::text, s.etw_store_type::text, '') as store_type,
+                COALESCE(p.etw_mini_app_type::text, '') as mini_app_type,
+                COALESCE(p.etw_store_type::text, s.etw_store_type::text) as etw_store_type,
+                COALESCE(p.etw_mini_app_type::text, '') as etw_mini_app_type,
                 p.store_id,
                 p.shelf_code,
                 COALESCE(p.main_price, 0) as main_price,
@@ -398,7 +361,7 @@ func (h *Handler) GetProducts(c *gin.Context) {
                 COALESCE(p.created_at, NOW()) as created_at,
                 COALESCE(p.updated_at, NOW()) as updated_at
             FROM admin_products p
-            LEFT JOIN admin_stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
+            LEFT JOIN admin_stores s ON p.store_id = s.store_id
             WHERE 1=1
         `
 	} else {
@@ -410,12 +373,10 @@ func (h *Handler) GetProducts(c *gin.Context) {
                 COALESCE(p.title, '') as title,
                 '' as description_short,
                 COALESCE(p.description, '') as description_long,
-                CASE
-                    WHEN p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales') AND s.type IS NOT NULL
-                    THEN s.type::text
-                    ELSE p.store_type::text
-                END as store_type,
-                COALESCE(p.mini_app_type::text, '') as mini_app_type,
+                COALESCE(p.etw_store_type::text, s.etw_store_type::text, '') as store_type,
+                COALESCE(p.etw_mini_app_type::text, '') as mini_app_type,
+                COALESCE(p.etw_store_type::text, s.etw_store_type::text) as etw_store_type,
+                COALESCE(p.etw_mini_app_type::text, '') as etw_mini_app_type,
                 p.store_id,
                 COALESCE(p.main_price, 0) as main_price,
                 p.strikethrough_price,
@@ -428,7 +389,7 @@ func (h *Handler) GetProducts(c *gin.Context) {
                 COALESCE(p.created_at, NOW()) as created_at,
                 COALESCE(p.updated_at, NOW()) as updated_at
             FROM admin_products p
-            LEFT JOIN admin_stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
+            LEFT JOIN admin_stores s ON p.store_id = s.store_id
             WHERE p.is_active = true
         `
 	}
@@ -436,30 +397,18 @@ func (h *Handler) GetProducts(c *gin.Context) {
 	args := []interface{}{}
 	argIndex := 1
 
-	// Add mini-app type filter first (authoritative)
+	// Add ETW mini-app type filter
 	if miniAppType != "" {
-		query += fmt.Sprintf(" AND p.mini_app_type = $%d", argIndex)
+		query += fmt.Sprintf(" AND p.etw_mini_app_type::text = $%d", argIndex)
 		args = append(args, miniAppType)
 		argIndex++
 	}
 
-	// Add store type filter (only for location-based mini-apps)
+	// Add ETW store type filter
 	if storeType != "" {
-		// If a non-location mini-app type sneaks in via store_type, coerce to mini_app_type filter
-		if storeType == "RetailStore" || storeType == "GroupBuying" {
-			if miniAppType == "" {
-				query += fmt.Sprintf(" AND p.mini_app_type = $%d", argIndex)
-				args = append(args, storeType)
-				argIndex++
-			}
-		} else {
-			// Use the same logic as the SELECT statement for store type filtering
-			query += fmt.Sprintf(" AND (CASE WHEN p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales') AND s.type IS NOT NULL THEN s.type::text ELSE p.store_type::text END) = $%d", argIndex)
-			// Convert English enum values to Chinese database values
-			dbStoreType := convertStoreTypeToDBValue(storeType)
-			args = append(args, dbStoreType)
-			argIndex++
-		}
+		query += fmt.Sprintf(" AND COALESCE(p.etw_store_type::text, s.etw_store_type::text) = $%d", argIndex)
+		args = append(args, storeType)
+		argIndex++
 	}
 
 	// Add store ID filter
@@ -499,6 +448,8 @@ func (h *Handler) GetProducts(c *gin.Context) {
 		var product models.Product
 		var err error
 		var storeType sql.NullString
+		var etwStoreType sql.NullString
+		var etwMiniAppType sql.NullString
 
 		if isAdminRequest {
 			err = rows.Scan(
@@ -510,6 +461,8 @@ func (h *Handler) GetProducts(c *gin.Context) {
 				&product.DescriptionLong,
 				&storeType,
 				&product.MiniAppType,
+				&etwStoreType,
+				&etwMiniAppType,
 				&product.StoreID,
 				&product.ShelfCode,
 				&product.MainPrice,
@@ -535,6 +488,8 @@ func (h *Handler) GetProducts(c *gin.Context) {
 				&product.DescriptionLong,
 				&storeType,
 				&product.MiniAppType,
+				&etwStoreType,
+				&etwMiniAppType,
 				&product.StoreID,
 				&product.MainPrice,
 				&product.StrikethroughPrice,
@@ -555,6 +510,18 @@ func (h *Handler) GetProducts(c *gin.Context) {
 		}
 		// Normalize nullable store_type from DB into string type
 		product.StoreType = models.StoreType(storeType.String)
+		if etwStoreType.Valid {
+			val := models.ETWStoreType(etwStoreType.String)
+			product.ETWStoreType = &val
+		} else {
+			product.ETWStoreType = nil
+		}
+		if etwMiniAppType.Valid {
+			val := models.ETWMiniAppType(etwMiniAppType.String)
+			product.ETWMiniAppType = &val
+		} else {
+			product.ETWMiniAppType = nil
+		}
 
 		// Get product images
 		images, err := h.getProductImages(ctx, product.ID)
@@ -640,12 +607,8 @@ func (h *Handler) GetProduct(c *gin.Context) {
                 COALESCE(p.title, '') as title,
                 '' as description_short,
                 COALESCE(p.description, '') as description_long,
-	                CASE
-	                    WHEN p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales') AND s.type IS NOT NULL
-	                    THEN s.type::text
-	                    ELSE p.store_type::text
-	                END as store_type,
-	                COALESCE(p.mini_app_type::text, '') as mini_app_type,
+                COALESCE(p.etw_store_type::text, s.etw_store_type::text, '') as store_type,
+                COALESCE(p.etw_mini_app_type::text, '') as mini_app_type,
                 p.store_id,
                 p.shelf_code,
                 COALESCE(p.main_price, 0) as main_price,
@@ -660,7 +623,7 @@ func (h *Handler) GetProduct(c *gin.Context) {
                 COALESCE(p.created_at, NOW()) as created_at,
                 COALESCE(p.updated_at, NOW()) as updated_at
 	            FROM admin_products p
-	            LEFT JOIN admin_stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
+	            LEFT JOIN admin_stores s ON p.store_id = s.store_id
 	            WHERE p.product_id = $1 AND p.is_active = true
 	        `
 		} else {
@@ -671,12 +634,8 @@ func (h *Handler) GetProduct(c *gin.Context) {
                 COALESCE(p.title, '') as title,
                 '' as description_short,
                 COALESCE(p.description, '') as description_long,
-	                CASE
-	                    WHEN p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales') AND s.type IS NOT NULL
-	                    THEN s.type::text
-	                    ELSE p.store_type::text
-	                END as store_type,
-	                COALESCE(p.mini_app_type::text, '') as mini_app_type,
+                COALESCE(p.etw_store_type::text, s.etw_store_type::text, '') as store_type,
+                COALESCE(p.etw_mini_app_type::text, '') as mini_app_type,
                 p.store_id,
                 COALESCE(p.main_price, 0) as main_price,
                 p.strikethrough_price,
@@ -688,7 +647,7 @@ func (h *Handler) GetProduct(c *gin.Context) {
                 COALESCE(p.created_at, NOW()) as created_at,
                 COALESCE(p.updated_at, NOW()) as updated_at
 	            FROM admin_products p
-	            LEFT JOIN admin_stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
+	            LEFT JOIN admin_stores s ON p.store_id = s.store_id
 	            WHERE p.product_id = $1 AND p.is_active = true
 	        `
 		}
@@ -703,20 +662,14 @@ func (h *Handler) GetProduct(c *gin.Context) {
                 COALESCE(p.title, '') as title,
                 '' as description_short,
                 COALESCE(p.description, '') as description_long,
-	                CASE
-	                    WHEN p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales') AND s.type IS NOT NULL
-	                    THEN s.type::text
-	                    ELSE p.store_type::text
-	                END as store_type,
-	                COALESCE(p.mini_app_type::text, '') as mini_app_type,
+                COALESCE(p.etw_store_type::text, s.etw_store_type::text, '') as store_type,
+                COALESCE(p.etw_mini_app_type::text, '') as mini_app_type,
                 p.store_id,
                 p.shelf_code,
-
                 COALESCE(p.main_price, 0) as main_price,
                 p.strikethrough_price,
 	                p.cost_price,
                 COALESCE(p.weight, 1.00) as weight,
-
                 COALESCE(p.stock_left, 0) as stock_left,
                 COALESCE(p.minimum_order_quantity, 1) as minimum_order_quantity,
                 COALESCE(p.is_active, false) as is_active,
@@ -725,9 +678,7 @@ func (h *Handler) GetProduct(c *gin.Context) {
                 COALESCE(p.created_at, NOW()) as created_at,
                 COALESCE(p.updated_at, NOW()) as updated_at
 	            FROM admin_products p
-	            LEFT JOIN admin_stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
-
-
+	            LEFT JOIN admin_stores s ON p.store_id = s.store_id
 	            WHERE p.product_uuid = $1 AND p.is_active = true
 	        `
 		} else {
@@ -738,17 +689,12 @@ func (h *Handler) GetProduct(c *gin.Context) {
                 COALESCE(p.title, '') as title,
                 '' as description_short,
                 COALESCE(p.description, '') as description_long,
-	                CASE
-	                    WHEN p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales') AND s.type IS NOT NULL
-	                    THEN s.type::text
-	                    ELSE p.store_type::text
-	                END as store_type,
-	                COALESCE(p.mini_app_type::text, '') as mini_app_type,
+                COALESCE(p.etw_store_type::text, s.etw_store_type::text, '') as store_type,
+                COALESCE(p.etw_mini_app_type::text, '') as mini_app_type,
                 p.store_id,
                 COALESCE(p.main_price, 0) as main_price,
                 p.strikethrough_price,
                 COALESCE(p.weight, 1.00) as weight,
-
 	                COALESCE(p.stock_left, 0) as stock_left,
                 COALESCE(p.minimum_order_quantity, 1) as minimum_order_quantity,
                 COALESCE(p.is_active, false) as is_active,
@@ -757,7 +703,7 @@ func (h *Handler) GetProduct(c *gin.Context) {
                 COALESCE(p.created_at, NOW()) as created_at,
                 COALESCE(p.updated_at, NOW()) as updated_at
 	            FROM admin_products p
-	            LEFT JOIN admin_stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore', 'ExhibitionSales')
+	            LEFT JOIN admin_stores s ON p.store_id = s.store_id
 	            WHERE p.product_uuid = $1 AND p.is_active = true
 	        `
 		}
@@ -823,6 +769,27 @@ func (h *Handler) GetProduct(c *gin.Context) {
 	// Normalize nullable store_type from DB into string type
 	product.StoreType = models.StoreType(storeType.String)
 
+	// Populate ETW fields from database (prefer product-level ETW, fall back to store-level ETW)
+	var etwStoreType, etwMiniAppType sql.NullString
+	etwQuery := `
+		SELECT
+			COALESCE(p.etw_store_type::text, s.etw_store_type::text) AS etw_store_type,
+			COALESCE(p.etw_mini_app_type::text, s.etw_mini_app_type::text) AS etw_mini_app_type
+		FROM admin_products p
+		LEFT JOIN admin_stores s ON p.store_id = s.store_id
+		WHERE p.product_id = $1
+	`
+	if err := h.db.Pool.QueryRow(ctx, etwQuery, product.ID).Scan(&etwStoreType, &etwMiniAppType); err == nil {
+		if etwStoreType.Valid {
+			v := models.ETWStoreType(etwStoreType.String)
+			product.ETWStoreType = &v
+		}
+		if etwMiniAppType.Valid {
+			v := models.ETWMiniAppType(etwMiniAppType.String)
+			product.ETWMiniAppType = &v
+		}
+	}
+
 	// Get product images
 	images, err := h.getProductImages(ctx, product.ID)
 	if err != nil {
@@ -873,17 +840,21 @@ func (h *Handler) GetCategories(c *gin.Context) {
 	if includeStoreInfo {
 		query = `
             SELECT
-                c.category_id, c.name, c.store_type_association, c.mini_app_association,
+                c.category_id, c.name,
+                c.etw_mini_app_type::text, c.etw_store_type::text,
                 c.store_id, c.display_order, c.is_active, c.image_url, c.created_at, c.updated_at,
                 s.name as store_name, s.city as store_city, s.latitude as store_latitude,
-                s.longitude as store_longitude, s.type as store_type
+                s.longitude as store_longitude,
+                s.etw_store_type::text as store_etw_store_type,
+                s.etw_mini_app_type::text as store_etw_mini_app_type
             FROM admin_product_categories c
             LEFT JOIN admin_stores s ON c.store_id = s.store_id
         `
 	} else {
 		query = `
             SELECT
-                category_id, name, store_type_association, mini_app_association,
+                category_id, name,
+                etw_mini_app_type::text, etw_store_type::text,
                 store_id, display_order, is_active, image_url, created_at, updated_at
             FROM admin_product_categories
         `
@@ -899,16 +870,16 @@ func (h *Handler) GetCategories(c *gin.Context) {
 		conditions = []string{"is_active = true"}
 	}
 
-	if storeType != "" {
-		conditions = append(conditions, fmt.Sprintf("(store_type_association = $%d OR store_type_association = 'All')", argIndex))
-		// Convert English enum values to appropriate store type association values
-		dbStoreTypeAssociation := convertStoreTypeToAssociation(storeType)
-		args = append(args, dbStoreTypeAssociation)
-		argIndex++
-	}
+	// Note: store_type filter - using ETW columns only
+	_ = storeType // Suppress unused variable warning during transition
 
 	if miniAppType != "" {
-		conditions = append(conditions, fmt.Sprintf("$%d = ANY(mini_app_association)", argIndex))
+		// Use ETW mini_app_type column only (singular)
+		if includeStoreInfo {
+			conditions = append(conditions, fmt.Sprintf("c.etw_mini_app_type = $%d", argIndex))
+		} else {
+			conditions = append(conditions, fmt.Sprintf("etw_mini_app_type = $%d", argIndex))
+		}
 		args = append(args, miniAppType)
 		argIndex++
 	}
@@ -948,11 +919,14 @@ func (h *Handler) GetCategories(c *gin.Context) {
 		var category models.Category
 
 		if includeStoreInfo {
+			var etwMiniAppType, etwStoreType sql.NullString
+			var storeEtwStoreType, storeEtwMiniAppType sql.NullString
+
 			err := rows.Scan(
 				&category.ID,
 				&category.Name,
-				&category.StoreTypeAssociation,
-				&category.MiniAppAssociation,
+				&etwMiniAppType,
+				&etwStoreType,
 				&category.StoreID,
 				&category.DisplayOrder,
 				&category.IsActive,
@@ -963,19 +937,38 @@ func (h *Handler) GetCategories(c *gin.Context) {
 				&category.StoreCity,
 				&category.StoreLatitude,
 				&category.StoreLongitude,
-				&category.StoreType,
+				&storeEtwStoreType,
+				&storeEtwMiniAppType,
 			)
 			if err != nil {
 				log.Printf("Error scanning category with store info: %v", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan category"})
 				return
 			}
+
+			if etwMiniAppType.Valid {
+				v := models.ETWMiniAppType(etwMiniAppType.String)
+				category.ETWMiniAppType = &v
+			}
+			if etwStoreType.Valid {
+				v := models.ETWStoreType(etwStoreType.String)
+				category.ETWStoreType = &v
+			}
+			if storeEtwStoreType.Valid {
+				v := models.ETWStoreType(storeEtwStoreType.String)
+				category.StoreETWStoreType = &v
+			}
+			if storeEtwMiniAppType.Valid {
+				v := models.ETWMiniAppType(storeEtwMiniAppType.String)
+				category.StoreETWMiniAppType = &v
+			}
 		} else {
+			var etwMiniAppType, etwStoreType sql.NullString
 			err := rows.Scan(
 				&category.ID,
 				&category.Name,
-				&category.StoreTypeAssociation,
-				&category.MiniAppAssociation,
+				&etwMiniAppType,
+				&etwStoreType,
 				&category.StoreID,
 				&category.DisplayOrder,
 				&category.IsActive,
@@ -987,6 +980,14 @@ func (h *Handler) GetCategories(c *gin.Context) {
 				log.Printf("Error scanning category: %v", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan category"})
 				return
+			}
+			if etwMiniAppType.Valid {
+				v := models.ETWMiniAppType(etwMiniAppType.String)
+				category.ETWMiniAppType = &v
+			}
+			if etwStoreType.Valid {
+				v := models.ETWStoreType(etwStoreType.String)
+				category.ETWStoreType = &v
 			}
 		}
 
@@ -1072,14 +1073,19 @@ func (h *Handler) GetStores(c *gin.Context) {
 	if userLat != "" && userLng != "" && orderByDistance {
 		query = `
             SELECT
-                store_id, name, city, address, latitude, longitude, type, region_id, image_url, is_active, created_at, updated_at,
+                store_id, name, city, address, latitude, longitude, region_id, image_url, is_active, created_at, updated_at,
+                etw_store_type::text as etw_store_type,
+                etw_mini_app_type::text as etw_mini_app_type,
                 (6371 * acos(cos(radians($1)) * cos(radians(latitude)) * cos(radians(longitude) - radians($2)) + sin(radians($1)) * sin(radians(latitude)))) AS distance_km
             FROM admin_stores
             WHERE is_active = true
         `
 	} else {
 		query = `
-            SELECT store_id, name, city, address, latitude, longitude, type, region_id, image_url, is_active, created_at, updated_at
+            SELECT
+                store_id, name, city, address, latitude, longitude, region_id, image_url, is_active, created_at, updated_at,
+                etw_store_type::text as etw_store_type,
+                etw_mini_app_type::text as etw_mini_app_type
             FROM admin_stores
             WHERE is_active = true
         `
@@ -1094,27 +1100,18 @@ func (h *Handler) GetStores(c *gin.Context) {
 		argIndex = 3
 	}
 
-	// Filter by store type
+	// Filter by ETW store type
 	if storeType != "" {
-		query += fmt.Sprintf(" AND type = $%d", argIndex)
-		// Convert English enum values to Chinese database values
-		dbStoreType := convertStoreTypeToDBValue(storeType)
-		args = append(args, dbStoreType)
+		query += fmt.Sprintf(" AND etw_store_type::text = $%d", argIndex)
+		args = append(args, storeType)
 		argIndex++
 	}
 
-	// Filter by mini-app type (map store types to mini-app types)
+	// Filter by ETW mini-app type
 	if miniAppType != "" {
-		switch miniAppType {
-		case "UnmannedStore":
-			query += fmt.Sprintf(" AND type IN ($%d, $%d)", argIndex, argIndex+1)
-			args = append(args, "无人门店", "无人仓店")
-			argIndex += 2
-		case "ExhibitionSales":
-			query += fmt.Sprintf(" AND type IN ($%d, $%d)", argIndex, argIndex+1)
-			args = append(args, "展销商店", "展销商城")
-			argIndex += 2
-		}
+		query += fmt.Sprintf(" AND etw_mini_app_type::text = $%d", argIndex)
+		args = append(args, miniAppType)
+		argIndex++
 	}
 
 	// Order by distance if requested, otherwise by store_id
@@ -1136,6 +1133,7 @@ func (h *Handler) GetStores(c *gin.Context) {
 	for rows.Next() {
 		var store models.Store
 		var distanceKm *float64
+		var etwStoreType, etwMiniAppType sql.NullString
 
 		if userLat != "" && userLng != "" && orderByDistance {
 			err := rows.Scan(
@@ -1145,12 +1143,13 @@ func (h *Handler) GetStores(c *gin.Context) {
 				&store.Address,
 				&store.Latitude,
 				&store.Longitude,
-				&store.Type,
 				&store.RegionID,
 				&store.ImageURL,
 				&store.IsActive,
 				&store.CreatedAt,
 				&store.UpdatedAt,
+				&etwStoreType,
+				&etwMiniAppType,
 				&distanceKm,
 			)
 			if err != nil {
@@ -1166,18 +1165,31 @@ func (h *Handler) GetStores(c *gin.Context) {
 				&store.Address,
 				&store.Latitude,
 				&store.Longitude,
-				&store.Type,
 				&store.RegionID,
 				&store.ImageURL,
 				&store.IsActive,
 				&store.CreatedAt,
 				&store.UpdatedAt,
+				&etwStoreType,
+				&etwMiniAppType,
 			)
 			if err != nil {
 				log.Printf("Error scanning store: %v", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan store"})
 				return
 			}
+		}
+
+		// Set ETW types from scanned values
+		if etwStoreType.Valid {
+			v := models.ETWStoreType(etwStoreType.String)
+			store.ETWStoreType = &v
+			// Also set legacy Type field for backward compatibility
+			store.Type = models.StoreType(etwStoreType.String)
+		}
+		if etwMiniAppType.Valid {
+			v := models.ETWMiniAppType(etwMiniAppType.String)
+			store.ETWMiniAppType = &v
 		}
 
 		stores = append(stores, store)
@@ -1712,29 +1724,35 @@ func (h *Handler) CreateCategory(c *gin.Context) {
 	var conflictCount int
 	var err error
 
+	// Use ETW mini-app type for conflict check (singular)
+	var etwMiniAppType string
+	if newCategory.ETWMiniAppType != nil {
+		etwMiniAppType = string(*newCategory.ETWMiniAppType)
+	}
+
 	if newCategory.StoreID == nil {
 		conflictQuery = `
             SELECT COUNT(*) FROM admin_product_categories
             WHERE display_order = $1
-            AND $2 = ANY(mini_app_association)
+            AND etw_mini_app_type = $2
             AND store_id IS NULL
             AND is_active = true
         `
 		err = h.db.Pool.QueryRow(ctx, conflictQuery,
 			newCategory.DisplayOrder,
-			newCategory.MiniAppAssociation[0],
+			etwMiniAppType,
 		).Scan(&conflictCount)
 	} else {
 		conflictQuery = `
             SELECT COUNT(*) FROM admin_product_categories
             WHERE display_order = $1
-            AND $2 = ANY(mini_app_association)
+            AND etw_mini_app_type = $2
             AND store_id = $3
             AND is_active = true
         `
 		err = h.db.Pool.QueryRow(ctx, conflictQuery,
 			newCategory.DisplayOrder,
-			newCategory.MiniAppAssociation[0],
+			etwMiniAppType,
 			*newCategory.StoreID,
 		).Scan(&conflictCount)
 	}
@@ -1751,7 +1769,7 @@ func (h *Handler) CreateCategory(c *gin.Context) {
 	}
 
 	query := `
-        INSERT INTO admin_product_categories (name, store_type_association, mini_app_association, store_id, display_order, is_active)
+        INSERT INTO admin_product_categories (name, etw_mini_app_type, etw_store_type, store_id, display_order, is_active)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING category_id, created_at, updated_at
     `
@@ -1760,8 +1778,8 @@ func (h *Handler) CreateCategory(c *gin.Context) {
 	var createdAt, updatedAt time.Time
 	err = h.db.Pool.QueryRow(ctx, query,
 		newCategory.Name,
-		newCategory.StoreTypeAssociation,
-		newCategory.MiniAppAssociation,
+		etwMiniAppType,
+		newCategory.ETWStoreType,
 		newCategory.StoreID,
 		newCategory.DisplayOrder,
 		newCategory.IsActive,
@@ -1804,32 +1822,38 @@ func (h *Handler) UpdateCategory(c *gin.Context) {
 	var conflictCount int
 	var err error
 
+	// Use ETW mini-app type for conflict check (singular)
+	var etwMiniAppType string
+	if updatedCategory.ETWMiniAppType != nil {
+		etwMiniAppType = string(*updatedCategory.ETWMiniAppType)
+	}
+
 	if updatedCategory.StoreID == nil {
 		conflictQuery = `
             SELECT COUNT(*) FROM admin_product_categories
             WHERE display_order = $1
-            AND $2 = ANY(mini_app_association)
+            AND etw_mini_app_type = $2
             AND store_id IS NULL
             AND category_id != $3
             AND is_active = true
         `
 		err = h.db.Pool.QueryRow(ctx, conflictQuery,
 			updatedCategory.DisplayOrder,
-			updatedCategory.MiniAppAssociation[0],
+			etwMiniAppType,
 			categoryID,
 		).Scan(&conflictCount)
 	} else {
 		conflictQuery = `
             SELECT COUNT(*) FROM admin_product_categories
             WHERE display_order = $1
-            AND $2 = ANY(mini_app_association)
+            AND etw_mini_app_type = $2
             AND store_id = $3
             AND category_id != $4
             AND is_active = true
         `
 		err = h.db.Pool.QueryRow(ctx, conflictQuery,
 			updatedCategory.DisplayOrder,
-			updatedCategory.MiniAppAssociation[0],
+			etwMiniAppType,
 			*updatedCategory.StoreID,
 			categoryID,
 		).Scan(&conflictCount)
@@ -1848,7 +1872,7 @@ func (h *Handler) UpdateCategory(c *gin.Context) {
 
 	query := `
         UPDATE admin_product_categories
-        SET name = $2, store_type_association = $3, mini_app_association = $4, store_id = $5, display_order = $6, is_active = $7, updated_at = CURRENT_TIMESTAMP
+        SET name = $2, etw_mini_app_type = $3, etw_store_type = $4, store_id = $5, display_order = $6, is_active = $7, updated_at = CURRENT_TIMESTAMP
         WHERE category_id = $1
         RETURNING updated_at
     `
@@ -1857,8 +1881,8 @@ func (h *Handler) UpdateCategory(c *gin.Context) {
 	err = h.db.Pool.QueryRow(ctx, query,
 		categoryID,
 		updatedCategory.Name,
-		updatedCategory.StoreTypeAssociation,
-		updatedCategory.MiniAppAssociation,
+		etwMiniAppType,
+		updatedCategory.ETWStoreType,
 		updatedCategory.StoreID,
 		updatedCategory.DisplayOrder,
 		updatedCategory.IsActive,
@@ -1947,8 +1971,8 @@ func (h *Handler) CreateStore(c *gin.Context) {
 	}
 
 	query := `
-        INSERT INTO admin_stores (name, city, address, latitude, longitude, type, region_id, image_url, is_active)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        INSERT INTO admin_stores (name, city, address, latitude, longitude, etw_store_type, etw_mini_app_type, region_id, image_url, is_active)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING store_id, created_at, updated_at
     `
 
@@ -1960,7 +1984,8 @@ func (h *Handler) CreateStore(c *gin.Context) {
 		payload.Address,
 		payload.Latitude,
 		payload.Longitude,
-		payload.Type,
+		payload.ETWStoreType,
+		payload.ETWMiniAppType,
 		payload.RegionID,
 		payload.ImageURL,
 		payload.IsActive,
@@ -2033,13 +2058,13 @@ func (h *Handler) UpdateStore(c *gin.Context) {
 		return
 	}
 
-	log.Printf("[UpdateStore] Parsed fields: id=%s name=%q city=%q address=%q lat=%v lng=%v type=%v region_id=%v image_url=%v is_active=%v partner_org_id=%v",
-		storeID, payload.Name, payload.City, payload.Address, payload.Latitude, payload.Longitude, payload.Type, payload.RegionID, payload.ImageURL, payload.IsActive, payload.PartnerOrgID,
+	log.Printf("[UpdateStore] Parsed fields: id=%s name=%q city=%q address=%q lat=%v lng=%v etw_store_type=%v etw_mini_app_type=%v region_id=%v image_url=%v is_active=%v partner_org_id=%v",
+		storeID, payload.Name, payload.City, payload.Address, payload.Latitude, payload.Longitude, payload.ETWStoreType, payload.ETWMiniAppType, payload.RegionID, payload.ImageURL, payload.IsActive, payload.PartnerOrgID,
 	)
 
 	query := `
         UPDATE admin_stores
-        SET name = $2, city = $3, address = $4, latitude = $5, longitude = $6, type = $7, region_id = $8, image_url = $9, is_active = $10, updated_at = CURRENT_TIMESTAMP
+        SET name = $2, city = $3, address = $4, latitude = $5, longitude = $6, etw_store_type = $7, etw_mini_app_type = $8, region_id = $9, image_url = $10, is_active = $11, updated_at = CURRENT_TIMESTAMP
         WHERE store_id = $1
     `
 
@@ -2050,13 +2075,14 @@ func (h *Handler) UpdateStore(c *gin.Context) {
 		payload.Address,
 		payload.Latitude,
 		payload.Longitude,
-		payload.Type,
+		payload.ETWStoreType,
+		payload.ETWMiniAppType,
 		payload.RegionID,
 		payload.ImageURL,
 		payload.IsActive,
 	}
-	log.Printf("[UpdateStore] SQL args: $1=%v $2=%v $3=%v $4=%v $5=%v $6=%v $7=%v $8=%v $9=%v $10=%v",
-		args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9],
+	log.Printf("[UpdateStore] SQL args: $1=%v $2=%v $3=%v $4=%v $5=%v $6=%v $7=%v $8=%v $9=%v $10=%v $11=%v",
+		args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10],
 	)
 
 	cmdTag, err := h.db.Pool.Exec(ctx, query, args...)
@@ -2867,8 +2893,8 @@ func (h *Handler) GetManufacturerProducts(c *gin.Context) {
 			COALESCE(p.title, '') as title,
 			'' as description_short,
 			COALESCE(p.description, '') as description_long,
-			CASE WHEN p.mini_app_type IN ('UnmannedStore','ExhibitionSales') AND s.type IS NOT NULL THEN s.type::text ELSE p.store_type::text END as store_type,
-			COALESCE(p.mini_app_type::text, '') as mini_app_type,
+			COALESCE(p.etw_store_type::text, s.etw_store_type::text, '') as store_type,
+			COALESCE(p.etw_mini_app_type::text, '') as mini_app_type,
 			p.store_id,
 			p.shelf_code,
 			COALESCE(p.main_price, 0) as main_price,
@@ -2882,7 +2908,7 @@ func (h *Handler) GetManufacturerProducts(c *gin.Context) {
 			COALESCE(p.created_at, NOW()) as created_at,
 			COALESCE(p.updated_at, NOW()) as updated_at
 		FROM admin_products p
-		LEFT JOIN admin_stores s ON p.store_id = s.store_id AND p.mini_app_type IN ('UnmannedStore','ExhibitionSales')
+		LEFT JOIN admin_stores s ON p.store_id = s.store_id
 		WHERE p.owner_org_id::text IN (%s)
 		ORDER BY p.product_id`
 

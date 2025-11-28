@@ -46,19 +46,19 @@ class MiniAppNavigation {
         navigateToMiniApp(context, product);
         break;
       case MiniAppType.unmannedStore:
-        // For unmanned store, navigate to cart screen with wrapper
+        // For unmanned store (ETW to U), navigate to cart screen with wrapper
         Navigator.of(context).push(
           MaterialPageRoute(builder: (context) => CartScreenWrapper(
-            miniAppType: 'UnmannedStore',
+            miniAppType: 'ETWtoU',
             storeId: product.storeId != null ? int.tryParse(product.storeId!) : null,
           )),
         );
         break;
       case MiniAppType.exhibitionSales:
-        // For exhibition sales, navigate to cart screen with wrapper
+        // For exhibition sales (ETW to C), navigate to cart screen with wrapper
         Navigator.of(context).push(
           MaterialPageRoute(builder: (context) => CartScreenWrapper(
-            miniAppType: 'ExhibitionSales',
+            miniAppType: 'ETWtoC',
             storeId: product.storeId != null ? int.tryParse(product.storeId!) : null,
           )),
         );

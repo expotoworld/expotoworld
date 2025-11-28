@@ -1202,19 +1202,17 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  /// Get store type color (copied from StoreLocatorHeader)
+  /// Get store type color (ETW store types)
   Color _getStoreTypeColor(StoreType storeType) {
     switch (storeType) {
-      case StoreType.unmannedStore:
-        return const Color(0xFF2196F3); // #2196f3
-      case StoreType.unmannedWarehouse:
-        return const Color(0xFF4CAF50); // #4caf50
-      case StoreType.exhibitionStore:
-        return const Color(0xFFFFD556); // #ffd556
-      case StoreType.exhibitionMall:
-        return const Color(0xFFF38900); // #f38900
-      default:
-        return Colors.grey;
+      case StoreType.etwToGo:
+        return const Color(0xFF2196F3); // #2196f3 - ETWtoGO (convenience)
+      case StoreType.etwXpress:
+        return const Color(0xFF4CAF50); // #4caf50 - ETWXpress (express)
+      case StoreType.etwMega:
+        return const Color(0xFFF38900); // #f38900 - ETWMega (large format)
+      case StoreType.etwMarket:
+        return const Color(0xFFFFD556); // #ffd556 - ETWMarket (market format)
     }
   }
 
@@ -1405,16 +1403,14 @@ class _CartStoreSelectorState extends State<_CartStoreSelector> {
 
   Color _getStoreTypeColor(StoreType storeType) {
     switch (storeType) {
-      case StoreType.unmannedStore:
-        return const Color(0xFF2196F3); // #2196f3
-      case StoreType.unmannedWarehouse:
-        return const Color(0xFF4CAF50); // #4caf50
-      case StoreType.exhibitionStore:
-        return const Color(0xFFFFD556); // #ffd556
-      case StoreType.exhibitionMall:
-        return const Color(0xFFF38900); // #f38900
-      default:
-        return Colors.grey;
+      case StoreType.etwToGo:
+        return const Color(0xFF2196F3); // #2196f3 - ETWtoGO (convenience)
+      case StoreType.etwXpress:
+        return const Color(0xFF4CAF50); // #4caf50 - ETWXpress (express)
+      case StoreType.etwMega:
+        return const Color(0xFFF38900); // #f38900 - ETWMega (large format)
+      case StoreType.etwMarket:
+        return const Color(0xFFFFD556); // #ffd556 - ETWMarket (market format)
     }
   }
 
@@ -1662,16 +1658,14 @@ class _HeaderStoreSelectorState extends State<_HeaderStoreSelector> {
 
   Color _getStoreTypeColor(StoreType storeType) {
     switch (storeType) {
-      case StoreType.unmannedStore:
-        return const Color(0xFF2196F3); // #2196f3
-      case StoreType.unmannedWarehouse:
-        return const Color(0xFF4CAF50); // #4caf50
-      case StoreType.exhibitionStore:
-        return const Color(0xFFFFD556); // #ffd556
-      case StoreType.exhibitionMall:
-        return const Color(0xFFF38900); // #f38900
-      default:
-        return Colors.grey;
+      case StoreType.etwToGo:
+        return const Color(0xFF2196F3); // #2196f3 - ETWtoGO (convenience)
+      case StoreType.etwXpress:
+        return const Color(0xFF4CAF50); // #4caf50 - ETWXpress (express)
+      case StoreType.etwMega:
+        return const Color(0xFFF38900); // #f38900 - ETWMega (large format)
+      case StoreType.etwMarket:
+        return const Color(0xFFFFD556); // #ffd556 - ETWMarket (market format)
     }
   }
 
@@ -1688,7 +1682,7 @@ class _HeaderStoreSelectorState extends State<_HeaderStoreSelector> {
           address: '',
           latitude: 0,
           longitude: 0,
-          type: StoreType.exhibitionStore,
+          type: StoreType.etwMarket,
           isActive: true,
         ),
       );

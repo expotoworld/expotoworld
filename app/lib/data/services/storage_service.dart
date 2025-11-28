@@ -55,7 +55,7 @@ class StorageService {
           address: storeAddress,
           latitude: storeLat,
           longitude: storeLng,
-          type: StoreType.unmannedStore, // Main stores are always unmanned stores
+          type: StoreType.etwToGo, // Main stores are ETWtoU (unmanned) stores
         );
         
         debugPrint('Main store loaded: ${store.name}');

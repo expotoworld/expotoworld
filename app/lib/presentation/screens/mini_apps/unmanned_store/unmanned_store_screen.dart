@@ -88,11 +88,11 @@ class _UnmannedStoreScreenState extends State<UnmannedStoreScreen> {
       _ProfileTab(key: ValueKey('unmanned_profile_$instanceId')),
     ];
 
-    // Initialize cart context for unmanned store mini-app
+    // Initialize cart context for unmanned store mini-app (ETW to U)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final cartProvider = Provider.of<CartProvider>(context, listen: false);
-      cartProvider.setMiniAppContext('UnmannedStore');
-      debugPrint('🛒 UnmannedStoreScreen: Cart context initialized for UnmannedStore');
+      cartProvider.setMiniAppContext('ETWtoU');
+      debugPrint('🛒 UnmannedStoreScreen: Cart context initialized for ETWtoU');
     });
   }
 
@@ -106,15 +106,15 @@ class _UnmannedStoreScreenState extends State<UnmannedStoreScreen> {
     // Update cart context with store_id
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
     final storeId = store?.id != null ? int.tryParse(store!.id) : null;
-    cartProvider.setMiniAppContext('UnmannedStore', storeId: storeId);
+    cartProvider.setMiniAppContext('ETWtoU', storeId: storeId);
     debugPrint('🛒 UnmannedStoreScreen: Updated cart context with store ID: $storeId');
   }
 
-  // Store locator header for unmanned store
+  // Store locator header for ETWtoU (unmanned store)
   PreferredSizeWidget _buildAppBar(LocationProvider locationProvider) {
     return StoreLocatorHeader(
       miniAppName: '无人商店',
-      allowedStoreTypes: const [StoreType.unmannedStore, StoreType.unmannedWarehouse],
+      allowedStoreTypes: const [StoreType.etwToGo, StoreType.etwXpress],
       selectedStore: _selectedStore,
       onStoreSelected: _onStoreSelected,
       onClose: () => Navigator.of(context).pop(),
@@ -350,29 +350,29 @@ class __ProductsTabState extends State<_ProductsTab>
 
   void _initializeStore() async {
     try {
-      // Get unmanned stores from API using mini_app_type filter
+      // Get ETWtoU stores from API using mini_app_type filter
       final stores = await _apiService.fetchStores();
-      // Filter for unmanned stores (无人商店 and 无人仓店)
-      final unmannedStores = stores
+      // Filter for ETWtoU stores (ETWtoGO and ETWXpress)
+      final etwToUStores = stores
           .where(
             (store) =>
-                store.type == StoreType.unmannedStore ||
-                store.type == StoreType.unmannedWarehouse,
+                store.type == StoreType.etwToGo ||
+                store.type == StoreType.etwXpress,
           )
           .toList();
 
-      if (unmannedStores.isNotEmpty && _selectedStore == null) {
+      if (etwToUStores.isNotEmpty && _selectedStore == null) {
         // Auto-select first store if none selected
         setState(() {
-          _selectedStore = unmannedStores.first;
+          _selectedStore = etwToUStores.first;
         });
         // Notify parent about the selected store
         widget.onStoreSelected(_selectedStore);
         // Fetch data after store is initialized
         fetchData();
-      } else if (unmannedStores.isEmpty) {
+      } else if (etwToUStores.isEmpty) {
         // No stores found, but still initialize with empty data
-        debugPrint('DEBUG: No unmanned stores found');
+        debugPrint('DEBUG: No ETWtoU stores found');
         fetchData(); // This will fetch data without store filter
       }
     } catch (e) {

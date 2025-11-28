@@ -1,24 +1,60 @@
 /**
  * Cloudflare Worker: API Gateway for EXPO to World Backend Services
- * 
+ *
  * This worker routes API requests from frontend applications to the appropriate
- * backend microservices running on AWS App Runner.
- * 
+ * backend microservices running on AWS App Runner (production) or localhost (development).
+ *
  * Deployed at: device-api.expotoworld.com
- * Last Updated: October 16, 2025
- * 
- * Backend Services:
+ * Last Updated: November 27, 2025
+ *
+ * Production Backend Services (AWS App Runner):
  * - Auth Service: https://ge6ik5nm6e.eu-central-1.awsapprunner.com
  * - User Service: https://yumaw38pdp.eu-central-1.awsapprunner.com
  * - Catalog Service: https://kykqma8nq4.eu-central-1.awsapprunner.com
  * - Order Service: https://mttci22rgj.eu-central-1.awsapprunner.com
  * - Ebook Service: https://brdmfppyst.eu-central-1.awsapprunner.com
+ *
+ * Local Development Ports:
+ * - Auth Service: http://localhost:8081
+ * - User Service: http://localhost:8083
+ * - Catalog Service: http://localhost:8080
+ * - Order Service: http://localhost:8082
+ * - Ebook Service: http://localhost:8084
  */
+
+// Backend service URLs - use environment variables for local dev, fallback to production
+const getBackendUrls = (env) => {
+  // Check if running locally (wrangler dev sets certain env characteristics)
+  const isLocal = env?.LOCAL_DEV === 'true' || typeof env?.AUTH_SERVICE === 'undefined';
+
+  if (isLocal) {
+    // Local development - connect to localhost services
+    return {
+      AUTH: env?.AUTH_SERVICE || 'http://localhost:8081',
+      USER: env?.USER_SERVICE || 'http://localhost:8083',
+      CATALOG: env?.CATALOG_SERVICE || 'http://localhost:8080',
+      ORDER: env?.ORDER_SERVICE || 'http://localhost:8082',
+      EBOOK: env?.EBOOK_SERVICE || 'http://localhost:8084',
+    };
+  }
+
+  // Production - use AWS App Runner URLs
+  return {
+    AUTH: env?.AUTH_SERVICE || 'https://ge6ik5nm6e.eu-central-1.awsapprunner.com',
+    USER: env?.USER_SERVICE || 'https://yumaw38pdp.eu-central-1.awsapprunner.com',
+    CATALOG: env?.CATALOG_SERVICE || 'https://kykqma8nq4.eu-central-1.awsapprunner.com',
+    ORDER: env?.ORDER_SERVICE || 'https://mttci22rgj.eu-central-1.awsapprunner.com',
+    EBOOK: env?.EBOOK_SERVICE || 'https://brdmfppyst.eu-central-1.awsapprunner.com',
+  };
+};
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
+
+    // Get backend URLs based on environment
+    const backends = getBackendUrls(env);
 
     // CORS configuration
     const allowedOrigins = [
@@ -54,32 +90,32 @@ export default {
 
     // Admin routes (most specific first)
     if (path.startsWith('/api/admin/manufacturer')) {
-      backendUrl = 'https://mttci22rgj.eu-central-1.awsapprunner.com';
+      backendUrl = backends.ORDER;
     } else if (path.startsWith('/api/admin/users')) {
-      backendUrl = 'https://yumaw38pdp.eu-central-1.awsapprunner.com';
+      backendUrl = backends.USER;
     } else if (path.startsWith('/api/admin/carts')) {
       // Admin cart management - handled by order service
-      backendUrl = 'https://mttci22rgj.eu-central-1.awsapprunner.com';
+      backendUrl = backends.ORDER;
     } else if (path.startsWith('/api/admin/orders')) {
-      backendUrl = 'https://mttci22rgj.eu-central-1.awsapprunner.com';
+      backendUrl = backends.ORDER;
     } else if (path.startsWith('/.well-known')) {
       // JWKS and other .well-known endpoints exposed at gateway root
-      backendUrl = 'https://ge6ik5nm6e.eu-central-1.awsapprunner.com';
+      backendUrl = backends.AUTH;
     } else if (path.startsWith('/api/auth')) {
       // Auth service - handles all authentication
-      backendUrl = 'https://ge6ik5nm6e.eu-central-1.awsapprunner.com';
+      backendUrl = backends.AUTH;
     } else if (path.startsWith('/api/ebook')) {
       // Ebook service - handles both /api/ebook and /api/ebook/* routes
-      backendUrl = 'https://brdmfppyst.eu-central-1.awsapprunner.com';
+      backendUrl = backends.EBOOK;
     } else if (path.startsWith('/api/cart')) {
       // Cart routes - handled by order service
-      backendUrl = 'https://mttci22rgj.eu-central-1.awsapprunner.com';
+      backendUrl = backends.ORDER;
     } else if (path.startsWith('/api/orders')) {
       // Order routes
-      backendUrl = 'https://mttci22rgj.eu-central-1.awsapprunner.com';
+      backendUrl = backends.ORDER;
     } else if (path.startsWith('/api/v1')) {
       // Catalog service - products, categories, stores
-      backendUrl = 'https://kykqma8nq4.eu-central-1.awsapprunner.com';
+      backendUrl = backends.CATALOG;
     }
 
     // If no route matches

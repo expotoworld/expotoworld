@@ -1,7 +1,7 @@
 # Expo to World - Development Orchestration Makefile
 # This Makefile provides convenient commands to start and manage development services
 
-.PHONY: help dev dev-env dev-backend dev-frontend dev-flutter-ios dev-flutter-android stop
+.PHONY: help dev dev-env dev-backend dev-frontend dev-flutter-ios dev-flutter-android dev-gateway stop
 
 # Default target - show help
 help:
@@ -10,15 +10,19 @@ help:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
 	@echo "  📦 FULL STACK DEVELOPMENT"
-	@echo "    make dev-env          Start backend + frontend (no auto-open browser)"
+	@echo "    make dev-env          Start backend + API gateway + frontend"
 	@echo ""
 	@echo "  🔧 BACKEND SERVICES"
-	@echo "    make dev-backend      Start all 5 backend Go services"
+	@echo "    make dev-backend      Start all 5 backend Go services + API gateway"
 	@echo "                          - Auth Service (port 8081)"
 	@echo "                          - Order Service (port 8082)"
 	@echo "                          - Catalog Service (port 8080)"
 	@echo "                          - User Service (port 8083)"
 	@echo "                          - Ebook Service (port 8084)"
+	@echo "                          - API Gateway (port 8787) ← Cloudflare Worker"
+	@echo ""
+	@echo "  🌐 API GATEWAY ONLY"
+	@echo "    make dev-gateway      Start only the Cloudflare Worker gateway (port 8787)"
 	@echo ""
 	@echo "  🎨 FRONTEND APPLICATIONS"
 	@echo "    make dev-frontend     Start admin panel + ebook editor"
@@ -45,10 +49,10 @@ dev-env:
 	@echo ""
 	@$(MAKE) -j2 dev-backend dev-frontend
 
-# Start all backend services in parallel
+# Start all backend services + API gateway in parallel
 dev-backend:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "  🔧 Starting Backend Services"
+	@echo "  🔧 Starting Backend Services + API Gateway"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
 	@echo "  ✅ Auth Service      → http://localhost:8081"
@@ -56,15 +60,38 @@ dev-backend:
 	@echo "  ✅ Catalog Service   → http://localhost:8080"
 	@echo "  ✅ User Service      → http://localhost:8083"
 	@echo "  ✅ Ebook Service     → http://localhost:8084"
+	@echo "  🌐 API Gateway       → http://localhost:8787  (Cloudflare Worker)"
 	@echo ""
-	@echo "  💡 Press Ctrl+C to stop all backend services"
+	@echo "  💡 Flutter apps connect via the API Gateway on port 8787"
+	@echo "  💡 Press Ctrl+C to stop all services"
 	@echo ""
 	@cd backend/auth-service && go run cmd/server/main.go & \
 	cd backend/user-service && go run cmd/server/main.go & \
 	cd backend/catalog-service && go run cmd/server/main.go & \
 	cd backend/order-service && go run cmd/server/main.go & \
 	cd backend/ebook-service && go run cmd/server/main.go & \
+	cd cloudflare-worker && npx wrangler dev --port 8787 --local & \
 	wait
+
+# Start only the API gateway (Cloudflare Worker)
+dev-gateway:
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  🌐 Starting API Gateway (Cloudflare Worker)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "  🌐 API Gateway       → http://localhost:8787"
+	@echo ""
+	@echo "  Routes requests to backend services:"
+	@echo "    /api/auth/*   → localhost:8081 (Auth Service)"
+	@echo "    /api/v1/*     → localhost:8080 (Catalog Service)"
+	@echo "    /api/cart/*   → localhost:8082 (Order Service)"
+	@echo "    /api/orders/* → localhost:8082 (Order Service)"
+	@echo "    /api/admin/*  → localhost:8082/8083 (Order/User Service)"
+	@echo "    /api/ebook/*  → localhost:8084 (Ebook Service)"
+	@echo ""
+	@echo "  💡 Press Ctrl+C to stop the gateway"
+	@echo ""
+	@cd cloudflare-worker && npx wrangler dev --port 8787 --local
 
 # Start frontend applications (no auto-open browser, show URLs)
 dev-frontend:
@@ -119,6 +146,9 @@ stop:
 	@echo ""
 	@echo "  🔧 Stopping backend services (Go)..."
 	@pkill -f "go run cmd/server/main.go" || true
+	@echo "  🌐 Stopping API gateway (Cloudflare Worker)..."
+	@pkill -f "wrangler dev" || true
+	@pkill -f "workerd" || true
 	@echo "  🎨 Stopping frontend services (React/Vite)..."
 	@pkill -f "react-scripts start" || true
 	@pkill -f "vite" || true

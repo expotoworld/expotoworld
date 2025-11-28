@@ -54,6 +54,9 @@ export interface Product {
   is_mini_app_recommendation?: boolean;
   is_active?: boolean;
   store_type?: string | null;
+  // ETW fields (primary for new code)
+  etw_store_type?: string | null;
+  etw_mini_app_type?: string | null;
   image_url?: string | null;
   image_urls?: string[];
   images?: ProductImage[];
@@ -74,6 +77,8 @@ export interface Store {
   latitude: number;
   longitude: number;
   type: string;
+  etw_store_type?: string | null;
+  etw_mini_app_type?: string | null;
   region_id: number | null;
   image_url?: string | null;
   is_active: boolean;
@@ -86,6 +91,14 @@ export interface Category {
   image_url?: string | null;
   display_order?: number;
   is_active?: boolean;
+  store_id?: number | null;
+  etw_mini_app_type?: ETWMiniAppType | null;
+  etw_store_type?: ETWStoreType | null;
+  // Store info (when joined)
+  store_name?: string | null;
+  store_city?: string | null;
+  store_etw_store_type?: ETWStoreType | null;
+  store_etw_mini_app_type?: ETWMiniAppType | null;
 }
 
 export interface Subcategory {

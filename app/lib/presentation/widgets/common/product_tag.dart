@@ -93,18 +93,15 @@ class ProductTag extends StatelessWidget {
     if (storeType == null) return AppColors.secondaryText;
 
     switch (storeType!) {
-      case StoreType.retailStore:
-        return const Color(0xFF520EE6); // Purple for 零售商店
-      case StoreType.unmannedStore:
-        return const Color(0xFF2196F3); // Blue for 无人门店
-      case StoreType.unmannedWarehouse:
-        return const Color(0xFF4CAF50); // Green for 无人仓店
-      case StoreType.exhibitionStore:
-        return const Color(0xFFFFD556); // Yellow for 展销商店
-      case StoreType.exhibitionMall:
-        return const Color(0xFFF38900); // Orange for 展销商城
-      case StoreType.groupBuying:
-        return const Color(0xFF076200); // Dark green for 团购团批
+      // ETW Store Types
+      case StoreType.etwMega:
+        return const Color(0xFFF38900); // Orange for ETW Mega (large format)
+      case StoreType.etwMarket:
+        return const Color(0xFFFFD556); // Yellow for ETW Market
+      case StoreType.etwToGo:
+        return const Color(0xFF2196F3); // Blue for ETW to GO (convenience)
+      case StoreType.etwXpress:
+        return const Color(0xFF4CAF50); // Green for ETW Xpress (express)
     }
   }
 }

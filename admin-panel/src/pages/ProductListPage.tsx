@@ -161,36 +161,54 @@ const ProductListPage: React.FC = () => {
     }).format(price);
   };
 
-  // Helper function to get the correct type display for a product
+  // Helper function to get the correct type display for a product (ETW naming)
   const getProductTypeDisplay = (product: Product): string | null | undefined => {
-    // For RetailStore and GroupBuying, use mini_app_type as the primary identifier
-    if (product.mini_app_type === 'RetailStore') {
-      return '零售商店';
+    // Use etw_mini_app_type (ETW values only)
+    const miniAppType = product.etw_mini_app_type || product.mini_app_type;
+
+    // ETW to B (Retail/B2B)
+    if (miniAppType === 'ETWtoB') {
+      return 'ETW to B';
     }
-    if (product.mini_app_type === 'GroupBuying') {
-      return '团购团批';
+    // ETW to G (Group Buying)
+    if (miniAppType === 'ETWtoG') {
+      return 'ETW to G';
     }
-    if (product.mini_app_type === 'UnmannedStore' || product.mini_app_type === 'ExhibitionSales') {
-      // For location-dependent mini-apps, use store_type from the associated store
-      // The backend should populate this correctly via JOIN with stores table
-      return product.store_type;
+    // ETW to U (Unmanned Store) - location-dependent, show store type
+    if (miniAppType === 'ETWtoU') {
+      return product.etw_store_type || 'ETW to U';
     }
-    // Fallback to store_type
-    return product.store_type;
+    // ETW to C (Exhibition Sales) - location-dependent, show store type
+    if (miniAppType === 'ETWtoC') {
+      return product.etw_store_type || 'ETW to C';
+    }
+    // Fallback to ETW store type
+    return product.etw_store_type;
   };
 
   const getStoreTypeChip = (product: Product) => {
     const typeDisplay = getProductTypeDisplay(product) ?? 'N/A';
 
-    // Color mapping for store/mini-app types
+    // Color mapping for store/mini-app types (ETW primary, legacy fallback)
     const getTypeColor = (type: string) => {
       const colorMap: Record<string, { bg: string; hover: string }> = {
-        '零售商店': { bg: '#520ee6', hover: '#4a0dd1' }, // purple
+        // ETW Mini-App Types
+        'ETW to B': { bg: '#520ee6', hover: '#4a0dd1' }, // purple
+        'ETW to U': { bg: '#2196f3', hover: '#1976d2' }, // blue
+        'ETW to C': { bg: '#ffd556', hover: '#ffcc33' }, // yellow
+        'ETW to G': { bg: '#076200', hover: '#054d00' }, // dark green
+        // ETW Store Types
+        'ETWMega': { bg: '#9c27b0', hover: '#7b1fa2' }, // purple
+        'ETWMarket': { bg: '#673ab7', hover: '#512da8' }, // deep purple
+        'ETWtoGO': { bg: '#3f51b5', hover: '#303f9f' }, // indigo
+        'ETWXpress': { bg: '#2196f3', hover: '#1976d2' }, // blue
+        // Legacy store types (for backward compatibility)
+        '零售商店': { bg: '#520ee6', hover: '#4a0dd1' }, // legacy retail
         '无人门店': { bg: '#2196f3', hover: '#1976d2' }, // blue
         '无人仓店': { bg: '#4caf50', hover: '#388e3c' }, // green
         '展销商店': { bg: '#ffd556', hover: '#ffcc33' }, // yellow
         '展销商城': { bg: '#f38900', hover: '#e67c00' }, // orange
-        '团购团批': { bg: '#076200', hover: '#054d00' }, // dark green
+        '团购团批': { bg: '#076200', hover: '#054d00' }, // legacy group buying
       };
       return colorMap[type] || { bg: '#757575', hover: '#616161' }; // default gray
     };
@@ -383,8 +401,8 @@ const ProductListPage: React.FC = () => {
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                           {getStoreTypeChip(product)}
-                          {/* 热门推荐 tag - Only for 无人商店 and 展销展消 mini-apps */}
-                          {['UnmannedStore', 'ExhibitionSales'].includes(product.mini_app_type) && product.is_featured && (
+                          {/* Featured tag - Only for ETWtoU and ETWtoC mini-apps */}
+                          {['ETWtoU', 'ETWtoC'].includes(product.etw_mini_app_type || product.mini_app_type || '') && product.is_featured && (
                             <Chip
                               label="热门推荐"
                               size="small"

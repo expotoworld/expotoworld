@@ -17,8 +17,27 @@ routes = [
   { pattern = "device-api.expotoworld.com/*", zone_name = "expotoworld.com" }
 ]
 
-# Environment variables (if needed in the future)
-# [env.production]
-# [env.production.vars]
-# BACKEND_AUTH_URL = "https://ge6ik5nm6e.eu-central-1.awsapprunner.com"
+# =============================================================================
+# LOCAL DEVELOPMENT CONFIGURATION
+# =============================================================================
+# Run locally with: npx wrangler dev --port 8787 --local
+# The worker automatically detects local mode and routes to localhost services.
+#
+# Backend service ports (local):
+#   - Auth Service:    http://localhost:8081
+#   - User Service:    http://localhost:8083
+#   - Catalog Service: http://localhost:8080
+#   - Order Service:   http://localhost:8082
+#   - Ebook Service:   http://localhost:8084
+#
+# Flutter apps connect via: http://127.0.0.1:8787 (iOS) or http://10.0.2.2:8787 (Android)
+# =============================================================================
 
+# Production environment variables (AWS App Runner URLs)
+[env.production]
+[env.production.vars]
+AUTH_SERVICE = "https://ge6ik5nm6e.eu-central-1.awsapprunner.com"
+USER_SERVICE = "https://yumaw38pdp.eu-central-1.awsapprunner.com"
+CATALOG_SERVICE = "https://kykqma8nq4.eu-central-1.awsapprunner.com"
+ORDER_SERVICE = "https://mttci22rgj.eu-central-1.awsapprunner.com"
+EBOOK_SERVICE = "https://brdmfppyst.eu-central-1.awsapprunner.com"

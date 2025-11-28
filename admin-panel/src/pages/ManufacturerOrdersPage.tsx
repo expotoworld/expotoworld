@@ -48,11 +48,13 @@ const statusColors: Record<string, string> = {
   cancelled: '#f44336',
 };
 
+// ETW Mini-App Type Labels (primary naming)
 const miniAppTypeLabels: Record<string, string> = {
-  RetailStore: '零售商店',
-  UnmannedStore: '无人商店',
-  ExhibitionSales: '展销展消',
-  GroupBuying: '团购团批',
+  // ETW types
+  ETWtoB: 'ETW to B',
+  ETWtoU: 'ETW to U',
+  ETWtoC: 'ETW to C',
+  ETWtoG: 'ETW to G',
 };
 
 interface ManufacturerOrderFilters {
@@ -213,10 +215,10 @@ export default function ManufacturerOrdersPage() {
             <Grid item xs={12} sm={6} md={2}>
               <TextField select fullWidth label="Mini-App" value={filters.mini_app_type} onChange={(e) => handleFilterChange('mini_app_type', e.target.value)}>
                 <MenuItem value="">All Mini-Apps</MenuItem>
-                <MenuItem value="RetailStore">零售商店</MenuItem>
-                <MenuItem value="UnmannedStore">无人商店</MenuItem>
-                <MenuItem value="ExhibitionSales">展销展消</MenuItem>
-                <MenuItem value="GroupBuying">团购团批</MenuItem>
+                <MenuItem value="ETWtoB">ETW to B</MenuItem>
+                <MenuItem value="ETWtoU">ETW to U</MenuItem>
+                <MenuItem value="ETWtoC">ETW to C</MenuItem>
+                <MenuItem value="ETWtoG">ETW to G</MenuItem>
               </TextField>
             </Grid>
             <Grid item xs={12} sm={6} md={2}>

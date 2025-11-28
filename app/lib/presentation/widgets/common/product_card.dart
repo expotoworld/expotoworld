@@ -89,8 +89,8 @@ class ProductCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               
-              // FIX: Stock Info (only for unmanned stores and warehouses)
-              if (product.storeType == StoreType.unmannedStore || product.storeType == StoreType.unmannedWarehouse) ...[
+              // FIX: Stock Info (only for ETWtoU stores - ETWtoGO and ETWXpress)
+              if (product.storeType == StoreType.etwToGo || product.storeType == StoreType.etwXpress) ...[
                 SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, 4)),
                 Text(
                   '剩余 ${product.displayStock ?? 0} 件', // Use ?? 0 to handle null gracefully
@@ -172,12 +172,13 @@ class ProductCard extends StatelessWidget {
     String? resolvedStoreName = storeName;
 
     // Always resolve missing data for consistent tag display
+    // Check if product is from a location-dependent mini-app (ETWtoU or ETWtoC)
     final needsResolution = resolvedCategoryName == null ||
                            resolvedSubcategoryName == null ||
-                           (product.storeType == StoreType.unmannedStore ||
-                            product.storeType == StoreType.unmannedWarehouse ||
-                            product.storeType == StoreType.exhibitionStore ||
-                            product.storeType == StoreType.exhibitionMall) && resolvedStoreName == null;
+                           (product.storeType == StoreType.etwToGo ||
+                            product.storeType == StoreType.etwXpress ||
+                            product.storeType == StoreType.etwMega ||
+                            product.storeType == StoreType.etwMarket) && resolvedStoreName == null;
 
     debugPrint('🔍 ProductCard: Needs resolution: $needsResolution');
 
@@ -262,11 +263,12 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  /// Determines if store tags should be shown based on store type
+  /// Determines if store tags should be shown based on store type (location-dependent mini-apps)
   bool _shouldShowStoreTag() {
-    return product.storeType == StoreType.unmannedStore ||
-           product.storeType == StoreType.unmannedWarehouse ||
-           product.storeType == StoreType.exhibitionStore ||
-           product.storeType == StoreType.exhibitionMall;
+    // All ETW store types are location-dependent
+    return product.storeType == StoreType.etwToGo ||
+           product.storeType == StoreType.etwXpress ||
+           product.storeType == StoreType.etwMega ||
+           product.storeType == StoreType.etwMarket;
   }
 }

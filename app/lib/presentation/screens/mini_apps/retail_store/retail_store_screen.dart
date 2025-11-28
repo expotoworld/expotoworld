@@ -38,11 +38,11 @@ class _RetailStoreScreenState extends State<RetailStoreScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize cart context for retail store mini-app
+    // Initialize cart context for retail store mini-app (ETW to B)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final cartProvider = Provider.of<CartProvider>(context, listen: false);
-      cartProvider.setMiniAppContext('RetailStore');
-      debugPrint('🛒 RetailStoreScreen: Cart context initialized for RetailStore');
+      cartProvider.setMiniAppContext('ETWtoB');
+      debugPrint('🛒 RetailStoreScreen: Cart context initialized for ETWtoB');
     });
   }
 

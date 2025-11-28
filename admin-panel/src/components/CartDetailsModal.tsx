@@ -47,18 +47,20 @@ const CartDetailsModal: React.FC<CartDetailsModalProps> = ({ open, onClose, cart
 
   const { showToast } = useToast();
 
-  const miniAppTypeLabels = {
-    RetailStore: '零售商店',
-    UnmannedStore: '无人商店',
-    ExhibitionSales: '展销展消',
-    GroupBuying: '团购团批',
+  const miniAppTypeLabels: Record<string, string> = {
+    // ETW types (primary)
+    ETWtoB: 'EXPO to WORLD to B',
+    ETWtoU: 'EXPO to WORLD to U',
+    ETWtoC: 'EXPO to WORLD to C',
+    ETWtoG: 'EXPO to WORLD to GATHER',
   };
 
-  const miniAppTypeColors = {
-    RetailStore: '#520ee6',
-    UnmannedStore: '#2196f3',
-    ExhibitionSales: '#ffd556',
-    GroupBuying: '#076200',
+  const miniAppTypeColors: Record<string, string> = {
+    // ETW types (primary)
+    ETWtoB: '#520ee6',
+    ETWtoU: '#2196f3',
+    ETWtoC: '#ffd556',
+    ETWtoG: '#076200',
   };
 
   const handleStartEdit = (item: Pick<CartItemDetail, 'id' | 'quantity'>): void => {

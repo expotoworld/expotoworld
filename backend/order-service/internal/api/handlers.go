@@ -121,6 +121,15 @@ func (h *Handler) AddToCart(c *gin.Context) {
 		return
 	}
 
+	// ETW business rule: ETWtoG orders must not be tied to a physical store
+	if miniAppType == models.MiniAppTypeETWtoG && req.StoreID != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error:   "Invalid store for ETWtoG",
+			Message: "ETWtoG orders cannot be associated with a physical store",
+		})
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -143,9 +152,9 @@ func (h *Handler) AddToCart(c *gin.Context) {
 		return
 	}
 
-	// Check stock availability only for UnmannedStore mini-app
+	// Check stock availability only for ETWtoU (Unmanned Store) mini-app
 	// All other mini-apps have infinite stock
-	if miniAppType == models.MiniAppTypeUnmannedStore && !product.HasStock() {
+	if miniAppType == models.MiniAppTypeETWtoU && !product.HasStock() {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Error:   "Insufficient stock",
 			Message: "This product is currently out of stock",
@@ -177,8 +186,8 @@ func (h *Handler) AddToCart(c *gin.Context) {
 		return
 	}
 
-	// Check if requested quantity exceeds available stock (only for UnmannedStore)
-	if miniAppType == models.MiniAppTypeUnmannedStore && req.Quantity > product.DisplayStock() {
+	// Check if requested quantity exceeds available stock (only for ETWtoU)
+	if miniAppType == models.MiniAppTypeETWtoU && req.Quantity > product.DisplayStock() {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Error:   "Insufficient stock",
 			Message: "Only " + strconv.Itoa(product.DisplayStock()) + " items available",
@@ -186,8 +195,8 @@ func (h *Handler) AddToCart(c *gin.Context) {
 		return
 	}
 
-	// Validate stock considering existing cart contents (only for UnmannedStore)
-	if miniAppType == models.MiniAppTypeUnmannedStore {
+	// Validate stock considering existing cart contents (only for ETWtoU)
+	if miniAppType == models.MiniAppTypeETWtoU {
 		err = h.validateStockForCartAddition(ctx, userID, miniAppType, req.ProductID, req.Quantity)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, models.ErrorResponse{
@@ -270,8 +279,8 @@ func (h *Handler) UpdateCartItem(c *gin.Context) {
 		return
 	}
 
-	// Check stock availability (only for UnmannedStore)
-	if miniAppType == models.MiniAppTypeUnmannedStore && req.Quantity > product.DisplayStock() {
+	// Check stock availability (only for ETWtoU)
+	if miniAppType == models.MiniAppTypeETWtoU && req.Quantity > product.DisplayStock() {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Error:   "Insufficient stock",
 			Message: "Only " + strconv.Itoa(product.DisplayStock()) + " items available",
@@ -370,6 +379,15 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		return
 	}
 
+	// ETW business rule: ETWtoG orders must not be tied to a physical store
+	if miniAppType == models.MiniAppTypeETWtoG && req.StoreID != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error:   "Invalid store for ETWtoG",
+			Message: "ETWtoG orders cannot be associated with a physical store",
+		})
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -392,8 +410,8 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	// Validate stock for all cart items before order creation (only for UnmannedStore)
-	if miniAppType == models.MiniAppTypeUnmannedStore {
+	// Validate stock for all cart items before order creation (only for ETWtoU)
+	if miniAppType == models.MiniAppTypeETWtoU {
 		err = h.validateCartStockBeforeOrder(ctx, cartItems)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, models.ErrorResponse{
