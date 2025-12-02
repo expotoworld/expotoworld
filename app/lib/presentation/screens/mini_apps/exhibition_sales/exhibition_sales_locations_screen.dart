@@ -261,7 +261,7 @@ class _ExhibitionSalesLocationsScreenState extends State<ExhibitionSalesLocation
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: '搜索 ETW to C 门店...', // Customized hint text
+          hintText: AppLocalizations.of(context)!.searchEtwToCStores, // Customized hint text
           hintStyle: AppTextStyles.body.copyWith(
             color: AppColors.secondaryText,
           ),
@@ -513,7 +513,7 @@ class _ExhibitionSalesLocationsScreenState extends State<ExhibitionSalesLocation
                   ),
                 ),
                 child: Text(
-                  '导航',
+                  AppLocalizations.of(context)!.navigate,
                   style: AppTextStyles.responsiveBody(context).copyWith(
                     color: AppColors.white,
                     fontWeight: FontWeight.w600,

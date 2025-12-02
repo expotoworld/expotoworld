@@ -332,7 +332,7 @@ abstract class AppLocalizations {
   /// **'Nearby ETW Stores ({count})'**
   String nearbyEtwStores(int count);
 
-  /// Map fallback text for showing nearby stores
+  /// Map placeholder text
   ///
   /// In en, this message translates to:
   /// **'Show nearby ETW store locations'**
@@ -608,7 +608,7 @@ abstract class AppLocalizations {
   /// **'Order creation failed: {error}'**
   String orderCreationFailed(String error);
 
-  /// Distance unknown label
+  /// Message when distance cannot be calculated
   ///
   /// In en, this message translates to:
   /// **'Distance unknown'**
@@ -919,6 +919,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please enter a valid phone number'**
   String get pleaseEnterValidPhone;
+
+  /// Loading state for recommendations
+  ///
+  /// In en, this message translates to:
+  /// **'Loading recommended products...'**
+  String get loadingRecommendations;
+
+  /// Empty state for recommendations
+  ///
+  /// In en, this message translates to:
+  /// **'No recommended products'**
+  String get noRecommendedProducts;
+
+  /// Suggestion when no recommendations available
+  ///
+  /// In en, this message translates to:
+  /// **'Please try again later or browse other products'**
+  String get tryAgainOrBrowse;
+
+  /// Product description section title
+  ///
+  /// In en, this message translates to:
+  /// **'Product Description'**
+  String get productDescription;
+
+  /// Message when product has no description
+  ///
+  /// In en, this message translates to:
+  /// **'No product description available'**
+  String get noProductDescription;
+
+  /// Out of stock message
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get outOfStock;
+
+  /// Insufficient stock warning message
+  ///
+  /// In en, this message translates to:
+  /// **'Insufficient stock! Only {count} left'**
+  String insufficientStock(int count);
+
+  /// Placeholder for unknown store name
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Store'**
+  String get unknownStore;
+
+  /// Map view title
+  ///
+  /// In en, this message translates to:
+  /// **'Map View'**
+  String get mapView;
+
+  /// Map view title for web platform
+  ///
+  /// In en, this message translates to:
+  /// **'Map View (Web)'**
+  String get mapViewWeb;
+
+  /// Nearby stores section title with count
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby ETW Stores ({count})'**
+  String nearbyEtwStoresCount(int count);
+
+  /// Remove item button text
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get remove;
+
+  /// Clear cart button text
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clear;
+
+  /// Order status - pending
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get orderStatusPending;
+
+  /// Order status - confirmed
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get orderStatusConfirmed;
+
+  /// Order status - processing
+  ///
+  /// In en, this message translates to:
+  /// **'Processing'**
+  String get orderStatusProcessing;
+
+  /// Order status - shipped
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped'**
+  String get orderStatusShipped;
+
+  /// Order status - delivered
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get orderStatusDelivered;
+
+  /// Order status - cancelled
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get orderStatusCancelled;
 }
 
 class _AppLocalizationsDelegate

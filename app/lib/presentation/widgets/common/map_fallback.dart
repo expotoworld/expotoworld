@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../data/models/store.dart';
 import '../../../data/services/location_service.dart';
+import '../../../l10n/app_localizations.dart';
 
 class MapFallback extends StatelessWidget {
   final List<Store> stores;
@@ -46,7 +47,7 @@ class MapFallback extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    kIsWeb ? '地图视图 (Web版本)' : '地图视图',
+                    kIsWeb ? AppLocalizations.of(context)!.mapViewWeb : AppLocalizations.of(context)!.mapView,
                     style: AppTextStyles.cardTitle.copyWith(
                       color: AppColors.themeRed,
                     ),
@@ -54,8 +55,8 @@ class MapFallback extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     kIsWeb
-                        ? '请在移动设备上查看完整地图功能'
-                        : '显示附近的 ETW 门店位置',
+                        ? AppLocalizations.of(context)!.viewFullMapOnMobile
+                        : AppLocalizations.of(context)!.showNearbyEtwLocations,
                     style: AppTextStyles.bodySmall,
                     textAlign: TextAlign.center,
                   ),
@@ -72,7 +73,7 @@ class MapFallback extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '附近的 ETW 门店 (${stores.length})',
+                    AppLocalizations.of(context)!.nearbyEtwStoresCount(stores.length),
                     style: AppTextStyles.cardTitle,
                   ),
                   const SizedBox(height: 12),

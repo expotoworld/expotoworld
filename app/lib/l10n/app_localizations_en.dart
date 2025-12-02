@@ -460,4 +460,66 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pleaseEnterValidPhone => 'Please enter a valid phone number';
+
+  @override
+  String get loadingRecommendations => 'Loading recommended products...';
+
+  @override
+  String get noRecommendedProducts => 'No recommended products';
+
+  @override
+  String get tryAgainOrBrowse =>
+      'Please try again later or browse other products';
+
+  @override
+  String get productDescription => 'Product Description';
+
+  @override
+  String get noProductDescription => 'No product description available';
+
+  @override
+  String get outOfStock => 'Out of stock';
+
+  @override
+  String insufficientStock(int count) {
+    return 'Insufficient stock! Only $count left';
+  }
+
+  @override
+  String get unknownStore => 'Unknown Store';
+
+  @override
+  String get mapView => 'Map View';
+
+  @override
+  String get mapViewWeb => 'Map View (Web)';
+
+  @override
+  String nearbyEtwStoresCount(int count) {
+    return 'Nearby ETW Stores ($count)';
+  }
+
+  @override
+  String get remove => 'Remove';
+
+  @override
+  String get clear => 'Clear';
+
+  @override
+  String get orderStatusPending => 'Pending';
+
+  @override
+  String get orderStatusConfirmed => 'Confirmed';
+
+  @override
+  String get orderStatusProcessing => 'Processing';
+
+  @override
+  String get orderStatusShipped => 'Shipped';
+
+  @override
+  String get orderStatusDelivered => 'Delivered';
+
+  @override
+  String get orderStatusCancelled => 'Cancelled';
 }

@@ -41,9 +41,9 @@ class _CartScreenState extends State<CartScreen> {
 
             return Row(
               children: [
-                // Left: 购物车 text (reduced padding to accommodate dropdown)
+                // Left: Cart text (reduced padding to accommodate dropdown)
                 Text(
-                  '购物车',
+                  AppLocalizations.of(context)!.cart,
                   style: AppTextStyles.majorHeader,
                 ),
 
@@ -63,7 +63,7 @@ class _CartScreenState extends State<CartScreen> {
                       _showClearCartDialog(context, cartProvider);
                     },
                     child: Text(
-                      '清空',
+                      AppLocalizations.of(context)!.clear,
                       style: AppTextStyles.body.copyWith(
                         color: AppColors.themeRed,
                         fontWeight: FontWeight.w600,
@@ -950,7 +950,7 @@ class _CartScreenState extends State<CartScreen> {
             });
           },
           child: Text(
-            '移除',
+            AppLocalizations.of(context)!.remove,
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.themeRed,
               fontWeight: FontWeight.w600,
@@ -1342,7 +1342,7 @@ class _CartStoreSelectorState extends State<_CartStoreSelector> {
 
                 // Get formatted distance using LocationProvider
                 final locationProvider = Provider.of<LocationProvider>(context, listen: false);
-                final formattedDistance = locationProvider.getFormattedDistanceToStore(store) ?? '距离未知';
+                final formattedDistance = locationProvider.getFormattedDistanceToStore(store) ?? AppLocalizations.of(context)!.distanceUnknown;
 
                 return ListTile(
                   onTap: () {
@@ -1419,7 +1419,7 @@ class _CartStoreSelectorState extends State<_CartStoreSelector> {
   Widget build(BuildContext context) {
     // Get formatted distance using LocationProvider
     final locationProvider = Provider.of<LocationProvider>(context, listen: false);
-    final formattedDistance = locationProvider.getFormattedDistanceToStore(widget.selectedStore) ?? '距离未知';
+    final formattedDistance = locationProvider.getFormattedDistanceToStore(widget.selectedStore) ?? AppLocalizations.of(context)!.distanceUnknown;
 
     return GestureDetector(
       key: _selectorKey,
@@ -1678,7 +1678,7 @@ class _HeaderStoreSelectorState extends State<_HeaderStoreSelector> {
         (store) => store.id == storeId,
         orElse: () => Store(
           id: storeId,
-          name: '未知门店',
+          name: AppLocalizations.of(context)!.unknownStore,
           city: '',
           address: '',
           latitude: 0,
@@ -1723,7 +1723,7 @@ class _HeaderStoreSelectorState extends State<_HeaderStoreSelector> {
             ),
             const SizedBox(width: 8),
             Text(
-              widget.selectedStore?.name ?? '选择门店',
+              widget.selectedStore?.name ?? AppLocalizations.of(context)!.selectStore,
               style: AppTextStyles.body.copyWith(
                 color: widget.selectedStore != null
                     ? AppColors.primaryText

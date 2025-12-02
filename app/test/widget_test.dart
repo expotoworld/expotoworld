@@ -14,6 +14,7 @@ void main() {
     // Build a minimal scaffold containing the expected bottom nav labels.
     // This avoids provider and network dependencies while still validating
     // the key localized strings we rely on across the app.
+    // Note: These are the English localized strings (default locale).
     await tester.pumpWidget(const MaterialApp(
       home: Scaffold(
         body: SizedBox.shrink(),
@@ -22,19 +23,19 @@ void main() {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Text('首页'),
-              Text('地点'),
-              Text('消息'),
-              Text('我的'),
+              Text('Home'),
+              Text('Locations'),
+              Text('Messages'),
+              Text('Profile'),
             ],
           ),
         ),
       ),
     ));
 
-    expect(find.text('首页'), findsOneWidget);
-    expect(find.text('地点'), findsOneWidget);
-    expect(find.text('消息'), findsOneWidget);
-    expect(find.text('我的'), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Locations'), findsOneWidget);
+    expect(find.text('Messages'), findsOneWidget);
+    expect(find.text('Profile'), findsOneWidget);
   });
 }
