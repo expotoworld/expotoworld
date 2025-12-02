@@ -13,17 +13,17 @@ extension OrderStatusExtension on OrderStatus {
   String get displayName {
     switch (this) {
       case OrderStatus.pending:
-        return '待处理';
+        return 'Pending';
       case OrderStatus.confirmed:
-        return '已确认';
+        return 'Confirmed';
       case OrderStatus.processing:
-        return '处理中';
+        return 'Processing';
       case OrderStatus.shipped:
-        return '已发货';
+        return 'Shipped';
       case OrderStatus.delivered:
-        return '已送达';
+        return 'Delivered';
       case OrderStatus.cancelled:
-        return '已取消';
+        return 'Cancelled';
     }
   }
 

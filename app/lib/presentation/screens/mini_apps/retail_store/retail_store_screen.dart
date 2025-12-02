@@ -140,23 +140,23 @@ class _RetailStoreScreenState extends State<RetailStoreScreen> {
                 _buildNavItem(
                   index: 0,
                   icon: Icons.home,
-                  label: '首页',
+                  label: AppLocalizations.of(context)!.navHome,
                 ),
                 _buildNavItem(
                   index: 1,
                   icon: Icons.shopping_cart,
-                  label: '购物车',
+                  label: AppLocalizations.of(context)!.cart,
                   showBadge: true,
                 ),
                 _buildNavItem(
                   index: 2,
                   icon: Icons.message,
-                  label: '消息',
+                  label: AppLocalizations.of(context)!.navMessages,
                 ),
                 _buildNavItem(
                   index: 3,
                   icon: Icons.person,
-                  label: '我的',
+                  label: AppLocalizations.of(context)!.navProfile,
                 ),
               ],
             ),
@@ -653,15 +653,15 @@ class _ProductsTabState extends State<_ProductsTab> {
     if (hasFeaturedProducts) {
       result.add(Category(
         id: 'featured',
-        name: '推荐',
+        name: AppLocalizations.of(context)!.featured,
         storeTypeAssociation: StoreTypeAssociation.all,
         miniAppAssociation: [],
       ));
     }
 
-    // Add all API categories except any "推荐" categories (to avoid duplicates)
+    // Add all API categories except any "Featured" categories (to avoid duplicates)
     for (final category in apiCategories) {
-      if (category.name != '推荐' && category.id != 'featured') {
+      if (category.id != 'featured') {
         result.add(category);
       }
     }

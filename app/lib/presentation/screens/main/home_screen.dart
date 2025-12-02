@@ -569,7 +569,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             horizontal: ResponsiveUtils.getResponsiveSpacing(context, 16),
           ),
           child: Text(
-            '热门推荐',
+            AppLocalizations.of(context)!.hotRecommendations,
             style: AppTextStyles.responsiveMajorHeader(context),
           ),
         ),
@@ -586,7 +586,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   height: ResponsiveUtils.getResponsiveSpacing(context, 16),
                 ),
                 Text(
-                  '正在加载推荐商品...',
+                  AppLocalizations.of(context)!.loadingRecommendations,
                   style: AppTextStyles.responsiveBodySmall(
                     context,
                   ).copyWith(color: AppColors.secondaryText),
@@ -608,7 +608,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             horizontal: ResponsiveUtils.getResponsiveSpacing(context, 16),
           ),
           child: Text(
-            '热门推荐',
+            AppLocalizations.of(context)!.hotRecommendations,
             style: AppTextStyles.responsiveMajorHeader(context),
           ),
         ),
@@ -629,7 +629,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   height: ResponsiveUtils.getResponsiveSpacing(context, 16),
                 ),
                 Text(
-                  '加载失败',
+                  AppLocalizations.of(context)!.loadingFailed,
                   style: AppTextStyles.responsiveBodySmall(context).copyWith(
                     color: AppColors.primaryText,
                     fontWeight: FontWeight.w600,
@@ -640,7 +640,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   height: ResponsiveUtils.getResponsiveSpacing(context, 8),
                 ),
                 Text(
-                  '请检查网络连接后重试',
+                  AppLocalizations.of(context)!.checkNetworkAndRetry,
                   style: AppTextStyles.responsiveBodySmall(
                     context,
                   ).copyWith(color: AppColors.secondaryText),
@@ -704,7 +704,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   height: ResponsiveUtils.getResponsiveSpacing(context, 16),
                 ),
                 Text(
-                  '暂无推荐商品',
+                  AppLocalizations.of(context)!.noRecommendedProducts,
                   style: AppTextStyles.responsiveBodySmall(context).copyWith(
                     color: AppColors.primaryText,
                     fontWeight: FontWeight.w600,
@@ -715,7 +715,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   height: ResponsiveUtils.getResponsiveSpacing(context, 8),
                 ),
                 Text(
-                  '请稍后再试或浏览其他商品',
+                  AppLocalizations.of(context)!.tryAgainOrBrowse,
                   style: AppTextStyles.responsiveBodySmall(
                     context,
                   ).copyWith(color: AppColors.secondaryText),

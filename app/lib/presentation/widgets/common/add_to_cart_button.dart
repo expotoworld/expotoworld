@@ -285,8 +285,8 @@ class AddToCartButton extends StatelessWidget {
       SnackBar(
         content: Text(
           product.displayStock != null && product.displayStock! > 0
-              ? '库存不足！仅剩 ${product.displayStock} 件'
-              : '商品已售罄',
+              ? AppLocalizations.of(context)!.insufficientStock(product.displayStock!)
+              : AppLocalizations.of(context)!.outOfStock,
         ),
         backgroundColor: AppColors.error,
         duration: const Duration(seconds: 2),
@@ -321,14 +321,14 @@ class AddToCartButton extends StatelessWidget {
     // Check authentication first
     if (!authProvider.isAuthenticated) {
       debugPrint('🛒 AddToCartButton: User not authenticated');
-      _showErrorFeedback(context, '请先登录后再添加商品到购物车');
+      _showErrorFeedback(context, AppLocalizations.of(context)!.pleaseLoginFirst);
       return false;
     }
 
     // Check if mini-app context is set
     if (cartProvider.currentMiniAppType == null) {
       debugPrint('🛒 AddToCartButton: Mini-app context not set');
-      _showErrorFeedback(context, '购物车初始化失败，请重试');
+      _showErrorFeedback(context, AppLocalizations.of(context)!.cartInitFailed);
       return false;
     }
 
@@ -337,7 +337,7 @@ class AddToCartButton extends StatelessWidget {
          product.miniAppType == MiniAppType.exhibitionSales) &&
         (product.storeId == null || product.storeId!.isEmpty)) {
       debugPrint('🛒 AddToCartButton: Location-based mini-app requires store selection');
-      _showErrorFeedback(context, '请先选择门店位置');
+      _showErrorFeedback(context, AppLocalizations.of(context)!.pleaseSelectStoreFirst);
       return false;
     }
 

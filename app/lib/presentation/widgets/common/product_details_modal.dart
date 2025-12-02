@@ -401,7 +401,7 @@ class _ProductDetailsModalState extends State<ProductDetailsModal>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '商品描述',
+          AppLocalizations.of(context)!.productDescription,
           style: AppTextStyles.responsiveCardTitle(context),
         ),
         SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, 6)), // Reduced from 8
@@ -410,7 +410,7 @@ class _ProductDetailsModalState extends State<ProductDetailsModal>
               ? widget.product.descriptionLong
               : widget.product.descriptionShort.isNotEmpty
                   ? widget.product.descriptionShort
-                  : '暂无商品描述',
+                  : AppLocalizations.of(context)!.noProductDescription,
           style: AppTextStyles.responsiveBody(context),
         ),
       ],

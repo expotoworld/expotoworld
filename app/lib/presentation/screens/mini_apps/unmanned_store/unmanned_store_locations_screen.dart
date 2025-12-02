@@ -262,7 +262,7 @@ class _UnmannedStoreLocationsScreenState extends State<UnmannedStoreLocationsScr
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: '搜索 ETW to U 门店...', // Customized hint text
+          hintText: AppLocalizations.of(context)!.searchEtwToUStores, // Customized hint text
           hintStyle: AppTextStyles.body.copyWith(
             color: AppColors.secondaryText,
           ),
@@ -514,7 +514,7 @@ class _UnmannedStoreLocationsScreenState extends State<UnmannedStoreLocationsScr
                   ),
                 ),
                 child: Text(
-                  '导航',
+                  AppLocalizations.of(context)!.navigate,
                   style: AppTextStyles.responsiveBody(context).copyWith(
                     color: AppColors.white,
                     fontWeight: FontWeight.w600,

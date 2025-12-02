@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../data/models/category.dart';
 import '../../../../data/models/subcategory.dart';
 import '../../../../data/models/product.dart';
@@ -115,14 +116,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            '暂无商品',
+            AppLocalizations.of(context)!.noProducts,
             style: AppTextStyles.body.copyWith(
               color: AppColors.secondaryText,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            '该子分类下暂时没有商品',
+            AppLocalizations.of(context)!.noSubcategoryProducts,
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.secondaryText,
             ),

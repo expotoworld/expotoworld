@@ -983,6 +983,126 @@
   "pleaseEnterValidPhone": "Please enter a valid phone number",
   "@pleaseEnterValidPhone": {
     "description": "Phone format validation"
+  },
+
+  "hotRecommendations": "Hot Recommendations",
+  "@hotRecommendations": {
+    "description": "Hot recommendations section title"
+  },
+
+  "loadingRecommendations": "Loading recommended products...",
+  "@loadingRecommendations": {
+    "description": "Loading state for recommendations"
+  },
+
+  "noRecommendedProducts": "No recommended products",
+  "@noRecommendedProducts": {
+    "description": "Empty state for recommendations"
+  },
+
+  "tryAgainOrBrowse": "Please try again later or browse other products",
+  "@tryAgainOrBrowse": {
+    "description": "Suggestion when no recommendations available"
+  },
+
+  "productDescription": "Product Description",
+  "@productDescription": {
+    "description": "Product description section title"
+  },
+
+  "noProductDescription": "No product description available",
+  "@noProductDescription": {
+    "description": "Message when product has no description"
+  },
+
+  "outOfStock": "Out of stock",
+  "@outOfStock": {
+    "description": "Out of stock message"
+  },
+
+  "insufficientStock": "Insufficient stock! Only {count} left",
+  "@insufficientStock": {
+    "description": "Insufficient stock warning message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "unknownStore": "Unknown Store",
+  "@unknownStore": {
+    "description": "Placeholder for unknown store name"
+  },
+
+  "distanceUnknown": "Distance unknown",
+  "@distanceUnknown": {
+    "description": "Message when distance cannot be calculated"
+  },
+
+  "mapView": "Map View",
+  "@mapView": {
+    "description": "Map view title"
+  },
+
+  "mapViewWeb": "Map View (Web)",
+  "@mapViewWeb": {
+    "description": "Map view title for web platform"
+  },
+
+  "showNearbyEtwLocations": "Show nearby ETW store locations",
+  "@showNearbyEtwLocations": {
+    "description": "Map placeholder text"
+  },
+
+  "nearbyEtwStoresCount": "Nearby ETW Stores ({count})",
+  "@nearbyEtwStoresCount": {
+    "description": "Nearby stores section title with count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "remove": "Remove",
+  "@remove": {
+    "description": "Remove item button text"
+  },
+
+  "clear": "Clear",
+  "@clear": {
+    "description": "Clear cart button text"
+  },
+
+  "orderStatusPending": "Pending",
+  "@orderStatusPending": {
+    "description": "Order status - pending"
+  },
+
+  "orderStatusConfirmed": "Confirmed",
+  "@orderStatusConfirmed": {
+    "description": "Order status - confirmed"
+  },
+
+  "orderStatusProcessing": "Processing",
+  "@orderStatusProcessing": {
+    "description": "Order status - processing"
+  },
+
+  "orderStatusShipped": "Shipped",
+  "@orderStatusShipped": {
+    "description": "Order status - shipped"
+  },
+
+  "orderStatusDelivered": "Delivered",
+  "@orderStatusDelivered": {
+    "description": "Order status - delivered"
+  },
+
+  "orderStatusCancelled": "Cancelled",
+  "@orderStatusCancelled": {
+    "description": "Order status - cancelled"
   }
 }
 

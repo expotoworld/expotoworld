@@ -166,12 +166,12 @@ class _ExhibitionSalesScreenState extends State<ExhibitionSalesScreen> {
                       _buildNavItem(
                         index: 0,
                         icon: Icons.home,
-                        label: '首页',
+                        label: AppLocalizations.of(context)!.navHome,
                       ),
                       _buildNavItem(
                         index: 1,
                         icon: Icons.location_on,
-                        label: '地点',
+                        label: AppLocalizations.of(context)!.navLocations,
                       ),
                     ],
                   ),
@@ -255,8 +255,8 @@ class _ExhibitionSalesScreenState extends State<ExhibitionSalesScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildNavItem(index: 2, icon: Icons.message, label: '消息'),
-                      _buildNavItem(index: 3, icon: Icons.person, label: '我的'),
+                      _buildNavItem(index: 2, icon: Icons.message, label: AppLocalizations.of(context)!.navMessages),
+                      _buildNavItem(index: 3, icon: Icons.person, label: AppLocalizations.of(context)!.navProfile),
                     ],
                   ),
                 ),
@@ -566,7 +566,7 @@ class _ProductsTabState extends State<_ProductsTab> {
     }).toList();
 
     if (subcategoriesWithProducts.isEmpty) {
-      return _buildEmptyState('该分类暂无商品');
+      return _buildEmptyState(AppLocalizations.of(context)!.noCategoryProducts);
     }
 
     return Padding(
@@ -736,7 +736,7 @@ class _ProductsTabState extends State<_ProductsTab> {
   /// Builds the product grid
   Widget _buildProductGrid(List<Product> products) {
     if (products.isEmpty) {
-      return _buildEmptyState('暂无商品');
+      return _buildEmptyState(AppLocalizations.of(context)!.noProducts);
     }
 
     return Padding(
@@ -807,15 +807,15 @@ class _ProductsTabState extends State<_ProductsTab> {
     if (hasRecommendedProducts) {
       result.add(Category(
         id: 'featured',
-        name: '推荐',
+        name: AppLocalizations.of(context)!.featured,
         storeTypeAssociation: StoreTypeAssociation.all,
         miniAppAssociation: [],
       ));
     }
 
-    // Add all API categories except any "推荐" categories (to avoid duplicates)
+    // Add all API categories except any "Featured" categories (to avoid duplicates)
     for (final category in apiCategories) {
-      if (category.name != '推荐' && category.id != 'featured') {
+      if (category.id != 'featured') {
         result.add(category);
       }
     }

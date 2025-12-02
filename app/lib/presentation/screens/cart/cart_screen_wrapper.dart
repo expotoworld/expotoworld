@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../providers/cart_provider.dart';
 
 import 'cart_screen.dart';
@@ -96,12 +97,12 @@ class _CartScreenWrapperState extends State<CartScreenWrapper> {
                   children: [
                     _buildNavItem(
                       icon: Icons.home,
-                      label: '首页',
+                      label: AppLocalizations.of(context)!.navHome,
                       onTap: () => _navigateToHome(),
                     ),
                     _buildNavItem(
                       icon: Icons.location_on,
-                      label: '地点',
+                      label: AppLocalizations.of(context)!.navLocations,
                       onTap: () => _navigateToLocation(),
                     ),
                   ],
@@ -173,12 +174,12 @@ class _CartScreenWrapperState extends State<CartScreenWrapper> {
                   children: [
                     _buildNavItem(
                       icon: Icons.message,
-                      label: '消息',
+                      label: AppLocalizations.of(context)!.navMessages,
                       onTap: () => _navigateToMessages(),
                     ),
                     _buildNavItem(
                       icon: Icons.person,
-                      label: '我的',
+                      label: AppLocalizations.of(context)!.navProfile,
                       onTap: () => _navigateToProfile(),
                     ),
                   ],
