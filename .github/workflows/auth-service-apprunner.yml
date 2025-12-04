@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION: eu-central-1
+  AWS_REGION: ${{ vars.AWS_REGION }}
   SERVICE_NAME: expotoworld-auth-service
   ECR_REPOSITORY: expotoworld-auth-service
 
@@ -30,7 +30,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::834076182408:role/GitHubActionsECRPush-expotoworld
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/GitHubActionsECRPush-expotoworld
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
@@ -41,7 +41,7 @@ jobs:
         id: current-image
         run: |
           CURRENT_IMAGE=$(aws apprunner describe-service \
-            --service-arn arn:aws:apprunner:${{ env.AWS_REGION }}:834076182408:service/${{ env.SERVICE_NAME }}/e7a6567be4e14507ade5f73312d95256 \
+            --service-arn arn:aws:apprunner:${{ env.AWS_REGION }}:${{ vars.AWS_ACCOUNT_ID }}:service/${{ env.SERVICE_NAME }}/e7a6567be4e14507ade5f73312d95256 \
             --region ${{ env.AWS_REGION }} \
             --query 'Service.SourceConfiguration.ImageRepository.ImageIdentifier' \
             --output text)
@@ -91,7 +91,7 @@ jobs:
           echo "⏳ Waiting for service to be stable before update..."
           for i in {1..40}; do
             STATUS=$(aws apprunner describe-service \
-              --service-arn arn:aws:apprunner:${{ env.AWS_REGION }}:834076182408:service/${{ env.SERVICE_NAME }}/e7a6567be4e14507ade5f73312d95256 \
+              --service-arn arn:aws:apprunner:${{ env.AWS_REGION }}:${{ vars.AWS_ACCOUNT_ID }}:service/${{ env.SERVICE_NAME }}/e7a6567be4e14507ade5f73312d95256 \
               --region ${{ env.AWS_REGION }} \
               --query 'Service.Status' \
               --output text)
@@ -106,7 +106,7 @@ jobs:
           echo "Updating App Runner service to ensure env/secrets and image are applied: ${{ steps.latest-image.outputs.latest_image }}"
 
           aws apprunner update-service \
-            --service-arn arn:aws:apprunner:${{ env.AWS_REGION }}:834076182408:service/${{ env.SERVICE_NAME }}/e7a6567be4e14507ade5f73312d95256 \
+            --service-arn arn:aws:apprunner:${{ env.AWS_REGION }}:${{ vars.AWS_ACCOUNT_ID }}:service/${{ env.SERVICE_NAME }}/e7a6567be4e14507ade5f73312d95256 \
             --region ${{ env.AWS_REGION }} \
             --source-configuration '{
               "ImageRepository": {
@@ -130,14 +130,14 @@ jobs:
               },
               "AutoDeploymentsEnabled": true,
               "AuthenticationConfiguration": {
-                "AccessRoleArn": "arn:aws:iam::834076182408:role/AppRunnerECRAccessRole-expotoworld"
+                "AccessRoleArn": "arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/AppRunnerECRAccessRole-expotoworld"
               }
             }'
 
           echo "⏳ Waiting for service to finish update..."
           for i in {1..40}; do
             STATUS=$(aws apprunner describe-service \
-              --service-arn arn:aws:apprunner:${{ env.AWS_REGION }}:834076182408:service/${{ env.SERVICE_NAME }}/e7a6567be4e14507ade5f73312d95256 \
+              --service-arn arn:aws:apprunner:${{ env.AWS_REGION }}:${{ vars.AWS_ACCOUNT_ID }}:service/${{ env.SERVICE_NAME }}/e7a6567be4e14507ade5f73312d95256 \
               --region ${{ env.AWS_REGION }} \
               --query 'Service.Status' \
               --output text)
@@ -159,7 +159,7 @@ jobs:
           
           while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
             STATUS=$(aws apprunner describe-service \
-              --service-arn arn:aws:apprunner:${{ env.AWS_REGION }}:834076182408:service/${{ env.SERVICE_NAME }}/e7a6567be4e14507ade5f73312d95256 \
+              --service-arn arn:aws:apprunner:${{ env.AWS_REGION }}:${{ vars.AWS_ACCOUNT_ID }}:service/${{ env.SERVICE_NAME }}/e7a6567be4e14507ade5f73312d95256 \
               --region ${{ env.AWS_REGION }} \
               --query 'Service.Status' \
               --output text)
@@ -189,7 +189,7 @@ jobs:
 
         run: |
           SERVICE_URL=$(aws apprunner describe-service \
-            --service-arn arn:aws:apprunner:${{ env.AWS_REGION }}:834076182408:service/${{ env.SERVICE_NAME }}/e7a6567be4e14507ade5f73312d95256 \
+            --service-arn arn:aws:apprunner:${{ env.AWS_REGION }}:${{ vars.AWS_ACCOUNT_ID }}:service/${{ env.SERVICE_NAME }}/e7a6567be4e14507ade5f73312d95256 \
             --region ${{ env.AWS_REGION }} \
             --query 'Service.ServiceUrl' \
             --output text)
