@@ -82,14 +82,14 @@ const CartListPage: React.FC = () => {
     ETWtoB: 'ETW to B',
     ETWtoU: 'ETW to U',
     ETWtoC: 'ETW to C',
-    ETWtoG: 'ETW to G',
+    ETWtoX: 'ETW to X',
   };
 
   const miniAppTypeColors: Record<string, string> = {
     ETWtoB: '#520ee6',
     ETWtoU: '#2196f3',
     ETWtoC: '#ffd556',
-    ETWtoG: '#076200',
+    ETWtoX: '#076200',
   };
 
 

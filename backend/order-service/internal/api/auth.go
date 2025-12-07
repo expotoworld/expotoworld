@@ -75,14 +75,14 @@ func GetUserID(c *gin.Context) (string, bool) {
 }
 
 // ValidateMiniAppType validates and returns the mini-app type from URL parameter.
-// Only ETW identifiers are accepted (ETWtoB, ETWtoC, ETWtoU, ETWtoG).
+// Only ETW identifiers are accepted (ETWtoB, ETWtoC, ETWtoU, ETWtoX).
 func ValidateMiniAppType(c *gin.Context) (models.MiniAppType, bool) {
 	miniAppTypeStr := c.Param("mini_app_type")
 	miniAppType, ok := models.ParseMiniAppTypeFromString(miniAppTypeStr)
 	if !ok {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Error:   "Invalid mini-app type",
-			Message: "Mini-app type must be one of: ETWtoB, ETWtoC, ETWtoU, ETWtoG",
+			Message: "Mini-app type must be one of: ETWtoB, ETWtoC, ETWtoU, ETWtoX",
 		})
 		return "", false
 	}

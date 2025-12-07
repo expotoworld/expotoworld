@@ -193,11 +193,11 @@ func (db *Database) CreateProduct(ctx context.Context, product models.Product) (
 	}
 	defer tx.Rollback(ctx)
 
-	// Determine ETW store_type param: NULL for ETWtoB and ETWtoG (no physical store)
+	// Determine ETW store_type param: NULL for ETWtoB and ETWtoX (no physical store)
 	var etwStoreTypeParam interface{}
 	if product.ETWMiniAppType != nil {
 		switch *product.ETWMiniAppType {
-		case models.ETWMiniAppTypeETWtoB, models.ETWMiniAppTypeETWtoG:
+		case models.ETWMiniAppTypeETWtoB, models.ETWMiniAppTypeETWtoX:
 			etwStoreTypeParam = nil
 		default:
 			if product.ETWStoreType != nil {
@@ -221,7 +221,7 @@ func (db *Database) CreateProduct(ctx context.Context, product models.Product) (
 	var shelfCodeParam interface{}
 	if product.ETWMiniAppType != nil {
 		switch *product.ETWMiniAppType {
-		case models.ETWMiniAppTypeETWtoB, models.ETWMiniAppTypeETWtoG:
+		case models.ETWMiniAppTypeETWtoB, models.ETWMiniAppTypeETWtoX:
 			shelfCodeParam = nil
 		default:
 			if product.StoreID != nil && product.ShelfCode != nil && strings.TrimSpace(*product.ShelfCode) != "" {
@@ -379,11 +379,11 @@ func (db *Database) UpdateProduct(ctx context.Context, productID int, product mo
 	}
 	defer tx.Rollback(ctx)
 
-	// Determine ETW store_type param: NULL for ETWtoB and ETWtoG (no physical store)
+	// Determine ETW store_type param: NULL for ETWtoB and ETWtoX (no physical store)
 	var etwStoreTypeParam interface{}
 	if product.ETWMiniAppType != nil {
 		switch *product.ETWMiniAppType {
-		case models.ETWMiniAppTypeETWtoB, models.ETWMiniAppTypeETWtoG:
+		case models.ETWMiniAppTypeETWtoB, models.ETWMiniAppTypeETWtoX:
 			etwStoreTypeParam = nil
 		default:
 			if product.ETWStoreType != nil {
@@ -407,7 +407,7 @@ func (db *Database) UpdateProduct(ctx context.Context, productID int, product mo
 	var shelfCodeParam interface{}
 	if product.ETWMiniAppType != nil {
 		switch *product.ETWMiniAppType {
-		case models.ETWMiniAppTypeETWtoB, models.ETWMiniAppTypeETWtoG:
+		case models.ETWMiniAppTypeETWtoB, models.ETWMiniAppTypeETWtoX:
 			shelfCodeParam = nil
 		default:
 			if product.StoreID != nil && product.ShelfCode != nil && strings.TrimSpace(*product.ShelfCode) != "" {

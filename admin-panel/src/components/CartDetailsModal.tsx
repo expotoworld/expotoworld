@@ -52,7 +52,7 @@ const CartDetailsModal: React.FC<CartDetailsModalProps> = ({ open, onClose, cart
     ETWtoB: 'EXPO to WORLD to B',
     ETWtoU: 'EXPO to WORLD to U',
     ETWtoC: 'EXPO to WORLD to C',
-    ETWtoG: 'EXPO to WORLD to GATHER',
+    ETWtoX: 'EXPO to WORLD to X',
   };
 
   const miniAppTypeColors: Record<string, string> = {
@@ -60,7 +60,7 @@ const CartDetailsModal: React.FC<CartDetailsModalProps> = ({ open, onClose, cart
     ETWtoB: '#520ee6',
     ETWtoU: '#2196f3',
     ETWtoC: '#ffd556',
-    ETWtoG: '#076200',
+    ETWtoX: '#076200',
   };
 
   const handleStartEdit = (item: Pick<CartItemDetail, 'id' | 'quantity'>): void => {

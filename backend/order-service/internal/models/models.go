@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// MiniAppType represents the ETW mini-app type (ETWtoB, ETWtoC, ETWtoU, ETWtoG)
+// MiniAppType represents the ETW mini-app type (ETWtoB, ETWtoC, ETWtoU, ETWtoX)
 // This is the primary and only supported type after the ETW migration.
 type MiniAppType string
 
@@ -12,13 +12,13 @@ const (
 	MiniAppTypeETWtoB MiniAppType = "ETWtoB" // B2B / Retail Store
 	MiniAppTypeETWtoC MiniAppType = "ETWtoC" // B2C / Exhibition Sales
 	MiniAppTypeETWtoU MiniAppType = "ETWtoU" // Unmanned Store
-	MiniAppTypeETWtoG MiniAppType = "ETWtoG" // Group Buying
+	MiniAppTypeETWtoX MiniAppType = "ETWtoX" // EXPO to WORLD to X
 )
 
 // IsValid checks if the mini-app type is valid
 func (m MiniAppType) IsValid() bool {
 	switch m {
-	case MiniAppTypeETWtoB, MiniAppTypeETWtoC, MiniAppTypeETWtoU, MiniAppTypeETWtoG:
+	case MiniAppTypeETWtoB, MiniAppTypeETWtoC, MiniAppTypeETWtoU, MiniAppTypeETWtoX:
 		return true
 	default:
 		return false
@@ -32,7 +32,7 @@ func (m MiniAppType) RequiresStore() bool {
 }
 
 // ParseMiniAppTypeFromString parses an ETW mini-app type string.
-// Only ETW values are accepted (ETWtoB, ETWtoC, ETWtoU, ETWtoG).
+// Only ETW values are accepted (ETWtoB, ETWtoC, ETWtoU, ETWtoX).
 func ParseMiniAppTypeFromString(raw string) (MiniAppType, bool) {
 	switch raw {
 	case string(MiniAppTypeETWtoB):
@@ -41,8 +41,8 @@ func ParseMiniAppTypeFromString(raw string) (MiniAppType, bool) {
 		return MiniAppTypeETWtoC, true
 	case string(MiniAppTypeETWtoU):
 		return MiniAppTypeETWtoU, true
-	case string(MiniAppTypeETWtoG):
-		return MiniAppTypeETWtoG, true
+	case string(MiniAppTypeETWtoX):
+		return MiniAppTypeETWtoX, true
 	default:
 		return "", false
 	}

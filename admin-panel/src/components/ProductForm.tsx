@@ -140,7 +140,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
       { value: 'ETWtoB', label: 'ETW to B', requiresStore: false },
       { value: 'ETWtoC', label: 'ETW to C', requiresStore: true },
       { value: 'ETWtoU', label: 'ETW to U', requiresStore: true },
-      { value: 'ETWtoG', label: 'ETW to G', requiresStore: false },
+      { value: 'ETWtoX', label: 'ETW to X', requiresStore: false },
     ],
     [],
   );
@@ -601,7 +601,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         const selectedStore = stores.find(store => store.id === parseInt(formData.store_id as string, 10));
         etwStoreType = selectedStore?.etw_store_type ?? null;
       } else {
-        // For ETWtoB and ETWtoG, store_type must be NULL
+        // For ETWtoB and ETWtoX, store_type must be NULL
         etwStoreType = null;
       }
 

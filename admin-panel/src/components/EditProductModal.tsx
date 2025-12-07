@@ -126,7 +126,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ open, onClose, prod
     { value: 'ETWtoB', label: 'ETW to B', requiresStore: false },
     { value: 'ETWtoU', label: 'ETW to U', requiresStore: true },
     { value: 'ETWtoC', label: 'ETW to C', requiresStore: true },
-    { value: 'ETWtoG', label: 'ETW to G', requiresStore: false },
+    { value: 'ETWtoX', label: 'ETW to X', requiresStore: false },
   ];
 
   // Initialize form data when product changes

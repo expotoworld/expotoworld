@@ -121,11 +121,11 @@ func (h *Handler) AddToCart(c *gin.Context) {
 		return
 	}
 
-	// ETW business rule: ETWtoG orders must not be tied to a physical store
-	if miniAppType == models.MiniAppTypeETWtoG && req.StoreID != nil {
+	// ETW business rule: ETWtoX orders must not be tied to a physical store
+	if miniAppType == models.MiniAppTypeETWtoX && req.StoreID != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error:   "Invalid store for ETWtoG",
-			Message: "ETWtoG orders cannot be associated with a physical store",
+			Error:   "Invalid store for ETWtoX",
+			Message: "ETWtoX orders cannot be associated with a physical store",
 		})
 		return
 	}
@@ -379,11 +379,11 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	// ETW business rule: ETWtoG orders must not be tied to a physical store
-	if miniAppType == models.MiniAppTypeETWtoG && req.StoreID != nil {
+	// ETW business rule: ETWtoX orders must not be tied to a physical store
+	if miniAppType == models.MiniAppTypeETWtoX && req.StoreID != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Error:   "Invalid store for ETWtoG",
-			Message: "ETWtoG orders cannot be associated with a physical store",
+			Error:   "Invalid store for ETWtoX",
+			Message: "ETWtoX orders cannot be associated with a physical store",
 		})
 		return
 	}

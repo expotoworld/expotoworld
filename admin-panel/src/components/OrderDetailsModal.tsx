@@ -64,7 +64,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     ETWtoB: 'ETW to B',
     ETWtoU: 'ETW to U',
     ETWtoC: 'ETW to C',
-    ETWtoG: 'ETW to G',
+    ETWtoX: 'ETW to X',
   };
 
   const handleStartEdit = (): void => {

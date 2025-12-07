@@ -5,7 +5,7 @@ enum MiniAppType {
   retailStore,      // ETWtoB - B2B Exposition
   unmannedStore,    // ETWtoU - Automated Unstaffed Stores
   exhibitionSales,  // ETWtoC - B2C Exposition
-  groupBuying,      // ETWtoG - Group Buying for Services
+  toX,              // ETWtoX - EXPO to WORLD to X
 }
 
 extension MiniAppTypeExtension on MiniAppType {
@@ -18,8 +18,8 @@ extension MiniAppTypeExtension on MiniAppType {
         return 'EXPO to WORLD to U';
       case MiniAppType.exhibitionSales:
         return 'EXPO to WORLD to C';
-      case MiniAppType.groupBuying:
-        return 'EXPO to WORLD to GATHER';
+      case MiniAppType.toX:
+        return 'EXPO to WORLD to X';
     }
   }
 
@@ -32,8 +32,8 @@ extension MiniAppTypeExtension on MiniAppType {
         return 'ETW to U';
       case MiniAppType.exhibitionSales:
         return 'ETW to C';
-      case MiniAppType.groupBuying:
-        return 'ETW to G';
+      case MiniAppType.toX:
+        return 'ETW to X';
     }
   }
 
@@ -46,8 +46,8 @@ extension MiniAppTypeExtension on MiniAppType {
         return 'ETWtoU';
       case MiniAppType.exhibitionSales:
         return 'ETWtoC';
-      case MiniAppType.groupBuying:
-        return 'ETWtoG';
+      case MiniAppType.toX:
+        return 'ETWtoX';
     }
   }
 
@@ -63,8 +63,8 @@ extension MiniAppTypeExtension on MiniAppType {
         return MiniAppType.unmannedStore;
       case 'ETWtoC':
         return MiniAppType.exhibitionSales;
-      case 'ETWtoG':
-        return MiniAppType.groupBuying;
+      case 'ETWtoX':
+        return MiniAppType.toX;
       default:
         throw ArgumentError('Unknown MiniAppType: $apiValue');
     }

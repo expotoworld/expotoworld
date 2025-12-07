@@ -170,9 +170,9 @@ const ProductListPage: React.FC = () => {
     if (miniAppType === 'ETWtoB') {
       return 'ETW to B';
     }
-    // ETW to G (Group Buying)
-    if (miniAppType === 'ETWtoG') {
-      return 'ETW to G';
+    // ETW to X (formerly Group Buying)
+    if (miniAppType === 'ETWtoX') {
+      return 'ETW to X';
     }
     // ETW to U (Unmanned Store) - location-dependent, show store type
     if (miniAppType === 'ETWtoU') {
@@ -196,7 +196,7 @@ const ProductListPage: React.FC = () => {
         'ETW to B': { bg: '#520ee6', hover: '#4a0dd1' }, // purple
         'ETW to U': { bg: '#2196f3', hover: '#1976d2' }, // blue
         'ETW to C': { bg: '#ffd556', hover: '#ffcc33' }, // yellow
-        'ETW to G': { bg: '#076200', hover: '#054d00' }, // dark green
+        'ETW to X': { bg: '#076200', hover: '#054d00' }, // dark green
         // ETW Store Types
         'ETWMega': { bg: '#9c27b0', hover: '#7b1fa2' }, // purple
         'ETWMarket': { bg: '#673ab7', hover: '#512da8' }, // deep purple

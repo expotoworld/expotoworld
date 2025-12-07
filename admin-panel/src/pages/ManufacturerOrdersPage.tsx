@@ -54,7 +54,7 @@ const miniAppTypeLabels: Record<string, string> = {
   ETWtoB: 'ETW to B',
   ETWtoU: 'ETW to U',
   ETWtoC: 'ETW to C',
-  ETWtoG: 'ETW to G',
+  ETWtoX: 'ETW to X',
 };
 
 interface ManufacturerOrderFilters {
@@ -218,7 +218,7 @@ export default function ManufacturerOrdersPage() {
                 <MenuItem value="ETWtoB">ETW to B</MenuItem>
                 <MenuItem value="ETWtoU">ETW to U</MenuItem>
                 <MenuItem value="ETWtoC">ETW to C</MenuItem>
-                <MenuItem value="ETWtoG">ETW to G</MenuItem>
+                <MenuItem value="ETWtoX">ETW to X</MenuItem>
               </TextField>
             </Grid>
             <Grid item xs={12} sm={6} md={2}>

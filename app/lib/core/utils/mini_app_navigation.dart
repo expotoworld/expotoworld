@@ -4,7 +4,7 @@ import '../../core/enums/mini_app_type.dart';
 import '../../presentation/screens/mini_apps/retail_store/retail_store_screen.dart';
 import '../../presentation/screens/mini_apps/unmanned_store/unmanned_store_screen.dart';
 import '../../presentation/screens/mini_apps/exhibition_sales/exhibition_sales_screen.dart';
-import '../../presentation/screens/mini_apps/group_buying/group_buying_screen.dart';
+import '../../presentation/screens/mini_apps/to_x/to_x_screen.dart';
 import '../../presentation/screens/cart/cart_screen_wrapper.dart';
 
 /// Utility class for handling navigation between mini-apps based on product types
@@ -27,8 +27,8 @@ class MiniAppNavigation {
           instanceId: DateTime.now().millisecondsSinceEpoch.toString(),
         );
         break;
-      case MiniAppType.groupBuying:
-        targetScreen = const GroupBuyingScreen();
+      case MiniAppType.toX:
+        targetScreen = const ToXScreen();
         break;
     }
 
@@ -63,8 +63,8 @@ class MiniAppNavigation {
           )),
         );
         break;
-      case MiniAppType.groupBuying:
-        // For group buying, navigate to the mini-app (no separate cart)
+      case MiniAppType.toX:
+        // For toX, navigate to the mini-app (no separate cart)
         navigateToMiniApp(context, product);
         break;
     }

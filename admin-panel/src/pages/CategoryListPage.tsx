@@ -52,7 +52,7 @@ import { CATALOG_BASE } from '../services/api';
 import type { Store } from '../types/domain';
 
 // ETW Mini-App Types (primary identifiers)
-type ETWMiniAppKey = 'ETWtoB' | 'ETWtoC' | 'ETWtoU' | 'ETWtoG';
+type ETWMiniAppKey = 'ETWtoB' | 'ETWtoC' | 'ETWtoU' | 'ETWtoX';
 
 interface StoreTypeInfo {
   value?: string;
@@ -216,8 +216,8 @@ const CategoryListPage: React.FC = () => {
         description: 'Automated unstaffed store categories (ETW to GO + ETW Xpress)',
       },
       {
-        value: 'ETWtoG',
-        label: 'EXPO to WORLD to GATHER',
+        value: 'ETWtoX',
+        label: 'EXPO to WORLD to X',
         icon: <GroupBuyingIcon />,
         color: '#f57c00',
         requiresStore: false,
