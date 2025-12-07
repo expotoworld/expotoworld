@@ -60,9 +60,9 @@ class _CartScreenWrapperState extends State<CartScreenWrapper> {
       case 'retail_store':
       case 'retailstore':
         return 'RetailStore';
-      case 'group_buying':
-      case 'groupbuying':
-        return 'GroupBuying';
+      case 'to_x':
+      case 'tox':
+        return 'ToX';
       default:
         // If already in correct format, return as-is
         return miniAppType;

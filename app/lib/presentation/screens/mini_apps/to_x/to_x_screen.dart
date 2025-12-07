@@ -20,14 +20,14 @@ import '../common/product_list_screen.dart';
 import '../../../../core/navigation/custom_page_transitions.dart';
 import '../../../../core/config/api_config.dart';
 
-class GroupBuyingScreen extends StatefulWidget {
-  const GroupBuyingScreen({super.key});
+class ToXScreen extends StatefulWidget {
+  const ToXScreen({super.key});
 
   @override
-  State<GroupBuyingScreen> createState() => _GroupBuyingScreenState();
+  State<ToXScreen> createState() => _ToXScreenState();
 }
 
-class _GroupBuyingScreenState extends State<GroupBuyingScreen> {
+class _ToXScreenState extends State<ToXScreen> {
   int _currentIndex = 0;
 
   // Product details state management
@@ -39,11 +39,11 @@ class _GroupBuyingScreenState extends State<GroupBuyingScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize cart context for group buying mini-app (ETW to G)
+    // Initialize cart context for toX mini-app (ETW to X)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final cartProvider = Provider.of<CartProvider>(context, listen: false);
-      cartProvider.setMiniAppContext('ETWtoG');
-      debugPrint('🛒 GroupBuyingScreen: Cart context initialized for ETWtoG');
+      cartProvider.setMiniAppContext('ETWtoX');
+      debugPrint('🛒 ToXScreen: Cart context initialized for ETWtoX');
     });
   }
 
@@ -71,18 +71,18 @@ class _GroupBuyingScreenState extends State<GroupBuyingScreen> {
 
   List<Widget> get _screens => [
     _ProductsTab(
-      key: const ValueKey('group_products'),
+      key: const ValueKey('tox_products'),
       onProductTap: _showProductDetails,
     ),
-    const _MessagesTab(key: ValueKey('group_messages')),
-    const _ProfileTab(key: ValueKey('group_profile')),
+    const _MessagesTab(key: ValueKey('tox_messages')),
+    const _ProfileTab(key: ValueKey('tox_profile')),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('ETW to G', style: AppTextStyles.majorHeader),
+        title: Text('ETW to X', style: AppTextStyles.majorHeader),
         backgroundColor: AppColors.lightBackground,
         elevation: 0,
         automaticallyImplyLeading: false,
@@ -97,7 +97,7 @@ class _GroupBuyingScreenState extends State<GroupBuyingScreen> {
         children: [
           // Main content
           IndexedStack(
-            key: const ValueKey('group_indexed_stack'),
+            key: const ValueKey('tox_indexed_stack'),
             index: _currentIndex,
             children: _screens,
           ),
@@ -213,11 +213,11 @@ class _ProductsTabState extends State<_ProductsTab> {
   void _fetchData() {
     setState(() {
       _categoriesFuture = _apiService.fetchCategoriesWithFilters(
-        miniAppType: MiniAppType.groupBuying,
+        miniAppType: MiniAppType.toX,
         includeSubcategories: true,
       );
       _productsFuture = _apiService.fetchProducts(
-        miniAppType: MiniAppType.groupBuying,
+        miniAppType: MiniAppType.toX,
       );
     });
   }
@@ -270,9 +270,9 @@ class _ProductsTabState extends State<_ProductsTab> {
             final categories = snapshot.data![0] as List<Category>;
             final products = snapshot.data![1] as List<Product>;
 
-            // Check if there are any mini-app recommended products for group buying
+            // Check if there are any mini-app recommended products for toX
             final hasRecommendedProducts = products.any((product) =>
-                product.isMiniAppRecommendation && product.miniAppType == MiniAppType.groupBuying);
+                product.isMiniAppRecommendation && product.miniAppType == MiniAppType.toX);
 
             // Build categories list with featured category if there are recommended products
             final displayCategories = _buildCategoriesWithFeatured(categories, hasRecommendedProducts);
@@ -325,7 +325,7 @@ class _ProductsTabState extends State<_ProductsTab> {
       // Show featured products directly
       final featuredProducts = allProducts.where((product) =>
           product.isMiniAppRecommendation &&
-          product.miniAppType == MiniAppType.groupBuying).toList();
+          product.miniAppType == MiniAppType.toX).toList();
 
       return _buildProductGrid(featuredProducts);
     } else {
@@ -391,10 +391,10 @@ class _ProductsTabState extends State<_ProductsTab> {
               category: category,
               subcategory: subcategory,
               allProducts: allProducts,
-              miniAppName: 'ETW to G',
+              miniAppName: 'ETW to X',
               onProductTap: widget.onProductTap,
             ),
-            routeKey: 'group_subcategory_${subcategory.id}_${DateTime.now().millisecondsSinceEpoch}',
+            routeKey: 'tox_subcategory_${subcategory.id}_${DateTime.now().millisecondsSinceEpoch}',
           ),
         );
       },
@@ -505,7 +505,7 @@ class _ProductsTabState extends State<_ProductsTab> {
       return {
         'categoryName': categoryName,
         'subcategoryName': subcategoryName,
-        'storeName': null, // Group buying doesn't show store name tags
+        'storeName': null, // toX doesn't show store name tags
       };
     } catch (e) {
       debugPrint('🔍 Error resolving product tag data: $e');

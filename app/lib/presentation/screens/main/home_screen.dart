@@ -15,7 +15,7 @@ import '../../providers/location_provider.dart';
 import '../mini_apps/retail_store/retail_store_screen.dart';
 import '../mini_apps/unmanned_store/unmanned_store_screen.dart';
 import '../mini_apps/exhibition_sales/exhibition_sales_screen.dart';
-import '../mini_apps/group_buying/group_buying_screen.dart';
+import '../mini_apps/to_x/to_x_screen.dart';
 import '../../../l10n/app_localizations.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -414,11 +414,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
       },
       {
-        'title': 'EXPO to WORLD to GATHER',
+        'title': 'EXPO to WORLD to X',
         'icon': Icons.group,
         'color': AppColors.indigoModule,
         'bgColor': AppColors.indigoModuleBg,
-        'onTap': () => _navigateToMiniApp(context, const GroupBuyingScreen()),
+        'onTap': () => _navigateToMiniApp(context, const ToXScreen()),
       },
     ];
 

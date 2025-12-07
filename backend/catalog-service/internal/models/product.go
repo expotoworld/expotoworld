@@ -26,7 +26,7 @@ const (
 	MiniAppTypeETWtoB MiniAppType = "ETWtoB" // B2B / Retail Store
 	MiniAppTypeETWtoC MiniAppType = "ETWtoC" // B2C / Exhibition Sales
 	MiniAppTypeETWtoU MiniAppType = "ETWtoU" // Unmanned Store
-	MiniAppTypeETWtoG MiniAppType = "ETWtoG" // Group Buying
+	MiniAppTypeETWtoX MiniAppType = "ETWtoX" // EXPO to WORLD to X
 )
 
 // MiniAppTypeArray represents an array of MiniAppType for PostgreSQL array support
@@ -73,14 +73,14 @@ func (a *MiniAppTypeArray) Scan(value interface{}) error {
 	}
 }
 
-// ETWMiniAppType represents the ETW mini-app type (ETWtoB, ETWtoC, ETWtoU, ETWtoG)
+// ETWMiniAppType represents the ETW mini-app type (ETWtoB, ETWtoC, ETWtoU, ETWtoX)
 type ETWMiniAppType string
 
 const (
 	ETWMiniAppTypeETWtoB ETWMiniAppType = "ETWtoB"
 	ETWMiniAppTypeETWtoC ETWMiniAppType = "ETWtoC"
 	ETWMiniAppTypeETWtoU ETWMiniAppType = "ETWtoU"
-	ETWMiniAppTypeETWtoG ETWMiniAppType = "ETWtoG"
+	ETWMiniAppTypeETWtoX ETWMiniAppType = "ETWtoX"
 )
 
 // ETWStoreType represents the ETW store type (ETWMega, ETWMarket, ETWtoGO, ETWXpress)

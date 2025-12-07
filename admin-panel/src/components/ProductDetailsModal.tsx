@@ -47,8 +47,8 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ open, onClose
 
     if (miniAppType === 'ETWtoB') {
       return 'ETW to B';
-    } else if (miniAppType === 'ETWtoG') {
-      return 'ETW to G';
+    } else if (miniAppType === 'ETWtoX') {
+      return 'ETW to X';
     } else if (miniAppType === 'ETWtoU') {
       // For ETW to U, show store type
       return product.etw_store_type || 'ETW to U';
@@ -70,7 +70,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ open, onClose
         'ETW to B': { bg: '#520ee6', hover: '#4a0dd1' }, // purple
         'ETW to U': { bg: '#2196f3', hover: '#1976d2' }, // blue
         'ETW to C': { bg: '#ffd556', hover: '#ffcc33' }, // yellow
-        'ETW to G': { bg: '#076200', hover: '#054d00' }, // dark green
+        'ETW to X': { bg: '#076200', hover: '#054d00' }, // dark green
         // ETW Store Types
         'ETWMega': { bg: '#9c27b0', hover: '#7b1fa2' }, // purple
         'ETWMarket': { bg: '#673ab7', hover: '#512da8' }, // deep purple
