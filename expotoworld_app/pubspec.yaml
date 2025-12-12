@@ -1,0 +1,71 @@
+name: expotoworld_app
+description: "EXPO to WORLD - Premium B2B & B2C retail, exposition & delivery platform"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^3.0.3
+  riverpod: ^3.0.3
+  
+  # Navigation
+  go_router: ^17.0.0
+  
+  # UI & Design
+  flutter_svg: ^2.2.3
+  google_fonts: ^6.3.2
+  shimmer: ^3.0.0
+  flutter_animate: ^4.5.2
+  cached_network_image: ^3.4.1
+  cupertino_icons: ^1.0.8
+  circle_flags: ^4.0.2
+  flutter_staggered_grid_view: ^0.7.0
+  
+  # Maps & Location
+  google_maps_flutter: ^2.10.0
+  geolocator: ^14.0.0
+  url_launcher: ^6.2.5
+  
+  # Storage & Utilities
+  shared_preferences: ^2.5.3
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
+
+# Flutter Launcher Icons configuration
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo/EXPOtoWORLD_logo_main.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/logo/EXPOtoWORLD_logo_main.png"
+
+flutter:
+  uses-material-design: true
+  generate: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/icons/map_markers/
+    - assets/logo/
+    - assets/flags/language/
+    - assets/mini-apps/
+  
+  # Note: Fonts are loaded dynamically via google_fonts package
+  # If you need offline support, download and add fonts to assets/fonts/
