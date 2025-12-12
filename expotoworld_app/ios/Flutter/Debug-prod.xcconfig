@@ -1,0 +1,7 @@
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug-prod.xcconfig"
+#include "Generated.xcconfig"
+
+// Prod flavor configuration
+PRODUCT_BUNDLE_IDENTIFIER=com.expotoworld.expotoworld-app
+APP_ICON_NAME=AppIcon
+PRODUCT_NAME=EXPO to WORLD

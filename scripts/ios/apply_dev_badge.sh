@@ -4,7 +4,7 @@ set -euo pipefail
 # Apply "DEV" badge overlay to iOS app icons
 # This helps visually distinguish development builds from production builds
 
-ASSET_DIR="app/ios/Runner/Assets.xcassets/AppIcon-Dev.appiconset"
+ASSET_DIR="expotoworld_app/ios/Runner/Assets.xcassets/AppIcon-Dev.appiconset"
 SCRIPT="scripts/ios/dev_icon_overlay.swift"
 
 if [ ! -d "$ASSET_DIR" ]; then

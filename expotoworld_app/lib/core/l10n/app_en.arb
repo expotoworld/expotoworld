@@ -1,0 +1,389 @@
+{
+  "@@locale": "en",
+  "@@last_modified": "2024-12-08T00:00:00.000Z",
+  
+  "appTitle": "EXPO to WORLD",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+
+  "navHome": "Home",
+  "@navHome": {
+    "description": "Bottom navigation label for Home tab"
+  },
+
+  "navMap": "Map",
+  "@navMap": {
+    "description": "Bottom navigation label for Map tab"
+  },
+
+  "navMessages": "Messages",
+  "@navMessages": {
+    "description": "Bottom navigation label for Messages tab"
+  },
+
+  "navProfile": "Profile",
+  "@navProfile": {
+    "description": "Bottom navigation label for Profile tab"
+  },
+
+  "searchPlaceholder": "Search products, stores, manufacturers...",
+  "@searchPlaceholder": {
+    "description": "Placeholder text for the search bar"
+  },
+
+  "homeWelcome": "Welcome to EXPO to WORLD",
+  "@homeWelcome": {
+    "description": "Welcome message on home screen"
+  },
+
+  "homeSubtitle": "Your gateway to premium global retail",
+  "@homeSubtitle": {
+    "description": "Subtitle on home screen"
+  },
+
+  "subAppToB": "to B",
+  "@subAppToB": {
+    "description": "B2B Exposition sub-app title"
+  },
+
+  "subAppToBDescription": "B2B Exposition",
+  "@subAppToBDescription": {
+    "description": "B2B Exposition sub-app description"
+  },
+
+  "subAppToC": "to C",
+  "@subAppToC": {
+    "description": "B2C Exposition sub-app title"
+  },
+
+  "subAppToCDescription": "B2C Marketplace",
+  "@subAppToCDescription": {
+    "description": "B2C Exposition sub-app description"
+  },
+
+  "subAppToU": "to U",
+  "@subAppToU": {
+    "description": "Automated Stores sub-app title"
+  },
+
+  "subAppToUDescription": "Automated Stores",
+  "@subAppToUDescription": {
+    "description": "Automated Stores sub-app description"
+  },
+
+  "subAppToX": "to X",
+  "@subAppToX": {
+    "description": "Group Buying sub-app title"
+  },
+
+  "subAppToXDescription": "Group Buying",
+  "@subAppToXDescription": {
+    "description": "Group Buying sub-app description"
+  },
+
+  "storeMega": "EXPO MEGA",
+  "@storeMega": {
+    "description": "B2B store name"
+  },
+
+  "storeMarket": "EXPO MARKET",
+  "@storeMarket": {
+    "description": "B2C store name"
+  },
+
+  "storeGo": "EXPO GO",
+  "@storeGo": {
+    "description": "Automated convenience store name (bulk items)"
+  },
+
+  "storeXpress": "EXPO XPRESS",
+  "@storeXpress": {
+    "description": "Automated convenience store name (premium items)"
+  },
+
+  "profileTitle": "Profile",
+  "@profileTitle": {
+    "description": "Profile screen title"
+  },
+
+  "profileSettings": "Settings",
+  "@profileSettings": {
+    "description": "Settings section in profile"
+  },
+
+  "profileLanguage": "Language",
+  "@profileLanguage": {
+    "description": "Language setting label"
+  },
+
+  "profileTheme": "Theme",
+  "@profileTheme": {
+    "description": "Theme setting label"
+  },
+
+  "profileDarkMode": "Dark Mode",
+  "@profileDarkMode": {
+    "description": "Dark mode toggle label"
+  },
+
+  "profileLightMode": "Light Mode",
+  "@profileLightMode": {
+    "description": "Light mode toggle label"
+  },
+
+  "profileSystemMode": "System",
+  "@profileSystemMode": {
+    "description": "System theme mode label"
+  },
+
+  "profileNotifications": "Notifications",
+  "@profileNotifications": {
+    "description": "Notifications setting label"
+  },
+
+  "profileIdVerification": "ID Verification",
+  "@profileIdVerification": {
+    "description": "ID Verification section label"
+  },
+
+  "profileVerified": "Verified",
+  "@profileVerified": {
+    "description": "Verified status label"
+  },
+
+  "profileNotVerified": "Not Verified",
+  "@profileNotVerified": {
+    "description": "Not verified status label"
+  },
+
+  "profilePaymentMethods": "Payment Methods",
+  "@profilePaymentMethods": {
+    "description": "Payment methods section label"
+  },
+
+  "profileHelpSupport": "Help & Support",
+  "@profileHelpSupport": {
+    "description": "Help and support section label"
+  },
+
+  "profileFaq": "FAQ",
+  "@profileFaq": {
+    "description": "FAQ link label"
+  },
+
+  "profileContact": "Contact Us",
+  "@profileContact": {
+    "description": "Contact us link label"
+  },
+
+  "profilePrivacy": "Privacy Policy",
+  "@profilePrivacy": {
+    "description": "Privacy policy link label"
+  },
+
+  "profileTerms": "Terms of Service",
+  "@profileTerms": {
+    "description": "Terms of service link label"
+  },
+
+  "profileLogout": "Log Out",
+  "@profileLogout": {
+    "description": "Log out button label"
+  },
+
+  "profileLogin": "Log In",
+  "@profileLogin": {
+    "description": "Log in button label"
+  },
+
+  "profileSignup": "Sign Up",
+  "@profileSignup": {
+    "description": "Sign up button label"
+  },
+
+  "profileMyOrders": "My Orders",
+  "@profileMyOrders": {
+    "description": "My orders section label"
+  },
+
+  "profileMyFavorites": "My Favorites",
+  "@profileMyFavorites": {
+    "description": "My favorites section label"
+  },
+
+  "profileEditProfile": "Edit Profile",
+  "@profileEditProfile": {
+    "description": "Edit profile button label"
+  },
+
+  "mapTitle": "Store Locations",
+  "@mapTitle": {
+    "description": "Map screen title"
+  },
+
+  "mapNearbyStores": "Nearby Stores",
+  "@mapNearbyStores": {
+    "description": "Nearby stores section label"
+  },
+
+  "mapNoStoresFound": "No stores found nearby",
+  "@mapNoStoresFound": {
+    "description": "Message when no stores are found"
+  },
+
+  "messagesTitle": "Messages",
+  "@messagesTitle": {
+    "description": "Messages screen title"
+  },
+
+  "messagesEmpty": "No messages yet",
+  "@messagesEmpty": {
+    "description": "Empty messages state"
+  },
+
+  "messagesNotifications": "Notifications",
+  "@messagesNotifications": {
+    "description": "Notifications tab label"
+  },
+
+  "messagesChat": "Chat",
+  "@messagesChat": {
+    "description": "Chat tab label"
+  },
+
+  "authLogin": "Log In",
+  "@authLogin": {
+    "description": "Login screen title"
+  },
+
+  "authSignup": "Sign Up",
+  "@authSignup": {
+    "description": "Signup screen title"
+  },
+
+  "authEmail": "Email",
+  "@authEmail": {
+    "description": "Email field label"
+  },
+
+  "authPassword": "Password",
+  "@authPassword": {
+    "description": "Password field label"
+  },
+
+  "authPhone": "Phone Number",
+  "@authPhone": {
+    "description": "Phone number field label"
+  },
+
+  "authVerificationCode": "Verification Code",
+  "@authVerificationCode": {
+    "description": "Verification code field label"
+  },
+
+  "authSendCode": "Send Code",
+  "@authSendCode": {
+    "description": "Send verification code button"
+  },
+
+  "authForgotPassword": "Forgot Password?",
+  "@authForgotPassword": {
+    "description": "Forgot password link"
+  },
+
+  "authNoAccount": "Don't have an account?",
+  "@authNoAccount": {
+    "description": "No account prompt"
+  },
+
+  "authHaveAccount": "Already have an account?",
+  "@authHaveAccount": {
+    "description": "Have account prompt"
+  },
+
+  "commonContinue": "Continue",
+  "@commonContinue": {
+    "description": "Continue button label"
+  },
+
+  "commonCancel": "Cancel",
+  "@commonCancel": {
+    "description": "Cancel button label"
+  },
+
+  "commonSave": "Save",
+  "@commonSave": {
+    "description": "Save button label"
+  },
+
+  "commonDelete": "Delete",
+  "@commonDelete": {
+    "description": "Delete button label"
+  },
+
+  "commonEdit": "Edit",
+  "@commonEdit": {
+    "description": "Edit button label"
+  },
+
+  "commonLoading": "Loading...",
+  "@commonLoading": {
+    "description": "Loading state text"
+  },
+
+  "commonError": "An error occurred",
+  "@commonError": {
+    "description": "Generic error message"
+  },
+
+  "commonRetry": "Retry",
+  "@commonRetry": {
+    "description": "Retry button label"
+  },
+
+  "commonSeeAll": "See All",
+  "@commonSeeAll": {
+    "description": "See all link label"
+  },
+
+  "commonComingSoon": "Coming Soon",
+  "@commonComingSoon": {
+    "description": "Coming soon placeholder text"
+  },
+
+  "productPrice": "Price",
+  "@productPrice": {
+    "description": "Price label"
+  },
+
+  "productAddToCart": "Add to Cart",
+  "@productAddToCart": {
+    "description": "Add to cart button"
+  },
+
+  "productBuyNow": "Buy Now",
+  "@productBuyNow": {
+    "description": "Buy now button"
+  },
+
+  "productManufacturer": "Manufacturer",
+  "@productManufacturer": {
+    "description": "Manufacturer label"
+  },
+
+  "productContactManufacturer": "Contact Manufacturer",
+  "@productContactManufacturer": {
+    "description": "Contact manufacturer button"
+  },
+
+  "qrScanTitle": "Scan QR Code",
+  "@qrScanTitle": {
+    "description": "QR scan screen title"
+  },
+
+  "qrScanInstructions": "Point your camera at the QR code",
+  "@qrScanInstructions": {
+    "description": "QR scan instructions"
+  }
+}
