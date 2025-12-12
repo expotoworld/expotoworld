@@ -45,6 +45,8 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>GoogleMapsAPIKey</key>
+	<string>$(Maps_API_KEY)</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>EXPO to WORLD needs your location to show nearby stores and provide personalized recommendations.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
