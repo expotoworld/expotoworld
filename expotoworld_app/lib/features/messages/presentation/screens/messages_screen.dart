@@ -2,6 +2,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/l10n/generated/app_localizations.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -558,7 +559,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen>
           ),
           SizedBox(height: AppSpacing.lg),
           Text(
-            'No messages found',
+            AppLocalizations.of(context)!.messagesNoMessages,
             style: AppTypography.h4(
               color: isDark
                   ? AppColors.neutralGray400
@@ -568,8 +569,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen>
           SizedBox(height: AppSpacing.xs),
           Text(
             _searchQuery.isNotEmpty
-                ? 'Try a different search term'
-                : 'Messages will appear here',
+                ? AppLocalizations.of(context)!.messagesTryDifferentSearch
+                : AppLocalizations.of(context)!.messagesWillAppear,
             style: AppTypography.bodySmall().copyWith(
               color: isDark
                   ? AppColors.neutralGray500
@@ -729,7 +730,7 @@ class _MessagesHeaderDelegate extends SliverPersistentHeaderDelegate {
                   scale: titleScale,
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Messages',
+                    AppLocalizations.of(context)!.navMessages,
                     style: AppTypography.h1(
                       color: isDark
                           ? AppColors.neutralWhite
@@ -751,10 +752,18 @@ class _MessagesHeaderDelegate extends SliverPersistentHeaderDelegate {
                 child: Row(
                   children: MessageFilter.values.map((filter) {
                     final isSelected = filter == selectedFilter;
+                    final l10n = AppLocalizations.of(context)!;
+                    final filterLabel = switch (filter) {
+                      MessageFilter.all => l10n.messagesFilterAll,
+                      MessageFilter.unread => l10n.messagesFilterUnread,
+                      MessageFilter.system => l10n.messagesFilterSystem,
+                      MessageFilter.support => l10n.messagesFilterSupport,
+                      MessageFilter.orders => l10n.messagesFilterOrders,
+                    };
                     return Padding(
                       padding: EdgeInsets.only(right: AppSpacing.sm),
                       child: _FilterPill(
-                        label: filter.label,
+                        label: filterLabel,
                         isSelected: isSelected,
                         isDark: isDark,
                         onTap: () => onFilterChanged(filter),
@@ -830,7 +839,7 @@ class _MessagesHeaderDelegate extends SliverPersistentHeaderDelegate {
                           color: isDark ? Colors.white : Colors.black,
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Search messages...',
+                          hintText: AppLocalizations.of(context)!.messagesSearchHint,
                           hintStyle: AppTypography.bodyMedium(
                             color: isDark
                                 ? Colors.white.withValues(alpha: 0.5)

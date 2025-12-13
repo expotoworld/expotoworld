@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../core/l10n/generated/app_localizations.dart';
 
 /// Placeholder signup screen
 class SignupScreen extends StatelessWidget {
@@ -34,7 +35,7 @@ class SignupScreen extends StatelessWidget {
             children: [
               // Title
               Text(
-                'Create Account',
+                AppLocalizations.of(context)!.authCreateAccount,
                 style: AppTypography.h2(
                   color: isDark ? AppColors.neutralLight : AppColors.neutralDarkest,
                 ),
@@ -42,7 +43,7 @@ class SignupScreen extends StatelessWidget {
               ),
               SizedBox(height: AppSpacing.sm),
               Text(
-                'Join Made in World and discover authentic products',
+                AppLocalizations.of(context)!.authJoinMadeInWorld,
                 style: AppTypography.bodyMedium(
                   color: isDark ? AppColors.neutralMid : AppColors.neutralDark,
                 ),
@@ -52,8 +53,8 @@ class SignupScreen extends StatelessWidget {
               // Name field
               TextField(
                 decoration: InputDecoration(
-                  labelText: 'Full Name',
-                  hintText: 'Enter your full name',
+                  labelText: AppLocalizations.of(context)!.authFullName,
+                  hintText: AppLocalizations.of(context)!.authFullNameHint,
                   prefixIcon: const Icon(Icons.person_outline),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -64,8 +65,8 @@ class SignupScreen extends StatelessWidget {
               // Email field
               TextField(
                 decoration: InputDecoration(
-                  labelText: 'Email',
-                  hintText: 'Enter your email',
+                  labelText: AppLocalizations.of(context)!.authEmail,
+                  hintText: AppLocalizations.of(context)!.authEmailHint,
                   prefixIcon: const Icon(Icons.email_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -77,8 +78,8 @@ class SignupScreen extends StatelessWidget {
               // Phone field
               TextField(
                 decoration: InputDecoration(
-                  labelText: 'Phone Number',
-                  hintText: 'Enter your phone number',
+                  labelText: AppLocalizations.of(context)!.authPhone,
+                  hintText: AppLocalizations.of(context)!.authPhoneHint,
                   prefixIcon: const Icon(Icons.phone_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -90,8 +91,8 @@ class SignupScreen extends StatelessWidget {
               // Password field
               TextField(
                 decoration: InputDecoration(
-                  labelText: 'Password',
-                  hintText: 'Create a password',
+                  labelText: AppLocalizations.of(context)!.authPassword,
+                  hintText: AppLocalizations.of(context)!.authPasswordCreateHint,
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: const Icon(Icons.visibility_off_outlined),
                   border: OutlineInputBorder(
@@ -104,8 +105,8 @@ class SignupScreen extends StatelessWidget {
               // Confirm password field
               TextField(
                 decoration: InputDecoration(
-                  labelText: 'Confirm Password',
-                  hintText: 'Confirm your password',
+                  labelText: AppLocalizations.of(context)!.authConfirmPassword,
+                  hintText: AppLocalizations.of(context)!.authConfirmPasswordHint,
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: const Icon(Icons.visibility_off_outlined),
                   border: OutlineInputBorder(
@@ -126,18 +127,18 @@ class SignupScreen extends StatelessWidget {
                   Expanded(
                     child: Text.rich(
                       TextSpan(
-                        text: 'I agree to the ',
+                        text: AppLocalizations.of(context)!.authAgreeToTerms,
                         style: AppTypography.bodySmall(
                           color: isDark ? AppColors.neutralMid : AppColors.neutralDark,
                         ),
                         children: [
                           TextSpan(
-                            text: 'Terms of Service',
+                            text: AppLocalizations.of(context)!.authTermsOfService,
                             style: AppTypography.bodySmall(color: AppColors.themeRed),
                           ),
-                          const TextSpan(text: ' and '),
+                          TextSpan(text: AppLocalizations.of(context)!.authAnd),
                           TextSpan(
-                            text: 'Privacy Policy',
+                            text: AppLocalizations.of(context)!.authPrivacyPolicy,
                             style: AppTypography.bodySmall(color: AppColors.themeRed),
                           ),
                         ],
@@ -162,7 +163,7 @@ class SignupScreen extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  'Create Account',
+                  AppLocalizations.of(context)!.authCreateAccount,
                   style: AppTypography.buttonLarge(color: Colors.white),
                 ),
               ),
@@ -172,7 +173,7 @@ class SignupScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    "Already have an account? ",
+                    AppLocalizations.of(context)!.authAlreadyHaveAccount,
                     style: AppTypography.bodySmall(
                       color: isDark ? AppColors.neutralMid : AppColors.neutralDark,
                     ),
@@ -182,7 +183,7 @@ class SignupScreen extends StatelessWidget {
                       context.pop();
                     },
                     child: Text(
-                      'Sign In',
+                      AppLocalizations.of(context)!.authSignIn,
                       style: AppTypography.bodySmall(color: AppColors.themeRed),
                     ),
                   ),

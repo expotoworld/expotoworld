@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import '../../../../core/l10n/generated/app_localizations.dart';
 import '../../../../core/theme/theme.dart';
 
 /// Featured products section with masonry grid layout
@@ -17,7 +18,7 @@ class FeaturedProductsSection extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Featured Products',
+              AppLocalizations.of(context)!.homeFeaturedProducts,
               style: AppTypography.h3(
                 color: AppColors.foreground(context),
               ),
@@ -29,7 +30,7 @@ class FeaturedProductsSection extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    'See All',
+                    AppLocalizations.of(context)!.commonSeeAll,
                     style: AppTypography.labelLarge(
                       color: AppColors.themeRed,
                     ),

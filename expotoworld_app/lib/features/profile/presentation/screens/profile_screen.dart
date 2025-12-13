@@ -5,6 +5,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/providers/theme_provider.dart';
 import '../../../../shared/widgets/glass_card.dart';
+import '../../../../core/l10n/generated/app_localizations.dart';
 
 /// Profile screen with user info, settings, and preferences
 class ProfileScreen extends ConsumerWidget {
@@ -32,7 +33,7 @@ class ProfileScreen extends ConsumerWidget {
               child: Row(
                 children: [
                   Text(
-                    'Profile',
+                    AppLocalizations.of(context)!.profileTitle,
                     style: AppTypography.h2(
                       color: isDark ? AppColors.neutralWhite : AppColors.neutralBlack,
                     ),
@@ -49,7 +50,7 @@ class ProfileScreen extends ConsumerWidget {
             _buildProfileHeader(context, isDark),
               SizedBox(height: AppSpacing.lg),
               // Stats row
-              _buildStatsRow(isDark),
+              _buildStatsRow(context, isDark),
               SizedBox(height: AppSpacing.lg),
               // Settings sections
               Padding(
@@ -57,14 +58,14 @@ class ProfileScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSectionTitle('Preferences', isDark),
+                    _buildSectionTitle(AppLocalizations.of(context)!.profilePreferences, isDark),
                     SizedBox(height: AppSpacing.sm),
                     _buildThemeToggle(context, ref, themeMode, isDark),
                     SizedBox(height: AppSpacing.sm),
                     _buildSettingsTile(
                       isDark: isDark,
                       icon: Icons.language_outlined,
-                      title: 'Language',
+                      title: AppLocalizations.of(context)!.profileLanguage,
                       subtitle: 'English',
                       onTap: () {},
                     ),
@@ -72,83 +73,83 @@ class ProfileScreen extends ConsumerWidget {
                     _buildSettingsTile(
                       isDark: isDark,
                       icon: Icons.notifications_outlined,
-                      title: 'Notifications',
-                      subtitle: 'Manage notification preferences',
+                      title: AppLocalizations.of(context)!.profileNotifications,
+                      subtitle: AppLocalizations.of(context)!.profileManageNotifications,
                       onTap: () {},
                     ),
                     SizedBox(height: AppSpacing.lg),
-                    _buildSectionTitle('Account', isDark),
+                    _buildSectionTitle(AppLocalizations.of(context)!.profileAccount, isDark),
                     SizedBox(height: AppSpacing.sm),
                     _buildSettingsTile(
                       isDark: isDark,
                       icon: Icons.person_outline,
-                      title: 'Personal Information',
-                      subtitle: 'Name, email, phone',
+                      title: AppLocalizations.of(context)!.profilePersonalInfo,
+                      subtitle: AppLocalizations.of(context)!.profilePersonalInfoSubtitle,
                       onTap: () {},
                     ),
                     SizedBox(height: AppSpacing.sm),
                     _buildSettingsTile(
                       isDark: isDark,
                       icon: Icons.location_on_outlined,
-                      title: 'Shipping Addresses',
-                      subtitle: '2 addresses saved',
+                      title: AppLocalizations.of(context)!.profileShippingAddresses,
+                      subtitle: AppLocalizations.of(context)!.profileAddressesSaved(2),
                       onTap: () {},
                     ),
                     SizedBox(height: AppSpacing.sm),
                     _buildSettingsTile(
                       isDark: isDark,
                       icon: Icons.payment_outlined,
-                      title: 'Payment Methods',
-                      subtitle: 'Cards, Alipay, WeChat Pay',
+                      title: AppLocalizations.of(context)!.profilePaymentMethods,
+                      subtitle: AppLocalizations.of(context)!.profilePaymentSubtitle,
                       onTap: () {},
                     ),
                     SizedBox(height: AppSpacing.lg),
-                    _buildSectionTitle('Orders & Support', isDark),
+                    _buildSectionTitle(AppLocalizations.of(context)!.profileOrdersAndSupport, isDark),
                     SizedBox(height: AppSpacing.sm),
                     _buildSettingsTile(
                       isDark: isDark,
                       icon: Icons.receipt_long_outlined,
-                      title: 'Order History',
-                      subtitle: 'View all past orders',
+                      title: AppLocalizations.of(context)!.profileOrderHistory,
+                      subtitle: AppLocalizations.of(context)!.profileViewAllOrders,
                       onTap: () {},
                     ),
                     SizedBox(height: AppSpacing.sm),
                     _buildSettingsTile(
                       isDark: isDark,
                       icon: Icons.favorite_outline,
-                      title: 'Wishlist',
-                      subtitle: '12 items saved',
+                      title: AppLocalizations.of(context)!.profileWishlist,
+                      subtitle: AppLocalizations.of(context)!.profileItemsSaved(12),
                       onTap: () {},
                     ),
                     SizedBox(height: AppSpacing.sm),
                     _buildSettingsTile(
                       isDark: isDark,
                       icon: Icons.headset_mic_outlined,
-                      title: 'Customer Support',
-                      subtitle: 'Get help with your orders',
+                      title: AppLocalizations.of(context)!.profileCustomerSupport,
+                      subtitle: AppLocalizations.of(context)!.profileGetHelp,
                       onTap: () {},
                     ),
                     SizedBox(height: AppSpacing.lg),
-                    _buildSectionTitle('About', isDark),
+                    _buildSectionTitle(AppLocalizations.of(context)!.profileAbout, isDark),
                     SizedBox(height: AppSpacing.sm),
                     _buildSettingsTile(
                       isDark: isDark,
                       icon: Icons.info_outline,
-                      title: 'About Made in World',
-                      subtitle: 'Version 1.0.0',
+                      title: AppLocalizations.of(context)!.profileAboutApp,
+                      subtitle: AppLocalizations.of(context)!.profileVersion('1.0.0'),
                       onTap: () {},
                     ),
                     SizedBox(height: AppSpacing.sm),
                     _buildSettingsTile(
                       isDark: isDark,
                       icon: Icons.description_outlined,
-                      title: 'Terms & Privacy',
-                      subtitle: 'Legal information',
+                      title: AppLocalizations.of(context)!.profileTermsPrivacy,
+                      subtitle: AppLocalizations.of(context)!.profileLegalInfo,
                       onTap: () {},
                     ),
                     SizedBox(height: AppSpacing.xl),
                     // Logout button
-                    _buildLogoutButton(isDark),
+                    _buildLogoutButton(context, isDark),
                     SizedBox(height: AppSpacing.xxl),
                   ],
                 ),
@@ -268,7 +269,7 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsRow(bool isDark) {
+  Widget _buildStatsRow(BuildContext context, bool isDark) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Row(
@@ -278,7 +279,7 @@ class ProfileScreen extends ConsumerWidget {
               isDark: isDark,
               icon: Icons.shopping_bag_outlined,
               value: '23',
-              label: 'Orders',
+              label: AppLocalizations.of(context)!.profileOrders,
               color: AppColors.blue500,
             ),
           ),
@@ -288,7 +289,7 @@ class ProfileScreen extends ConsumerWidget {
               isDark: isDark,
               icon: Icons.star_outline,
               value: '1,280',
-              label: 'Points',
+              label: AppLocalizations.of(context)!.profilePoints,
               color: AppColors.yellow500,
             ),
           ),
@@ -298,7 +299,7 @@ class ProfileScreen extends ConsumerWidget {
               isDark: isDark,
               icon: Icons.local_offer_outlined,
               value: '5',
-              label: 'Coupons',
+              label: AppLocalizations.of(context)!.profileCoupons,
               color: AppColors.green500,
             ),
           ),
@@ -388,7 +389,7 @@ class ProfileScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Dark Mode',
+                  AppLocalizations.of(context)!.profileDarkMode,
                   style: AppTypography.bodyMedium().copyWith(
                     color: isDark
                         ? AppColors.neutralWhite
@@ -398,10 +399,10 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 Text(
                   themeMode == ThemeMode.dark
-                      ? 'On'
+                      ? AppLocalizations.of(context)!.profileOn
                       : themeMode == ThemeMode.light
-                          ? 'Off'
-                          : 'System',
+                          ? AppLocalizations.of(context)!.profileOff
+                          : AppLocalizations.of(context)!.profileSystemMode,
                   style: AppTypography.bodySmall().copyWith(
                     color: isDark
                         ? AppColors.neutralGray400
@@ -497,13 +498,13 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLogoutButton(bool isDark) {
+  Widget _buildLogoutButton(BuildContext context, bool isDark) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: () {},
         icon: const Icon(Icons.logout, size: 20),
-        label: const Text('Log Out'),
+        label: Text(AppLocalizations.of(context)!.profileLogout),
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.red500,
           side: const BorderSide(color: AppColors.red500),

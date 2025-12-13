@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/l10n/generated/app_localizations.dart';
 import '../../../../core/theme/theme.dart';
 
 /// Full-screen search UI
@@ -77,7 +78,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               color: Colors.white,
                             ),
                             decoration: InputDecoration(
-                              hintText: 'Search products, stores...',
+                              hintText: AppLocalizations.of(context)!.searchHint,
                               hintStyle: AppTypography.bodyMedium(
                                 color: Colors.white.withValues(alpha: 0.7),
                               ),
@@ -117,7 +118,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 GestureDetector(
                   onTap: () => context.pop(),
                   child: Text(
-                    'Cancel',
+                    AppLocalizations.of(context)!.searchCancel,
                     style: AppTypography.labelMedium(
                       color: AppColors.blue,
                     ),
@@ -146,7 +147,7 @@ class _SearchScreenState extends State<SearchScreen> {
         children: [
           // Recent searches
           Text(
-            'Recent Searches',
+            AppLocalizations.of(context)!.searchRecentSearches,
             style: AppTypography.titleSmall.copyWith(
               color: isDark ? AppColors.neutralWhite : AppColors.neutralBlack,
               fontWeight: FontWeight.w600,
@@ -166,7 +167,7 @@ class _SearchScreenState extends State<SearchScreen> {
           
           // Popular searches
           Text(
-            'Popular Right Now',
+            AppLocalizations.of(context)!.searchPopular,
             style: AppTypography.titleSmall.copyWith(
               color: isDark ? AppColors.neutralWhite : AppColors.neutralBlack,
               fontWeight: FontWeight.w600,
@@ -183,18 +184,18 @@ class _SearchScreenState extends State<SearchScreen> {
           
           // Categories
           Text(
-            'Browse by Category',
+            AppLocalizations.of(context)!.searchBrowseByCategory,
             style: AppTypography.titleSmall.copyWith(
               color: isDark ? AppColors.neutralWhite : AppColors.neutralBlack,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          _buildCategoryItem('Fashion & Apparel', Icons.checkroom_outlined, isDark),
-          _buildCategoryItem('Electronics', Icons.devices_outlined, isDark),
-          _buildCategoryItem('Food & Beverage', Icons.restaurant_outlined, isDark),
-          _buildCategoryItem('Home & Living', Icons.home_outlined, isDark),
-          _buildCategoryItem('Health & Beauty', Icons.spa_outlined, isDark),
+          _buildCategoryItem(AppLocalizations.of(context)!.categoryFashion, Icons.checkroom_outlined, isDark),
+          _buildCategoryItem(AppLocalizations.of(context)!.categoryElectronics, Icons.devices_outlined, isDark),
+          _buildCategoryItem(AppLocalizations.of(context)!.categoryFood, Icons.restaurant_outlined, isDark),
+          _buildCategoryItem(AppLocalizations.of(context)!.categoryHome, Icons.home_outlined, isDark),
+          _buildCategoryItem(AppLocalizations.of(context)!.categoryHealth, Icons.spa_outlined, isDark),
         ],
       ),
     );
@@ -329,14 +330,14 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(
-            'Searching for "${_searchController.text}"',
+            '${AppLocalizations.of(context)!.searchSearchingFor} "${_searchController.text}"',
             style: AppTypography.bodyMedium().copyWith(
               color: isDark ? AppColors.neutralGray400 : AppColors.neutralGray600,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Results will appear here',
+            AppLocalizations.of(context)!.searchResultsWillAppear,
             style: AppTypography.bodySmall().copyWith(
               color: isDark ? AppColors.neutralGray500 : AppColors.neutralGray500,
             ),

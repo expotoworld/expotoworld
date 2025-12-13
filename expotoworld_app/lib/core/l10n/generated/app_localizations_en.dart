@@ -238,4 +238,284 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get qrScanInstructions => 'Point your camera at the QR code';
+
+  @override
+  String get authWelcomeBack => 'Welcome Back';
+
+  @override
+  String get authSignInToContinue => 'Sign in to continue to Made in World';
+
+  @override
+  String get authEmailHint => 'Enter your email';
+
+  @override
+  String get authPasswordHint => 'Enter your password';
+
+  @override
+  String get authSignIn => 'Sign In';
+
+  @override
+  String get authCreateAccount => 'Create Account';
+
+  @override
+  String get authJoinMadeInWorld =>
+      'Join Made in World and discover authentic products';
+
+  @override
+  String get authFullName => 'Full Name';
+
+  @override
+  String get authFullNameHint => 'Enter your full name';
+
+  @override
+  String get authPhoneHint => 'Enter your phone number';
+
+  @override
+  String get authPasswordCreateHint => 'Create a password';
+
+  @override
+  String get authConfirmPassword => 'Confirm Password';
+
+  @override
+  String get authConfirmPasswordHint => 'Confirm your password';
+
+  @override
+  String get authAgreeToTerms => 'I agree to the ';
+
+  @override
+  String get authTermsOfService => 'Terms of Service';
+
+  @override
+  String get authAnd => ' and ';
+
+  @override
+  String get authPrivacyPolicy => 'Privacy Policy';
+
+  @override
+  String get authAlreadyHaveAccount => 'Already have an account? ';
+
+  @override
+  String get profilePreferences => 'Preferences';
+
+  @override
+  String get profileAccount => 'Account';
+
+  @override
+  String get profileOrdersAndSupport => 'Orders & Support';
+
+  @override
+  String get profileAbout => 'About';
+
+  @override
+  String get profileManageNotifications => 'Manage notification preferences';
+
+  @override
+  String get profilePersonalInfo => 'Personal Information';
+
+  @override
+  String get profilePersonalInfoSubtitle => 'Name, email, phone';
+
+  @override
+  String get profileShippingAddresses => 'Shipping Addresses';
+
+  @override
+  String profileAddressesSaved(int count) {
+    return '$count addresses saved';
+  }
+
+  @override
+  String get profilePaymentSubtitle => 'Cards, Alipay, WeChat Pay';
+
+  @override
+  String get profileOrderHistory => 'Order History';
+
+  @override
+  String get profileViewAllOrders => 'View all past orders';
+
+  @override
+  String get profileWishlist => 'Wishlist';
+
+  @override
+  String profileItemsSaved(int count) {
+    return '$count items saved';
+  }
+
+  @override
+  String get profileCustomerSupport => 'Customer Support';
+
+  @override
+  String get profileGetHelp => 'Get help with your orders';
+
+  @override
+  String get profileAboutApp => 'About Made in World';
+
+  @override
+  String profileVersion(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get profileTermsPrivacy => 'Terms & Privacy';
+
+  @override
+  String get profileLegalInfo => 'Legal information';
+
+  @override
+  String get profileGoldMember => 'Gold Member';
+
+  @override
+  String get profileOn => 'On';
+
+  @override
+  String get profileOff => 'Off';
+
+  @override
+  String get profileOrders => 'Orders';
+
+  @override
+  String get profilePoints => 'Points';
+
+  @override
+  String get profileCoupons => 'Coupons';
+
+  @override
+  String get messagesFilterAll => 'All';
+
+  @override
+  String get messagesFilterUnread => 'Unread';
+
+  @override
+  String get messagesFilterSystem => 'System';
+
+  @override
+  String get messagesFilterSupport => 'Support';
+
+  @override
+  String get messagesFilterOrders => 'Orders';
+
+  @override
+  String get messagesNoMessages => 'No messages found';
+
+  @override
+  String get messagesTryDifferentSearch => 'Try a different search term';
+
+  @override
+  String get messagesWillAppear => 'Messages will appear here';
+
+  @override
+  String get messagesSearchHint => 'Search messages...';
+
+  @override
+  String get mapSearchHint => 'Search stores...';
+
+  @override
+  String get mapCouldNotOpen => 'Could not open maps';
+
+  @override
+  String get mapDirections => 'Directions';
+
+  @override
+  String get mapVisitStore => 'Visit Store';
+
+  @override
+  String mapAway(String distance) {
+    return '$distance away';
+  }
+
+  @override
+  String get mapLocationServicesDisabled => 'Location services disabled';
+
+  @override
+  String get mapLocationPermissionDenied => 'Location permission denied';
+
+  @override
+  String get mapLocationPermanentlyDenied => 'Location permanently denied';
+
+  @override
+  String get mapCouldNotGetLocation => 'Could not get location';
+
+  @override
+  String mapVisiting(String storeName) {
+    return 'Visiting $storeName...';
+  }
+
+  @override
+  String get searchHint => 'Search products, stores...';
+
+  @override
+  String get searchCancel => 'Cancel';
+
+  @override
+  String get searchRecentSearches => 'Recent Searches';
+
+  @override
+  String get searchPopular => 'Popular Right Now';
+
+  @override
+  String get searchBrowseByCategory => 'Browse by Category';
+
+  @override
+  String searchSearchingFor(String query) {
+    return 'Searching for \"$query\"';
+  }
+
+  @override
+  String get searchResultsWillAppear => 'Results will appear here';
+
+  @override
+  String get categoryFashion => 'Fashion & Apparel';
+
+  @override
+  String get categoryElectronics => 'Electronics';
+
+  @override
+  String get categoryFood => 'Food & Beverage';
+
+  @override
+  String get categoryHome => 'Home & Living';
+
+  @override
+  String get categoryHealth => 'Health & Beauty';
+
+  @override
+  String get supportTitle => 'Support';
+
+  @override
+  String get supportOnline => 'Online • Usually replies instantly';
+
+  @override
+  String get supportTypeMessage => 'Type a message...';
+
+  @override
+  String get supportWelcomeMessage =>
+      'Hello! 👋 I\'m your EXPO to WORLD support assistant. How can I help you today?';
+
+  @override
+  String get supportAutoReply =>
+      'Thank you for your message! Our team is looking into this. Is there anything else I can help you with?';
+
+  @override
+  String get homeFeaturedProducts => 'Featured Products';
+
+  @override
+  String get homeSearch => 'Search';
+
+  @override
+  String get promoWelcomeTitle => 'Welcome to EXPO to WORLD';
+
+  @override
+  String get promoWelcomeSubtitle => 'Your gateway to premium global retail';
+
+  @override
+  String get promoNewArrivalsTitle => 'New Arrivals';
+
+  @override
+  String get promoNewArrivalsSubtitle =>
+      'Discover the latest products from top manufacturers';
+
+  @override
+  String get promoGroupDealsTitle => 'Group Deals';
+
+  @override
+  String get promoGroupDealsSubtitle => 'Join now and save up to 40%';
 }
