@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/l10n/generated/app_localizations.dart';
 import '../../../../core/theme/theme.dart';
 
 /// Support Chat Screen - AI-powered conversation interface
@@ -133,7 +134,7 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Support',
+                  AppLocalizations.of(context)!.supportTitle,
                   style: AppTypography.bodyMedium().copyWith(
                     fontWeight: FontWeight.w600,
                     color: isDark
@@ -142,7 +143,7 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen> {
                   ),
                 ),
                 Text(
-                  'Online • Usually replies instantly',
+                  AppLocalizations.of(context)!.supportOnline,
                   style: AppTypography.caption().copyWith(
                     color: AppColors.green500,
                   ),
@@ -232,7 +233,7 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen> {
                         minLines: 1,
                         cursorColor: AppColors.themeRed,
                         decoration: InputDecoration(
-                          hintText: 'Type a message...',
+                          hintText: AppLocalizations.of(context)!.supportTypeMessage,
                           hintStyle: AppTypography.bodyMedium(
                             color: isDark
                                 ? AppColors.neutralGray500

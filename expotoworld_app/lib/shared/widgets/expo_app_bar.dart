@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'language_flag.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/theme.dart';
 import '../../core/providers/locale_provider.dart';
 
@@ -182,7 +183,7 @@ class _CompactSearchBar extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
-              'Search',
+              AppLocalizations.of(context)!.homeSearch,
               style: AppTypography.bodyMedium(
                 color: Colors.white.withValues(alpha: 0.9),
               ),

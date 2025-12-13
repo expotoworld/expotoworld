@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../../core/l10n/generated/app_localizations.dart';
 import '../../../../core/theme/theme.dart';
 
 /// Promotional banner carousel with infinite seamless auto-play
@@ -18,30 +19,36 @@ class _PromoBannerState extends State<PromoBanner> {
   // Virtual infinite scroll - use a large number
   static const int _virtualPageCount = 10000;
 
-  // TODO: DUMMY DATA
-  final List<PromoItem> _promos = [
-    PromoItem(
-      title: 'Welcome to EXPO to WORLD',
-      subtitle: 'Your gateway to premium global retail',
-      color: AppColors.themeRed,
-      icon: Icons.celebration_rounded,
-    ),
-    PromoItem(
-      title: 'New Arrivals',
-      subtitle: 'Discover the latest products from top manufacturers',
-      color: AppColors.blue,
-      icon: Icons.new_releases_rounded,
-    ),
-    PromoItem(
-      title: 'Group Deals',
-      subtitle: 'Join now and save up to 40%',
-      color: AppColors.purple,
-      icon: Icons.groups_rounded,
-    ),
-  ];
+  // Get localized promo items
+  List<PromoItem> _getPromos(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return [
+      PromoItem(
+        title: l10n.promoWelcomeTitle,
+        subtitle: l10n.promoWelcomeSubtitle,
+        color: AppColors.themeRed,
+        icon: Icons.celebration_rounded,
+      ),
+      PromoItem(
+        title: l10n.promoNewArrivalsTitle,
+        subtitle: l10n.promoNewArrivalsSubtitle,
+        color: AppColors.blue,
+        icon: Icons.new_releases_rounded,
+      ),
+      PromoItem(
+        title: l10n.promoGroupDealsTitle,
+        subtitle: l10n.promoGroupDealsSubtitle,
+        color: AppColors.purple,
+        icon: Icons.groups_rounded,
+      ),
+    ];
+  }
 
+  // Number of promo items (fixed - same as _getPromos length)
+  static const int _promoCount = 3;
+  
   // Start from the middle to allow scrolling both directions
-  int get _initialPage => (_virtualPageCount ~/ 2) - ((_virtualPageCount ~/ 2) % _promos.length);
+  int get _initialPage => (_virtualPageCount ~/ 2) - ((_virtualPageCount ~/ 2) % _promoCount);
 
   @override
   void initState() {
@@ -72,6 +79,7 @@ class _PromoBannerState extends State<PromoBanner> {
 
   @override
   Widget build(BuildContext context) {
+    final promos = _getPromos(context);
     return SizedBox(
       height: 180,
       child: Stack(
@@ -80,14 +88,14 @@ class _PromoBannerState extends State<PromoBanner> {
           PageView.builder(
             controller: _pageController,
             onPageChanged: (index) {
-              setState(() => _currentPage = index % _promos.length);
+              setState(() => _currentPage = index % promos.length);
             },
             // Virtual infinite item count
             itemCount: _virtualPageCount,
             itemBuilder: (context, index) {
               // Map virtual index to actual promo index
-              final actualIndex = index % _promos.length;
-              final promo = _promos[actualIndex];
+              final actualIndex = index % promos.length;
+              final promo = promos[actualIndex];
               return Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -160,7 +168,7 @@ class _PromoBannerState extends State<PromoBanner> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
-                _promos.length,
+                promos.length,
                 (i) => AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   width: _currentPage == i ? 20 : 6,

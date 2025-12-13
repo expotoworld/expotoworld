@@ -385,5 +385,475 @@
   "qrScanInstructions": "Point your camera at the QR code",
   "@qrScanInstructions": {
     "description": "QR scan instructions"
+  },
+
+  "authWelcomeBack": "Welcome Back",
+  "@authWelcomeBack": {
+    "description": "Welcome back title on login screen"
+  },
+
+  "authSignInToContinue": "Sign in to continue to Made in World",
+  "@authSignInToContinue": {
+    "description": "Sign in subtitle on login screen"
+  },
+
+  "authEmailHint": "Enter your email",
+  "@authEmailHint": {
+    "description": "Email field hint text"
+  },
+
+  "authPasswordHint": "Enter your password",
+  "@authPasswordHint": {
+    "description": "Password field hint text"
+  },
+
+  "authSignIn": "Sign In",
+  "@authSignIn": {
+    "description": "Sign in button text"
+  },
+
+  "authCreateAccount": "Create Account",
+  "@authCreateAccount": {
+    "description": "Create account title/button"
+  },
+
+  "authJoinMadeInWorld": "Join Made in World and discover authentic products",
+  "@authJoinMadeInWorld": {
+    "description": "Create account subtitle"
+  },
+
+  "authFullName": "Full Name",
+  "@authFullName": {
+    "description": "Full name field label"
+  },
+
+  "authFullNameHint": "Enter your full name",
+  "@authFullNameHint": {
+    "description": "Full name field hint"
+  },
+
+  "authPhoneHint": "Enter your phone number",
+  "@authPhoneHint": {
+    "description": "Phone number field hint"
+  },
+
+  "authPasswordCreateHint": "Create a password",
+  "@authPasswordCreateHint": {
+    "description": "Create password hint"
+  },
+
+  "authConfirmPassword": "Confirm Password",
+  "@authConfirmPassword": {
+    "description": "Confirm password field label"
+  },
+
+  "authConfirmPasswordHint": "Confirm your password",
+  "@authConfirmPasswordHint": {
+    "description": "Confirm password field hint"
+  },
+
+  "authAgreeToTerms": "I agree to the ",
+  "@authAgreeToTerms": {
+    "description": "Terms agreement prefix"
+  },
+
+  "authTermsOfService": "Terms of Service",
+  "@authTermsOfService": {
+    "description": "Terms of service link text"
+  },
+
+  "authAnd": " and ",
+  "@authAnd": {
+    "description": "And conjunction"
+  },
+
+  "authPrivacyPolicy": "Privacy Policy",
+  "@authPrivacyPolicy": {
+    "description": "Privacy policy link text"
+  },
+
+  "authAlreadyHaveAccount": "Already have an account? ",
+  "@authAlreadyHaveAccount": {
+    "description": "Already have account prompt"
+  },
+
+  "profilePreferences": "Preferences",
+  "@profilePreferences": {
+    "description": "Preferences section title"
+  },
+
+  "profileAccount": "Account",
+  "@profileAccount": {
+    "description": "Account section title"
+  },
+
+  "profileOrdersAndSupport": "Orders & Support",
+  "@profileOrdersAndSupport": {
+    "description": "Orders and support section title"
+  },
+
+  "profileAbout": "About",
+  "@profileAbout": {
+    "description": "About section title"
+  },
+
+  "profileManageNotifications": "Manage notification preferences",
+  "@profileManageNotifications": {
+    "description": "Notifications setting subtitle"
+  },
+
+  "profilePersonalInfo": "Personal Information",
+  "@profilePersonalInfo": {
+    "description": "Personal information title"
+  },
+
+  "profilePersonalInfoSubtitle": "Name, email, phone",
+  "@profilePersonalInfoSubtitle": {
+    "description": "Personal information subtitle"
+  },
+
+  "profileShippingAddresses": "Shipping Addresses",
+  "@profileShippingAddresses": {
+    "description": "Shipping addresses title"
+  },
+
+  "profileAddressesSaved": "{count} addresses saved",
+  "@profileAddressesSaved": {
+    "description": "Number of addresses saved",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "profilePaymentSubtitle": "Cards, Alipay, WeChat Pay",
+  "@profilePaymentSubtitle": {
+    "description": "Payment methods subtitle"
+  },
+
+  "profileOrderHistory": "Order History",
+  "@profileOrderHistory": {
+    "description": "Order history title"
+  },
+
+  "profileViewAllOrders": "View all past orders",
+  "@profileViewAllOrders": {
+    "description": "Order history subtitle"
+  },
+
+  "profileWishlist": "Wishlist",
+  "@profileWishlist": {
+    "description": "Wishlist title"
+  },
+
+  "profileItemsSaved": "{count} items saved",
+  "@profileItemsSaved": {
+    "description": "Number of items saved",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "profileCustomerSupport": "Customer Support",
+  "@profileCustomerSupport": {
+    "description": "Customer support title"
+  },
+
+  "profileGetHelp": "Get help with your orders",
+  "@profileGetHelp": {
+    "description": "Customer support subtitle"
+  },
+
+  "profileAboutApp": "About Made in World",
+  "@profileAboutApp": {
+    "description": "About app title"
+  },
+
+  "profileVersion": "Version {version}",
+  "@profileVersion": {
+    "description": "App version",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+
+  "profileTermsPrivacy": "Terms & Privacy",
+  "@profileTermsPrivacy": {
+    "description": "Terms and privacy title"
+  },
+
+  "profileLegalInfo": "Legal information",
+  "@profileLegalInfo": {
+    "description": "Terms and privacy subtitle"
+  },
+
+  "profileGoldMember": "Gold Member",
+  "@profileGoldMember": {
+    "description": "Gold member badge text"
+  },
+
+  "profileOn": "On",
+  "@profileOn": {
+    "description": "Toggle on state"
+  },
+
+  "profileOff": "Off",
+  "@profileOff": {
+    "description": "Toggle off state"
+  },
+
+  "profileOrders": "Orders",
+  "@profileOrders": {
+    "description": "Orders stat label"
+  },
+
+  "profilePoints": "Points",
+  "@profilePoints": {
+    "description": "Points stat label"
+  },
+
+  "profileCoupons": "Coupons",
+  "@profileCoupons": {
+    "description": "Coupons stat label"
+  },
+
+  "messagesFilterAll": "All",
+  "@messagesFilterAll": {
+    "description": "All messages filter"
+  },
+
+  "messagesFilterUnread": "Unread",
+  "@messagesFilterUnread": {
+    "description": "Unread messages filter"
+  },
+
+  "messagesFilterSystem": "System",
+  "@messagesFilterSystem": {
+    "description": "System messages filter"
+  },
+
+  "messagesFilterSupport": "Support",
+  "@messagesFilterSupport": {
+    "description": "Support messages filter"
+  },
+
+  "messagesFilterOrders": "Orders",
+  "@messagesFilterOrders": {
+    "description": "Orders messages filter"
+  },
+
+  "messagesNoMessages": "No messages found",
+  "@messagesNoMessages": {
+    "description": "Empty messages state title"
+  },
+
+  "messagesTryDifferentSearch": "Try a different search term",
+  "@messagesTryDifferentSearch": {
+    "description": "Search empty state hint"
+  },
+
+  "messagesWillAppear": "Messages will appear here",
+  "@messagesWillAppear": {
+    "description": "Empty messages state hint"
+  },
+
+  "messagesSearchHint": "Search messages...",
+  "@messagesSearchHint": {
+    "description": "Messages search hint"
+  },
+
+  "mapSearchHint": "Search stores...",
+  "@mapSearchHint": {
+    "description": "Map search hint"
+  },
+
+  "mapCouldNotOpen": "Could not open maps",
+  "@mapCouldNotOpen": {
+    "description": "Error opening maps"
+  },
+
+  "mapDirections": "Directions",
+  "@mapDirections": {
+    "description": "Directions button"
+  },
+
+  "mapVisitStore": "Visit Store",
+  "@mapVisitStore": {
+    "description": "Visit store button"
+  },
+
+  "mapAway": "{distance} away",
+  "@mapAway": {
+    "description": "Distance away text",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+
+  "mapLocationServicesDisabled": "Location services disabled",
+  "@mapLocationServicesDisabled": {
+    "description": "Location services disabled error"
+  },
+
+  "mapLocationPermissionDenied": "Location permission denied",
+  "@mapLocationPermissionDenied": {
+    "description": "Location permission denied error"
+  },
+
+  "mapLocationPermanentlyDenied": "Location permanently denied",
+  "@mapLocationPermanentlyDenied": {
+    "description": "Location permanently denied error"
+  },
+
+  "mapCouldNotGetLocation": "Could not get location",
+  "@mapCouldNotGetLocation": {
+    "description": "Could not get location error"
+  },
+
+  "mapVisiting": "Visiting {storeName}...",
+  "@mapVisiting": {
+    "description": "Visiting store snackbar",
+    "placeholders": {
+      "storeName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "searchHint": "Search products, stores...",
+  "@searchHint": {
+    "description": "Search screen hint"
+  },
+
+  "searchCancel": "Cancel",
+  "@searchCancel": {
+    "description": "Cancel search button"
+  },
+
+  "searchRecentSearches": "Recent Searches",
+  "@searchRecentSearches": {
+    "description": "Recent searches section title"
+  },
+
+  "searchPopular": "Popular Right Now",
+  "@searchPopular": {
+    "description": "Popular searches section title"
+  },
+
+  "searchBrowseByCategory": "Browse by Category",
+  "@searchBrowseByCategory": {
+    "description": "Browse by category section title"
+  },
+
+  "searchSearchingFor": "Searching for \"{query}\"",
+  "@searchSearchingFor": {
+    "description": "Searching for text",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+
+  "searchResultsWillAppear": "Results will appear here",
+  "@searchResultsWillAppear": {
+    "description": "Search results placeholder"
+  },
+
+  "categoryFashion": "Fashion & Apparel",
+  "@categoryFashion": {
+    "description": "Fashion category name"
+  },
+
+  "categoryElectronics": "Electronics",
+  "@categoryElectronics": {
+    "description": "Electronics category name"
+  },
+
+  "categoryFood": "Food & Beverage",
+  "@categoryFood": {
+    "description": "Food category name"
+  },
+
+  "categoryHome": "Home & Living",
+  "@categoryHome": {
+    "description": "Home category name"
+  },
+
+  "categoryHealth": "Health & Beauty",
+  "@categoryHealth": {
+    "description": "Health category name"
+  },
+
+  "supportTitle": "Support",
+  "@supportTitle": {
+    "description": "Support screen title"
+  },
+
+  "supportOnline": "Online • Usually replies instantly",
+  "@supportOnline": {
+    "description": "Support online status"
+  },
+
+  "supportTypeMessage": "Type a message...",
+  "@supportTypeMessage": {
+    "description": "Support chat input hint"
+  },
+
+  "supportWelcomeMessage": "Hello! 👋 I'm your EXPO to WORLD support assistant. How can I help you today?",
+  "@supportWelcomeMessage": {
+    "description": "Support welcome message"
+  },
+
+  "supportAutoReply": "Thank you for your message! Our team is looking into this. Is there anything else I can help you with?",
+  "@supportAutoReply": {
+    "description": "Support auto reply message"
+  },
+
+  "homeFeaturedProducts": "Featured Products",
+  "@homeFeaturedProducts": {
+    "description": "Featured products section title"
+  },
+
+  "homeSearch": "Search",
+  "@homeSearch": {
+    "description": "Search bar text"
+  },
+
+  "promoWelcomeTitle": "Welcome to EXPO to WORLD",
+  "@promoWelcomeTitle": {
+    "description": "Welcome promo title"
+  },
+
+  "promoWelcomeSubtitle": "Your gateway to premium global retail",
+  "@promoWelcomeSubtitle": {
+    "description": "Welcome promo subtitle"
+  },
+
+  "promoNewArrivalsTitle": "New Arrivals",
+  "@promoNewArrivalsTitle": {
+    "description": "New arrivals promo title"
+  },
+
+  "promoNewArrivalsSubtitle": "Discover the latest products from top manufacturers",
+  "@promoNewArrivalsSubtitle": {
+    "description": "New arrivals promo subtitle"
+  },
+
+  "promoGroupDealsTitle": "Group Deals",
+  "@promoGroupDealsTitle": {
+    "description": "Group deals promo title"
+  },
+
+  "promoGroupDealsSubtitle": "Join now and save up to 40%",
+  "@promoGroupDealsSubtitle": {
+    "description": "Group deals promo subtitle"
   }
 }

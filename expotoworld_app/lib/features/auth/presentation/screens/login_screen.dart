@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../core/l10n/generated/app_localizations.dart';
 
 /// Placeholder login screen
 class LoginScreen extends StatelessWidget {
@@ -39,7 +40,7 @@ class LoginScreen extends StatelessWidget {
               SizedBox(height: AppSpacing.xxl),
               // Title
               Text(
-                'Welcome Back',
+                AppLocalizations.of(context)!.authWelcomeBack,
                 style: AppTypography.h2(
                   color: isDark ? AppColors.neutralLight : AppColors.neutralDarkest,
                 ),
@@ -47,7 +48,7 @@ class LoginScreen extends StatelessWidget {
               ),
               SizedBox(height: AppSpacing.sm),
               Text(
-                'Sign in to continue to Made in World',
+                AppLocalizations.of(context)!.authSignInToContinue,
                 style: AppTypography.bodyMedium(
                   color: isDark ? AppColors.neutralMid : AppColors.neutralDark,
                 ),
@@ -57,8 +58,8 @@ class LoginScreen extends StatelessWidget {
               // Email field
               TextField(
                 decoration: InputDecoration(
-                  labelText: 'Email',
-                  hintText: 'Enter your email',
+                  labelText: AppLocalizations.of(context)!.authEmail,
+                  hintText: AppLocalizations.of(context)!.authEmailHint,
                   prefixIcon: const Icon(Icons.email_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -70,8 +71,8 @@ class LoginScreen extends StatelessWidget {
               // Password field
               TextField(
                 decoration: InputDecoration(
-                  labelText: 'Password',
-                  hintText: 'Enter your password',
+                  labelText: AppLocalizations.of(context)!.authPassword,
+                  hintText: AppLocalizations.of(context)!.authPasswordHint,
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: const Icon(Icons.visibility_off_outlined),
                   border: OutlineInputBorder(
@@ -87,7 +88,7 @@ class LoginScreen extends StatelessWidget {
                 child: TextButton(
                   onPressed: () {},
                   child: Text(
-                    'Forgot Password?',
+                    AppLocalizations.of(context)!.authForgotPassword,
                     style: AppTypography.bodySmall(color: AppColors.themeRed),
                   ),
                 ),
@@ -108,7 +109,7 @@ class LoginScreen extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  'Sign In',
+                  AppLocalizations.of(context)!.authSignIn,
                   style: AppTypography.buttonLarge(color: Colors.white),
                 ),
               ),
@@ -118,7 +119,7 @@ class LoginScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    "Don't have an account? ",
+                    AppLocalizations.of(context)!.authNoAccount,
                     style: AppTypography.bodySmall(
                       color: isDark ? AppColors.neutralMid : AppColors.neutralDark,
                     ),
@@ -128,7 +129,7 @@ class LoginScreen extends StatelessWidget {
                       context.push(RoutePaths.signup);
                     },
                     child: Text(
-                      'Sign Up',
+                      AppLocalizations.of(context)!.authSignup,
                       style: AppTypography.bodySmall(color: AppColors.themeRed),
                     ),
                   ),

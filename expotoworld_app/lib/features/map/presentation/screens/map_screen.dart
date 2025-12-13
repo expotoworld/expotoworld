@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/l10n/generated/app_localizations.dart';
 import '../../../../core/theme/theme.dart';
 
 class MapScreen extends StatefulWidget {
@@ -101,6 +102,18 @@ class _MapScreenState extends State<MapScreen>
       _searchController.clear();
       _searchFocusNode.unfocus();
     }
+  }
+
+  /// Returns localized error message for the given error key
+  String _getLocalizedErrorMessage(BuildContext context, String errorKey) {
+    final l10n = AppLocalizations.of(context)!;
+    return switch (errorKey) {
+      'mapLocationServicesDisabled' => l10n.mapLocationServicesDisabled,
+      'mapLocationPermissionDenied' => l10n.mapLocationPermissionDenied,
+      'mapLocationPermanentlyDenied' => l10n.mapLocationPermanentlyDenied,
+      'mapCouldNotGetLocation' => l10n.mapCouldNotGetLocation,
+      _ => errorKey,
+    };
   }
 
   /// Closes the search bar and legend panel when tapping outside
@@ -255,7 +268,7 @@ class _MapScreenState extends State<MapScreen>
       if (!serviceEnabled) {
         if (mounted) {
           setState(() {
-            _errorMessage = 'Location services disabled';
+            _errorMessage = 'mapLocationServicesDisabled';
             _isMapReady = true;
           });
         }
@@ -270,7 +283,7 @@ class _MapScreenState extends State<MapScreen>
         if (permission == LocationPermission.denied) {
           if (mounted) {
             setState(() {
-              _errorMessage = 'Location permission denied';
+              _errorMessage = 'mapLocationPermissionDenied';
               _isMapReady = true;
             });
           }
@@ -283,7 +296,7 @@ class _MapScreenState extends State<MapScreen>
       if (permission == LocationPermission.deniedForever) {
         if (mounted) {
           setState(() {
-            _errorMessage = 'Location permanently denied';
+            _errorMessage = 'mapLocationPermanentlyDenied';
             _isMapReady = true;
           });
         }
@@ -368,7 +381,7 @@ class _MapScreenState extends State<MapScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Could not get location';
+          _errorMessage = 'mapCouldNotGetLocation';
           _isMapReady = true;
         });
       }
@@ -504,7 +517,7 @@ class _MapScreenState extends State<MapScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Could not open maps'),
+            content: Text(AppLocalizations.of(context)!.mapCouldNotOpen),
             backgroundColor: AppColors.themeRed,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -614,7 +627,7 @@ class _MapScreenState extends State<MapScreen>
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
-                        _errorMessage!,
+                        _getLocalizedErrorMessage(context, _errorMessage!),
                         style: AppTypography.bodySmall(color: Colors.white),
                       ),
                     ),
@@ -923,7 +936,7 @@ class _MapScreenState extends State<MapScreen>
                           color: isDark ? Colors.white : Colors.black,
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Search stores...',
+                          hintText: AppLocalizations.of(context)!.mapSearchHint,
                           hintStyle: AppTypography.bodyMedium(
                             color: isDark
                                 ? Colors.white.withValues(alpha: 0.5)
@@ -1120,7 +1133,7 @@ class _MapScreenState extends State<MapScreen>
                     Icon(Icons.near_me_rounded, size: 18, color: store.color),
                     const SizedBox(width: 8),
                     Text(
-                      '${store.distance} away',
+                      '${store.distance} ${AppLocalizations.of(context)!.mapAway}',
                       style: AppTypography.bodySmall(
                         color: AppColors.foreground(context),
                       ),
@@ -1142,7 +1155,7 @@ class _MapScreenState extends State<MapScreen>
                           _openInExternalMaps(store);
                         },
                         icon: const Icon(Icons.directions_rounded, size: 18),
-                        label: const Text('Directions'),
+                        label: Text(AppLocalizations.of(context)!.mapDirections),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isDark
                               ? Colors.white.withValues(alpha: 0.1)
@@ -1170,7 +1183,7 @@ class _MapScreenState extends State<MapScreen>
                           // TODO: Navigate to store's product page
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Visiting ${store.name}...'),
+                              content: Text('${AppLocalizations.of(context)!.mapVisiting} ${store.name}...'),
                               backgroundColor: store.color,
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
@@ -1180,7 +1193,7 @@ class _MapScreenState extends State<MapScreen>
                           );
                         },
                         icon: const Icon(Icons.storefront_rounded, size: 20),
-                        label: const Text('Visit Store'),
+                        label: Text(AppLocalizations.of(context)!.mapVisitStore),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: store.color,
                           foregroundColor: store.storeType == StoreType.xpress
