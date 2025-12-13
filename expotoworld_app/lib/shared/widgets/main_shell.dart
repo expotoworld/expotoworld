@@ -57,6 +57,7 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     return Scaffold(
       extendBody: true,
+      resizeToAvoidBottomInset: false,
       backgroundColor: Colors.transparent,
       body: widget.child,
       bottomNavigationBar: Padding(

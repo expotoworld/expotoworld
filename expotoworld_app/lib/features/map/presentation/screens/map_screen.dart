@@ -24,6 +24,7 @@ class _MapScreenState extends State<MapScreen>
   // Search state
   bool _isSearchExpanded = false;
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   AnimationController? _searchAnimationController;
   Animation<double>? _searchWidthAnimation;
   String _searchQuery = ''; // Current search query for filtering stores
@@ -82,6 +83,7 @@ class _MapScreenState extends State<MapScreen>
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _searchFocusNode.dispose();
     _searchAnimationController?.dispose();
     super.dispose();
   }
@@ -92,10 +94,12 @@ class _MapScreenState extends State<MapScreen>
     });
     if (_isSearchExpanded) {
       _searchAnimationController?.forward();
+      // Auto-focus the search field when expanding
+      _searchFocusNode.requestFocus();
     } else {
       _searchAnimationController?.reverse();
       _searchController.clear();
-      FocusManager.instance.primaryFocus?.unfocus();
+      _searchFocusNode.unfocus();
     }
   }
 
@@ -106,7 +110,7 @@ class _MapScreenState extends State<MapScreen>
     if (_isSearchExpanded) {
       _searchAnimationController?.reverse();
       _searchController.clear();
-      FocusManager.instance.primaryFocus?.unfocus();
+      _searchFocusNode.unfocus();
       _isSearchExpanded = false;
       shouldUpdate = true;
     }
@@ -518,6 +522,7 @@ class _MapScreenState extends State<MapScreen>
     final statusBarHeight = MediaQuery.of(context).padding.top;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
       body: Stack(
         children: [
@@ -912,6 +917,7 @@ class _MapScreenState extends State<MapScreen>
                       ),
                       child: TextField(
                         controller: _searchController,
+                        focusNode: _searchFocusNode,
                         textAlignVertical: TextAlignVertical.center,
                         style: AppTypography.bodyMedium(
                           color: isDark ? Colors.white : Colors.black,
@@ -930,9 +936,7 @@ class _MapScreenState extends State<MapScreen>
                           enabledBorder: InputBorder.none,
                           errorBorder: InputBorder.none,
                           disabledBorder: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 14,
-                          ),
+                          contentPadding: EdgeInsets.zero,
                           isCollapsed: true,
                         ),
                       ),
