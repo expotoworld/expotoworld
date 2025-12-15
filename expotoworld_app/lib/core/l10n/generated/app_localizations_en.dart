@@ -138,6 +138,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileEditProfile => 'Edit Profile';
 
   @override
+  String get profileYearSingular => 'year';
+
+  @override
+  String get profileYearPlural => 'years';
+
+  @override
+  String get profileMonthSingular => 'month';
+
+  @override
+  String get profileMonthPlural => 'months';
+
+  @override
+  String get profileOnExpoToWorld => 'on EXPO to WORLD';
+
+  @override
   String get mapTitle => 'Store Locations';
 
   @override
@@ -518,4 +533,160 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get promoGroupDealsSubtitle => 'Join now and save up to 40%';
+
+  @override
+  String get settingsAccountSettings => 'Account Settings';
+
+  @override
+  String get settingsGetHelp => 'Get Help';
+
+  @override
+  String get settingsPrivacy => 'Privacy';
+
+  @override
+  String get settingsLegal => 'Legal';
+
+  @override
+  String get accountSettingsTitle => 'Account Settings';
+
+  @override
+  String get accountSettingsYourDetails => 'Your Details';
+
+  @override
+  String get accountSettingsUsername => 'Username';
+
+  @override
+  String get accountSettingsEmail => 'Email';
+
+  @override
+  String get accountSettingsPhoneNumber => 'Phone Number';
+
+  @override
+  String get accountSettingsNotProvided => 'Not Provided';
+
+  @override
+  String get accountSettingsLanguage => 'Language';
+
+  @override
+  String get accountSettingsTheme => 'Theme';
+
+  @override
+  String get accountSettingsThemeDark => 'Dark';
+
+  @override
+  String get accountSettingsThemeLight => 'Light';
+
+  @override
+  String get accountSettingsThemeSystem => 'System';
+
+  @override
+  String get accountSettingsEdit => 'Edit';
+
+  @override
+  String get accountSettingsPaymentDetails => 'Payment Details';
+
+  @override
+  String get accountSettingsPaymentMethods => 'Payment Methods';
+
+  @override
+  String get accountSettingsYourTransactions => 'Your Transactions';
+
+  @override
+  String get accountSettingsYourOrders => 'Your Orders';
+
+  @override
+  String get accountSettingsSelectLanguage => 'Select Language';
+
+  @override
+  String get accountSettingsSelectTheme => 'Select Theme';
+
+  @override
+  String get getHelpTitle => 'Get Help';
+
+  @override
+  String get getHelpFaqTitle => 'Frequently Asked Questions';
+
+  @override
+  String get getHelpFaqSubtitle => 'Find answers to common questions below';
+
+  @override
+  String get getHelpStillNeedHelp => 'Still need help?';
+
+  @override
+  String get getHelpSupportTeamMessage =>
+      'Our support team is here to assist you';
+
+  @override
+  String get getHelpContactUs => 'Contact Us';
+
+  @override
+  String get faqCreateAccountQuestion => 'How do I create an account?';
+
+  @override
+  String get faqCreateAccountAnswer =>
+      'To create an account, tap the \"Sign Up\" button on the login screen. You can register using your email address or sign up with your social media accounts. Follow the prompts to complete your profile setup.';
+
+  @override
+  String get faqResetPasswordQuestion => 'How do I reset my password?';
+
+  @override
+  String get faqResetPasswordAnswer =>
+      'If you\'ve forgotten your password, tap \"Forgot Password\" on the login screen. Enter your registered email address, and we\'ll send you a password reset link. Check your spam folder if you don\'t see the email within a few minutes.';
+
+  @override
+  String get faqUpdateProfileQuestion =>
+      'How do I update my profile information?';
+
+  @override
+  String get faqUpdateProfileAnswer =>
+      'Go to your Profile, then tap \"Account Settings\". From there, you can edit your username, email, phone number, and other personal details by tapping the \"Edit\" button next to each field.';
+
+  @override
+  String get faqPaymentMethodsQuestion => 'What payment methods are accepted?';
+
+  @override
+  String get faqPaymentMethodsAnswer =>
+      'We accept major credit and debit cards including Visa, Mastercard, and American Express. You can also pay using Apple Pay, Google Pay, and various digital wallets depending on your region.';
+
+  @override
+  String get faqTrackOrdersQuestion => 'How do I track my orders?';
+
+  @override
+  String get faqTrackOrdersAnswer =>
+      'You can view all your orders in the Profile section under \"Account Settings\" > \"Your Orders\". Each order shows its current status, estimated delivery date, and tracking information when available.';
+
+  @override
+  String get faqContactSupportQuestion => 'How do I contact customer support?';
+
+  @override
+  String get faqContactSupportAnswer =>
+      'You can reach our customer support team by tapping the \"Contact Us\" button at the bottom of this page. We\'re available 24/7 via live chat, email, or phone to assist you with any questions or concerns.';
+
+  @override
+  String get faqDataSecurityQuestion => 'Is my personal data secure?';
+
+  @override
+  String get faqDataSecurityAnswer =>
+      'Yes, we take data security very seriously. All your personal information is encrypted and stored securely. We never share your data with third parties without your consent. You can review our Privacy Policy for more details.';
+
+  @override
+  String get faqChangeLanguageQuestion => 'How do I change the app language?';
+
+  @override
+  String get faqChangeLanguageAnswer =>
+      'Go to Profile > Account Settings, then find the \"Language\" option. Tap \"Edit\" to select from our available languages including English, Chinese, Japanese, Korean, and more.';
+
+  @override
+  String get faqOfflineUseQuestion => 'Can I use the app offline?';
+
+  @override
+  String get faqOfflineUseAnswer =>
+      'Some features of the app work offline, such as viewing cached content and previously downloaded items. However, features like placing orders, messaging, and real-time updates require an internet connection.';
+
+  @override
+  String get faqDeleteAccountQuestion => 'How do I delete my account?';
+
+  @override
+  String get faqDeleteAccountAnswer =>
+      'If you wish to delete your account, please contact our support team through the \"Contact Us\" button below. Note that account deletion is permanent and all your data will be removed from our servers.';
 }

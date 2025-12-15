@@ -217,6 +217,31 @@
     "description": "Edit profile button label"
   },
 
+  "profileYearSingular": "year",
+  "@profileYearSingular": {
+    "description": "Singular form of year for membership duration"
+  },
+
+  "profileYearPlural": "years",
+  "@profileYearPlural": {
+    "description": "Plural form of year for membership duration"
+  },
+
+  "profileMonthSingular": "month",
+  "@profileMonthSingular": {
+    "description": "Singular form of month for membership duration"
+  },
+
+  "profileMonthPlural": "months",
+  "@profileMonthPlural": {
+    "description": "Plural form of month for membership duration"
+  },
+
+  "profileOnExpoToWorld": "on EXPO to WORLD",
+  "@profileOnExpoToWorld": {
+    "description": "Text shown below membership duration in profile"
+  },
+
   "mapTitle": "Store Locations",
   "@mapTitle": {
     "description": "Map screen title"
@@ -855,5 +880,245 @@
   "promoGroupDealsSubtitle": "Join now and save up to 40%",
   "@promoGroupDealsSubtitle": {
     "description": "Group deals promo subtitle"
+  },
+
+  "settingsAccountSettings": "Account Settings",
+  "@settingsAccountSettings": {
+    "description": "Account settings menu item"
+  },
+
+  "settingsGetHelp": "Get Help",
+  "@settingsGetHelp": {
+    "description": "Get help menu item"
+  },
+
+  "settingsPrivacy": "Privacy",
+  "@settingsPrivacy": {
+    "description": "Privacy menu item"
+  },
+
+  "settingsLegal": "Legal",
+  "@settingsLegal": {
+    "description": "Legal menu item"
+  },
+
+  "accountSettingsTitle": "Account Settings",
+  "@accountSettingsTitle": {
+    "description": "Account settings page title"
+  },
+
+  "accountSettingsYourDetails": "Your Details",
+  "@accountSettingsYourDetails": {
+    "description": "Your details section header"
+  },
+
+  "accountSettingsUsername": "Username",
+  "@accountSettingsUsername": {
+    "description": "Username field label"
+  },
+
+  "accountSettingsEmail": "Email",
+  "@accountSettingsEmail": {
+    "description": "Email field label"
+  },
+
+  "accountSettingsPhoneNumber": "Phone Number",
+  "@accountSettingsPhoneNumber": {
+    "description": "Phone number field label"
+  },
+
+  "accountSettingsNotProvided": "Not Provided",
+  "@accountSettingsNotProvided": {
+    "description": "Placeholder text for empty fields"
+  },
+
+  "accountSettingsLanguage": "Language",
+  "@accountSettingsLanguage": {
+    "description": "Language field label"
+  },
+
+  "accountSettingsTheme": "Theme",
+  "@accountSettingsTheme": {
+    "description": "Theme field label"
+  },
+
+  "accountSettingsThemeDark": "Dark",
+  "@accountSettingsThemeDark": {
+    "description": "Dark theme option"
+  },
+
+  "accountSettingsThemeLight": "Light",
+  "@accountSettingsThemeLight": {
+    "description": "Light theme option"
+  },
+
+  "accountSettingsThemeSystem": "System",
+  "@accountSettingsThemeSystem": {
+    "description": "System theme option"
+  },
+
+  "accountSettingsEdit": "Edit",
+  "@accountSettingsEdit": {
+    "description": "Edit button text"
+  },
+
+  "accountSettingsPaymentDetails": "Payment Details",
+  "@accountSettingsPaymentDetails": {
+    "description": "Payment details section header"
+  },
+
+  "accountSettingsPaymentMethods": "Payment Methods",
+  "@accountSettingsPaymentMethods": {
+    "description": "Payment methods navigation item"
+  },
+
+  "accountSettingsYourTransactions": "Your Transactions",
+  "@accountSettingsYourTransactions": {
+    "description": "Your transactions navigation item"
+  },
+
+  "accountSettingsYourOrders": "Your Orders",
+  "@accountSettingsYourOrders": {
+    "description": "Your orders navigation item"
+  },
+
+  "accountSettingsSelectLanguage": "Select Language",
+  "@accountSettingsSelectLanguage": {
+    "description": "Language selector popup title"
+  },
+
+  "accountSettingsSelectTheme": "Select Theme",
+  "@accountSettingsSelectTheme": {
+    "description": "Theme selector popup title"
+  },
+
+  "getHelpTitle": "Get Help",
+  "@getHelpTitle": {
+    "description": "Get help page title"
+  },
+
+  "getHelpFaqTitle": "Frequently Asked Questions",
+  "@getHelpFaqTitle": {
+    "description": "FAQ section title"
+  },
+
+  "getHelpFaqSubtitle": "Find answers to common questions below",
+  "@getHelpFaqSubtitle": {
+    "description": "FAQ section subtitle"
+  },
+
+  "getHelpStillNeedHelp": "Still need help?",
+  "@getHelpStillNeedHelp": {
+    "description": "Contact section header"
+  },
+
+  "getHelpSupportTeamMessage": "Our support team is here to assist you",
+  "@getHelpSupportTeamMessage": {
+    "description": "Contact section subtitle"
+  },
+
+  "getHelpContactUs": "Contact Us",
+  "@getHelpContactUs": {
+    "description": "Contact us button text"
+  },
+
+  "faqCreateAccountQuestion": "How do I create an account?",
+  "@faqCreateAccountQuestion": {
+    "description": "FAQ question about account creation"
+  },
+
+  "faqCreateAccountAnswer": "To create an account, tap the \"Sign Up\" button on the login screen. You can register using your email address or sign up with your social media accounts. Follow the prompts to complete your profile setup.",
+  "@faqCreateAccountAnswer": {
+    "description": "FAQ answer about account creation"
+  },
+
+  "faqResetPasswordQuestion": "How do I reset my password?",
+  "@faqResetPasswordQuestion": {
+    "description": "FAQ question about password reset"
+  },
+
+  "faqResetPasswordAnswer": "If you've forgotten your password, tap \"Forgot Password\" on the login screen. Enter your registered email address, and we'll send you a password reset link. Check your spam folder if you don't see the email within a few minutes.",
+  "@faqResetPasswordAnswer": {
+    "description": "FAQ answer about password reset"
+  },
+
+  "faqUpdateProfileQuestion": "How do I update my profile information?",
+  "@faqUpdateProfileQuestion": {
+    "description": "FAQ question about updating profile"
+  },
+
+  "faqUpdateProfileAnswer": "Go to your Profile, then tap \"Account Settings\". From there, you can edit your username, email, phone number, and other personal details by tapping the \"Edit\" button next to each field.",
+  "@faqUpdateProfileAnswer": {
+    "description": "FAQ answer about updating profile"
+  },
+
+  "faqPaymentMethodsQuestion": "What payment methods are accepted?",
+  "@faqPaymentMethodsQuestion": {
+    "description": "FAQ question about payment methods"
+  },
+
+  "faqPaymentMethodsAnswer": "We accept major credit and debit cards including Visa, Mastercard, and American Express. You can also pay using Apple Pay, Google Pay, and various digital wallets depending on your region.",
+  "@faqPaymentMethodsAnswer": {
+    "description": "FAQ answer about payment methods"
+  },
+
+  "faqTrackOrdersQuestion": "How do I track my orders?",
+  "@faqTrackOrdersQuestion": {
+    "description": "FAQ question about order tracking"
+  },
+
+  "faqTrackOrdersAnswer": "You can view all your orders in the Profile section under \"Account Settings\" > \"Your Orders\". Each order shows its current status, estimated delivery date, and tracking information when available.",
+  "@faqTrackOrdersAnswer": {
+    "description": "FAQ answer about order tracking"
+  },
+
+  "faqContactSupportQuestion": "How do I contact customer support?",
+  "@faqContactSupportQuestion": {
+    "description": "FAQ question about contacting support"
+  },
+
+  "faqContactSupportAnswer": "You can reach our customer support team by tapping the \"Contact Us\" button at the bottom of this page. We're available 24/7 via live chat, email, or phone to assist you with any questions or concerns.",
+  "@faqContactSupportAnswer": {
+    "description": "FAQ answer about contacting support"
+  },
+
+  "faqDataSecurityQuestion": "Is my personal data secure?",
+  "@faqDataSecurityQuestion": {
+    "description": "FAQ question about data security"
+  },
+
+  "faqDataSecurityAnswer": "Yes, we take data security very seriously. All your personal information is encrypted and stored securely. We never share your data with third parties without your consent. You can review our Privacy Policy for more details.",
+  "@faqDataSecurityAnswer": {
+    "description": "FAQ answer about data security"
+  },
+
+  "faqChangeLanguageQuestion": "How do I change the app language?",
+  "@faqChangeLanguageQuestion": {
+    "description": "FAQ question about changing language"
+  },
+
+  "faqChangeLanguageAnswer": "Go to Profile > Account Settings, then find the \"Language\" option. Tap \"Edit\" to select from our available languages including English, Chinese, Japanese, Korean, and more.",
+  "@faqChangeLanguageAnswer": {
+    "description": "FAQ answer about changing language"
+  },
+
+  "faqOfflineUseQuestion": "Can I use the app offline?",
+  "@faqOfflineUseQuestion": {
+    "description": "FAQ question about offline use"
+  },
+
+  "faqOfflineUseAnswer": "Some features of the app work offline, such as viewing cached content and previously downloaded items. However, features like placing orders, messaging, and real-time updates require an internet connection.",
+  "@faqOfflineUseAnswer": {
+    "description": "FAQ answer about offline use"
+  },
+
+  "faqDeleteAccountQuestion": "How do I delete my account?",
+  "@faqDeleteAccountQuestion": {
+    "description": "FAQ question about account deletion"
+  },
+
+  "faqDeleteAccountAnswer": "If you wish to delete your account, please contact our support team through the \"Contact Us\" button below. Note that account deletion is permanent and all your data will be removed from our servers.",
+  "@faqDeleteAccountAnswer": {
+    "description": "FAQ answer about account deletion"
   }
 }
