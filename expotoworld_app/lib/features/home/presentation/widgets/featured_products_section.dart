@@ -14,37 +14,11 @@ class FeaturedProductsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Section header
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.homeFeaturedProducts,
-              style: AppTypography.h3(
-                color: AppColors.foreground(context),
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                // TODO: NEED TO FULLY IMPLEMENT - Navigate to all products
-              },
-              child: Row(
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.commonSeeAll,
-                    style: AppTypography.labelLarge(
-                      color: AppColors.themeRed,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 14,
-                    color: AppColors.themeRed,
-                  ),
-                ],
-              ),
-            ),
-          ],
+        Text(
+          AppLocalizations.of(context)!.homeRecommendedProducts,
+          style: AppTypography.h3(
+            color: AppColors.foreground(context),
+          ).copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: AppSpacing.sm),
         

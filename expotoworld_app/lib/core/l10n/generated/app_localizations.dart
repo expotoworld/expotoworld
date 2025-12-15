@@ -1066,11 +1066,11 @@ abstract class AppLocalizations {
   /// **'Thank you for your message! Our team is looking into this. Is there anything else I can help you with?'**
   String get supportAutoReply;
 
-  /// Featured products section title
+  /// Recommended products section title
   ///
   /// In en, this message translates to:
-  /// **'Featured Products'**
-  String get homeFeaturedProducts;
+  /// **'Recommended for you'**
+  String get homeRecommendedProducts;
 
   /// Search bar text
   ///

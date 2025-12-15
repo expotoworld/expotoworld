@@ -225,94 +225,74 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
   }) {
     return Padding(
       padding: EdgeInsets.only(bottom: AppSpacing.md),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.black.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.black.withValues(alpha: 0.08),
-              ),
-            ),
-            child: Column(
-              children: [
-                // Question row (always visible)
-                InkWell(
-                  onTap: onTap,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  child: Padding(
-                    padding: EdgeInsets.all(AppSpacing.lg),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            question,
-                            style: AppTypography.bodyMedium().copyWith(
-                              color: isDark
-                                  ? AppColors.neutralWhite
-                                  : AppColors.neutralBlack,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: AppSpacing.md),
-                        AnimatedRotation(
-                          turns: isExpanded ? 0.5 : 0,
-                          duration: const Duration(milliseconds: 200),
-                          child: Icon(
-                            Icons.keyboard_arrow_down,
-                            color: isDark
-                                ? AppColors.neutralGray400
-                                : AppColors.neutralGray600,
-                            size: 24,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Answer (expandable)
-                AnimatedCrossFade(
-                  firstChild: const SizedBox.shrink(),
-                  secondChild: Padding(
-                    padding: EdgeInsets.only(
-                      left: AppSpacing.lg,
-                      right: AppSpacing.lg,
-                      bottom: AppSpacing.lg,
-                    ),
+      child: Column(
+        children: [
+          // Question row (always visible)
+          InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: Row(
+                children: [
+                  Expanded(
                     child: Text(
-                      answer,
-                      style: AppTypography.bodySmall().copyWith(
+                      question,
+                      style: AppTypography.bodyMedium().copyWith(
                         color: isDark
-                            ? AppColors.neutralGray400
-                            : AppColors.neutralGray600,
-                        height: 1.5,
+                            ? AppColors.neutralWhite
+                            : AppColors.neutralBlack,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                  crossFadeState: isExpanded
-                      ? CrossFadeState.showSecond
-                      : CrossFadeState.showFirst,
-                  duration: const Duration(milliseconds: 200),
-                ),
-              ],
+                  SizedBox(width: AppSpacing.md),
+                  AnimatedRotation(
+                    turns: isExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      color: isDark
+                          ? AppColors.neutralGray400
+                          : AppColors.neutralGray600,
+                      size: 24,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+
+          // Answer (expandable)
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Padding(
+              padding: EdgeInsets.only(
+                left: AppSpacing.lg,
+                right: AppSpacing.lg,
+                bottom: AppSpacing.lg,
+              ),
+              child: Text(
+                answer,
+                style: AppTypography.bodySmall().copyWith(
+                  color: isDark
+                      ? AppColors.neutralGray400
+                      : AppColors.neutralGray600,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            crossFadeState: isExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
+        ],
       ),
     );
   }
 
-  /// Contact Us button with glassmorphism style
+  /// Contact Us button with fully rounded (stadium) shape
   Widget _buildContactUsButton(bool isDark, String buttonText) {
     return GestureDetector(
       onTap: () {
@@ -320,7 +300,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
         // TODO: Implement contact support navigation
       },
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        borderRadius: BorderRadius.circular(100), // Fully rounded (stadium shape)
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
           child: Container(
@@ -331,10 +311,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
             ),
             decoration: BoxDecoration(
               color: AppColors.themeRed.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-              border: Border.all(
-                color: AppColors.themeRed.withValues(alpha: 0.3),
-              ),
+              borderRadius: BorderRadius.circular(100), // Fully rounded (stadium shape)
               boxShadow: [
                 BoxShadow(
                   color: AppColors.themeRed.withValues(alpha: 0.3),

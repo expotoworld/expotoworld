@@ -356,7 +356,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen>
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: isDark ? AppColors.neutralBlack : AppColors.neutralWhite,
+      backgroundColor: isDark ? const Color(0xFF121212) : AppColors.neutralWhite,
       body: Stack(
         children: [
           // Main content with CustomScrollView
@@ -703,7 +703,7 @@ class _MessagesHeaderDelegate extends SliverPersistentHeaderDelegate {
     return ClipRect(
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? AppColors.neutralBlack : AppColors.neutralWhite,
+          color: isDark ? const Color(0xFF121212) : AppColors.neutralWhite,
           border: showDivider
               ? Border(
                   bottom: BorderSide(

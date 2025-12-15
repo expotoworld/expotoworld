@@ -2,12 +2,12 @@ import 'dart:math' as math;
 import 'dart:ui' show lerpDouble, ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/l10n/generated/app_localizations.dart';
-import 'account_settings_screen.dart';
-import 'get_help_screen.dart';
+import '../../../../core/router/app_router.dart';
 
 /// Formats a number to a compact representation with max 3 significant digits
 /// Examples: 1358 → "1.35K", 28743 → "28.7K", 1000000 → "1M", 134 → "134"
@@ -185,11 +185,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   icon: Icons.manage_accounts_outlined,
                   title: AppLocalizations.of(context)!.settingsAccountSettings,
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const AccountSettingsScreen(),
-                      ),
-                    );
+                    context.push(RoutePaths.accountSettings);
                   },
                 ),
                 _buildSimpleSettingsItem(
@@ -197,11 +193,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   icon: Icons.help_outline,
                   title: AppLocalizations.of(context)!.settingsGetHelp,
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const GetHelpScreen(),
-                      ),
-                    );
+                    context.push(RoutePaths.getHelp);
                   },
                 ),
                 _buildSimpleSettingsItem(
