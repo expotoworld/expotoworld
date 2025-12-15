@@ -1133,7 +1133,7 @@ class _MapScreenState extends State<MapScreen>
                     Icon(Icons.near_me_rounded, size: 18, color: store.color),
                     const SizedBox(width: 8),
                     Text(
-                      '${store.distance} ${AppLocalizations.of(context)!.mapAway}',
+                      AppLocalizations.of(context)!.mapAway(store.distance),
                       style: AppTypography.bodySmall(
                         color: AppColors.foreground(context),
                       ),

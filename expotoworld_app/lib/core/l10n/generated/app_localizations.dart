@@ -352,6 +352,36 @@ abstract class AppLocalizations {
   /// **'Edit Profile'**
   String get profileEditProfile;
 
+  /// Singular form of year for membership duration
+  ///
+  /// In en, this message translates to:
+  /// **'year'**
+  String get profileYearSingular;
+
+  /// Plural form of year for membership duration
+  ///
+  /// In en, this message translates to:
+  /// **'years'**
+  String get profileYearPlural;
+
+  /// Singular form of month for membership duration
+  ///
+  /// In en, this message translates to:
+  /// **'month'**
+  String get profileMonthSingular;
+
+  /// Plural form of month for membership duration
+  ///
+  /// In en, this message translates to:
+  /// **'months'**
+  String get profileMonthPlural;
+
+  /// Text shown below membership duration in profile
+  ///
+  /// In en, this message translates to:
+  /// **'on EXPO to WORLD'**
+  String get profileOnExpoToWorld;
+
   /// Map screen title
   ///
   /// In en, this message translates to:
@@ -1083,6 +1113,294 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Join now and save up to 40%'**
   String get promoGroupDealsSubtitle;
+
+  /// Account settings menu item
+  ///
+  /// In en, this message translates to:
+  /// **'Account Settings'**
+  String get settingsAccountSettings;
+
+  /// Get help menu item
+  ///
+  /// In en, this message translates to:
+  /// **'Get Help'**
+  String get settingsGetHelp;
+
+  /// Privacy menu item
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy'**
+  String get settingsPrivacy;
+
+  /// Legal menu item
+  ///
+  /// In en, this message translates to:
+  /// **'Legal'**
+  String get settingsLegal;
+
+  /// Account settings page title
+  ///
+  /// In en, this message translates to:
+  /// **'Account Settings'**
+  String get accountSettingsTitle;
+
+  /// Your details section header
+  ///
+  /// In en, this message translates to:
+  /// **'Your Details'**
+  String get accountSettingsYourDetails;
+
+  /// Username field label
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get accountSettingsUsername;
+
+  /// Email field label
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get accountSettingsEmail;
+
+  /// Phone number field label
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Number'**
+  String get accountSettingsPhoneNumber;
+
+  /// Placeholder text for empty fields
+  ///
+  /// In en, this message translates to:
+  /// **'Not Provided'**
+  String get accountSettingsNotProvided;
+
+  /// Language field label
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get accountSettingsLanguage;
+
+  /// Theme field label
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get accountSettingsTheme;
+
+  /// Dark theme option
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get accountSettingsThemeDark;
+
+  /// Light theme option
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get accountSettingsThemeLight;
+
+  /// System theme option
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get accountSettingsThemeSystem;
+
+  /// Edit button text
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get accountSettingsEdit;
+
+  /// Payment details section header
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Details'**
+  String get accountSettingsPaymentDetails;
+
+  /// Payment methods navigation item
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Methods'**
+  String get accountSettingsPaymentMethods;
+
+  /// Your transactions navigation item
+  ///
+  /// In en, this message translates to:
+  /// **'Your Transactions'**
+  String get accountSettingsYourTransactions;
+
+  /// Your orders navigation item
+  ///
+  /// In en, this message translates to:
+  /// **'Your Orders'**
+  String get accountSettingsYourOrders;
+
+  /// Language selector popup title
+  ///
+  /// In en, this message translates to:
+  /// **'Select Language'**
+  String get accountSettingsSelectLanguage;
+
+  /// Theme selector popup title
+  ///
+  /// In en, this message translates to:
+  /// **'Select Theme'**
+  String get accountSettingsSelectTheme;
+
+  /// Get help page title
+  ///
+  /// In en, this message translates to:
+  /// **'Get Help'**
+  String get getHelpTitle;
+
+  /// FAQ section title
+  ///
+  /// In en, this message translates to:
+  /// **'Frequently Asked Questions'**
+  String get getHelpFaqTitle;
+
+  /// FAQ section subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Find answers to common questions below'**
+  String get getHelpFaqSubtitle;
+
+  /// Contact section header
+  ///
+  /// In en, this message translates to:
+  /// **'Still need help?'**
+  String get getHelpStillNeedHelp;
+
+  /// Contact section subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Our support team is here to assist you'**
+  String get getHelpSupportTeamMessage;
+
+  /// Contact us button text
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Us'**
+  String get getHelpContactUs;
+
+  /// FAQ question about account creation
+  ///
+  /// In en, this message translates to:
+  /// **'How do I create an account?'**
+  String get faqCreateAccountQuestion;
+
+  /// FAQ answer about account creation
+  ///
+  /// In en, this message translates to:
+  /// **'To create an account, tap the \"Sign Up\" button on the login screen. You can register using your email address or sign up with your social media accounts. Follow the prompts to complete your profile setup.'**
+  String get faqCreateAccountAnswer;
+
+  /// FAQ question about password reset
+  ///
+  /// In en, this message translates to:
+  /// **'How do I reset my password?'**
+  String get faqResetPasswordQuestion;
+
+  /// FAQ answer about password reset
+  ///
+  /// In en, this message translates to:
+  /// **'If you\'ve forgotten your password, tap \"Forgot Password\" on the login screen. Enter your registered email address, and we\'ll send you a password reset link. Check your spam folder if you don\'t see the email within a few minutes.'**
+  String get faqResetPasswordAnswer;
+
+  /// FAQ question about updating profile
+  ///
+  /// In en, this message translates to:
+  /// **'How do I update my profile information?'**
+  String get faqUpdateProfileQuestion;
+
+  /// FAQ answer about updating profile
+  ///
+  /// In en, this message translates to:
+  /// **'Go to your Profile, then tap \"Account Settings\". From there, you can edit your username, email, phone number, and other personal details by tapping the \"Edit\" button next to each field.'**
+  String get faqUpdateProfileAnswer;
+
+  /// FAQ question about payment methods
+  ///
+  /// In en, this message translates to:
+  /// **'What payment methods are accepted?'**
+  String get faqPaymentMethodsQuestion;
+
+  /// FAQ answer about payment methods
+  ///
+  /// In en, this message translates to:
+  /// **'We accept major credit and debit cards including Visa, Mastercard, and American Express. You can also pay using Apple Pay, Google Pay, and various digital wallets depending on your region.'**
+  String get faqPaymentMethodsAnswer;
+
+  /// FAQ question about order tracking
+  ///
+  /// In en, this message translates to:
+  /// **'How do I track my orders?'**
+  String get faqTrackOrdersQuestion;
+
+  /// FAQ answer about order tracking
+  ///
+  /// In en, this message translates to:
+  /// **'You can view all your orders in the Profile section under \"Account Settings\" > \"Your Orders\". Each order shows its current status, estimated delivery date, and tracking information when available.'**
+  String get faqTrackOrdersAnswer;
+
+  /// FAQ question about contacting support
+  ///
+  /// In en, this message translates to:
+  /// **'How do I contact customer support?'**
+  String get faqContactSupportQuestion;
+
+  /// FAQ answer about contacting support
+  ///
+  /// In en, this message translates to:
+  /// **'You can reach our customer support team by tapping the \"Contact Us\" button at the bottom of this page. We\'re available 24/7 via live chat, email, or phone to assist you with any questions or concerns.'**
+  String get faqContactSupportAnswer;
+
+  /// FAQ question about data security
+  ///
+  /// In en, this message translates to:
+  /// **'Is my personal data secure?'**
+  String get faqDataSecurityQuestion;
+
+  /// FAQ answer about data security
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, we take data security very seriously. All your personal information is encrypted and stored securely. We never share your data with third parties without your consent. You can review our Privacy Policy for more details.'**
+  String get faqDataSecurityAnswer;
+
+  /// FAQ question about changing language
+  ///
+  /// In en, this message translates to:
+  /// **'How do I change the app language?'**
+  String get faqChangeLanguageQuestion;
+
+  /// FAQ answer about changing language
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Profile > Account Settings, then find the \"Language\" option. Tap \"Edit\" to select from our available languages including English, Chinese, Japanese, Korean, and more.'**
+  String get faqChangeLanguageAnswer;
+
+  /// FAQ question about offline use
+  ///
+  /// In en, this message translates to:
+  /// **'Can I use the app offline?'**
+  String get faqOfflineUseQuestion;
+
+  /// FAQ answer about offline use
+  ///
+  /// In en, this message translates to:
+  /// **'Some features of the app work offline, such as viewing cached content and previously downloaded items. However, features like placing orders, messaging, and real-time updates require an internet connection.'**
+  String get faqOfflineUseAnswer;
+
+  /// FAQ question about account deletion
+  ///
+  /// In en, this message translates to:
+  /// **'How do I delete my account?'**
+  String get faqDeleteAccountQuestion;
+
+  /// FAQ answer about account deletion
+  ///
+  /// In en, this message translates to:
+  /// **'If you wish to delete your account, please contact our support team through the \"Contact Us\" button below. Note that account deletion is permanent and all your data will be removed from our servers.'**
+  String get faqDeleteAccountAnswer;
 }
 
 class _AppLocalizationsDelegate
