@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/theme.dart';
@@ -67,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 50),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.neutralBlack : AppColors.neutralWhite,
+                color: isDark ? const Color(0xFF121212) : AppColors.neutralWhite,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(_borderRadius),
                   topRight: Radius.circular(_borderRadius),
@@ -97,10 +96,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       // Mini-apps section with SVG images
                       Padding(
                         padding: const EdgeInsets.only(
-                          left: AppSpacing.lg,
-                          right: AppSpacing.lg,
+                          left: AppSpacing.md,
+                          right: AppSpacing.md,
                           top: AppSpacing.xs,
-                          bottom: AppSpacing.md,
+                          bottom: 10, // ~10px gap (sm + 2px)
                         ),
                         child: const SubAppGrid(),
                       ),
@@ -140,13 +139,14 @@ class SubAppGrid extends StatelessWidget {
     // Screen width - padding (16*2) - gap (12) = available width / 2
     return LayoutBuilder(
       builder: (context, constraints) {
-        final tileWidth = (constraints.maxWidth - AppSpacing.md) / 2;
-        // Fixed height - taller than SVG aspect ratio for equal vertical padding
-        const tileHeight = 90.0;
+        // Reduced horizontal gap (4px instead of 12px) to make logos ~10% wider
+        const horizontalGap = AppSpacing.xs;
+        final tileWidth = (constraints.maxWidth - horizontalGap) / 2;
+        const tileHeight = 75.0;
 
         return Wrap(
-          spacing: AppSpacing.md,
-          runSpacing: AppSpacing.md,
+          spacing: horizontalGap,
+          runSpacing: AppSpacing.xs, // Reduced vertical gap between rows
           children: [
             // Row 1
             SizedBox(
@@ -197,7 +197,7 @@ class SubAppGrid extends StatelessWidget {
   }
 }
 
-/// Individual mini-app tile with SVG image and lift effect
+/// Individual mini-app tile with SVG image, sheen effect, and breathing animation
 class _MiniAppTile extends StatefulWidget {
   const _MiniAppTile({
     required this.assetPath,
@@ -211,168 +211,170 @@ class _MiniAppTile extends StatefulWidget {
   State<_MiniAppTile> createState() => _MiniAppTileState();
 }
 
-class _MiniAppTileState extends State<_MiniAppTile> {
+class _MiniAppTileState extends State<_MiniAppTile>
+    with TickerProviderStateMixin {
   bool _isPressed = false;
   bool _isHovered = false;
+
+  // Sheen animation controller (sweeps every 3 seconds)
+  late final AnimationController _sheenController;
+  late final Animation<double> _sheenAnimation;
+
+  // Breathing animation controller (gentle float up/down)
+  late final AnimationController _breathingController;
+  late final Animation<double> _breathingAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Sheen effect: sweeps diagonally every 3 seconds (3200ms sweep duration)
+    _sheenController = AnimationController(
+      duration: const Duration(milliseconds: 3200),
+      vsync: this,
+    );
+    _sheenAnimation = Tween<double>(begin: -1.5, end: 1.5).animate(
+      CurvedAnimation(parent: _sheenController, curve: Curves.easeInOut),
+    );
+    // Repeat sheen every 3 seconds
+    _startSheenLoop();
+
+    // Breathing effect: heartbeat-style pulse
+    _breathingController = AnimationController(
+      duration: const Duration(milliseconds: 200), // Slower pulse duration
+      vsync: this,
+    );
+    _breathingAnimation = Tween<double>(begin: 1.0, end: 1.005).animate(
+      CurvedAnimation(parent: _breathingController, curve: Curves.easeOut),
+    );
+    _startHeartbeatLoop();
+  }
+
+  void _startSheenLoop() async {
+    while (mounted) {
+      await Future.delayed(const Duration(seconds: 3));
+      if (mounted) {
+        _sheenController.forward(from: 0);
+      }
+    }
+  }
+
+  // Heartbeat pattern: two beats, then 5 second pause, repeat
+  void _startHeartbeatLoop() async {
+    while (mounted) {
+      // First beat: increase → decrease
+      if (mounted) {
+        await _breathingController.forward();
+        await _breathingController.reverse();
+      }
+      // Short pause between beats
+      await Future.delayed(const Duration(milliseconds: 150));
+      // Second beat: increase → decrease
+      if (mounted) {
+        await _breathingController.forward();
+        await _breathingController.reverse();
+      }
+      // Long pause (5 seconds) before repeating
+      await Future.delayed(const Duration(seconds: 5));
+    }
+  }
+
+  @override
+  void dispose() {
+    _sheenController.dispose();
+    _breathingController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isActive = _isPressed || _isHovered;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) => setState(() => _isPressed = false),
-        onTapCancel: () => setState(() => _isPressed = false),
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          transform: Matrix4.identity()
-            ..scale(_isPressed ? 0.96 : 1.0)
-            ..translate(0.0, _isPressed ? 2.0 : 0.0),
-          child: Stack(
-            children: [
-              // Red glow layer - MORE AGGRESSIVE for both modes
-              if (!_isPressed)
-                Positioned.fill(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-                      boxShadow: [
-                        // Primary red glow - STRONGER
-                        BoxShadow(
-                          color: AppColors.themeRed.withValues(
-                            alpha: isDark
-                                ? (isActive ? 0.35 : 0.2)
-                                : (isActive ? 0.4 : 0.25), // More visible in light mode
-                          ),
-                          blurRadius: isActive ? 28 : 20,
-                          spreadRadius: isActive ? 4 : 1,
-                          offset: const Offset(0, 6),
+    return AnimatedBuilder(
+      animation: Listenable.merge([_sheenAnimation, _breathingAnimation]),
+      builder: (context, child) {
+        return MouseRegion(
+          onEnter: (_) => setState(() => _isHovered = true),
+          onExit: (_) => setState(() => _isHovered = false),
+          child: GestureDetector(
+            onTapDown: (_) => setState(() => _isPressed = true),
+            onTapUp: (_) => setState(() => _isPressed = false),
+            onTapCancel: () => setState(() => _isPressed = false),
+            onTap: widget.onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 50),
+              curve: Curves.easeOutCubic,
+              transform: Matrix4.identity()
+                ..scale(_isPressed ? 0.96 : _breathingAnimation.value),
+              child: Stack(
+                children: [
+                  // Subtle directional shadow - bottom-right
+                  if (!_isPressed)
+                    Positioned.fill(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.all(1),
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              // Shadow - red in dark mode for visibility, black in light mode
+                              color: isDark
+                                  ? AppColors.themeRed
+                                      .withValues(alpha: isActive ? 0.5 : 0.3)
+                                  : Colors.black
+                                      .withValues(alpha: isActive ? 0.2 : 0.15),
+                              blurRadius: isActive ? 12 : 10,
+                              spreadRadius: isActive ? 1 : 0,
+                              offset: const Offset(4, 3),
+                            ),
+                          ],
                         ),
-                        // Secondary red glow for edge lighting
-                        BoxShadow(
-                          color: AppColors.themeRed.withValues(
-                            alpha: isDark ? 0.15 : 0.18,
-                          ),
-                          blurRadius: 8,
-                          spreadRadius: 0,
-                          offset: const Offset(0, 2),
-                        ),
-                        // Deep shadow for lift effect
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.2),
-                          blurRadius: 24,
-                          offset: const Offset(0, 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              // Glass morphism card with red accent border
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    decoration: BoxDecoration(
-                      // Glass gradient - slightly warmer in light mode
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: isDark
-                            ? [
-                                Colors.white.withValues(alpha: 0.1),
-                                Colors.white.withValues(alpha: 0.04),
-                              ]
-                            : [
-                                Colors.white.withValues(alpha: 0.95),
-                                Colors.white.withValues(alpha: 0.85),
-                              ],
-                      ),
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-                      // Subtle border - no red accent
-                      border: Border.all(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: isActive ? 0.15 : 0.08)
-                            : Colors.black.withValues(alpha: isActive ? 0.1 : 0.05),
-                        width: 1,
                       ),
                     ),
-                    child: Stack(
-                      children: [
-                        // Top edge red accent line (premium detail)
-                        Positioned(
-                          top: 0,
-                          left: AppSpacing.xl,
-                          right: AppSpacing.xl,
-                          height: 2,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColors.themeRed.withValues(alpha: 0),
-                                  AppColors.themeRed.withValues(alpha: isDark ? 0.5 : 0.6),
-                                  AppColors.themeRed.withValues(alpha: 0),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Specular highlight (top shine)
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          height: 35,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(AppSpacing.radiusXl),
-                                topRight: Radius.circular(AppSpacing.radiusXl),
-                              ),
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.white.withValues(alpha: isDark ? 0.12 : 0.6),
-                                  Colors.white.withValues(alpha: 0),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        // SVG content with shadow effect
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
-                            vertical: AppSpacing.xs,
-                          ),
-                          child: Center(
-                            child: SvgPicture.asset(
-                              widget.assetPath,
-                              fit: BoxFit.contain,
-                              colorFilter: isDark
-                                  ? null // Keep original colors in dark mode
-                                  : null, // Keep original colors in light mode
-                            ),
-                          ),
-                        ),
-                      ],
+                  // SVG logo - fills tile with minimal margin
+                  Padding(
+                    padding: const EdgeInsets.all(1),
+                    child: SvgPicture.asset(
+                      widget.assetPath,
+                      fit: BoxFit.contain,
                     ),
                   ),
-                ),
+                  // Sheen effect overlay - diagonal light sweep
+                  Positioned.fill(
+                    child: ClipRect(
+                      child: IgnorePointer(
+                        child: Transform.translate(
+                          offset: Offset(
+                            _sheenAnimation.value * 200,
+                            _sheenAnimation.value * 80,
+                          ),
+                          child: Transform.rotate(
+                            angle: -0.5, // Diagonal angle
+                            child: Container(
+                              width: 60,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.white.withValues(alpha: 0),
+                                    Colors.white
+                                        .withValues(alpha: isDark ? 0.35 : 0.3),
+                                    Colors.white.withValues(alpha: 0),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

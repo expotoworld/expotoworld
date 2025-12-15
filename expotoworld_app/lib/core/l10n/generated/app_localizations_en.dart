@@ -510,7 +510,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Thank you for your message! Our team is looking into this. Is there anything else I can help you with?';
 
   @override
-  String get homeFeaturedProducts => 'Featured Products';
+  String get homeRecommendedProducts => 'Recommended for you';
 
   @override
   String get homeSearch => 'Search';

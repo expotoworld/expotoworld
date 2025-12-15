@@ -8,6 +8,8 @@ import '../../features/messages/presentation/screens/messages_screen.dart';
 import '../../features/messages/presentation/screens/support_chat_screen.dart';
 import '../../features/messages/presentation/screens/message_conversation_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/profile/presentation/screens/account_settings_screen.dart';
+import '../../features/profile/presentation/screens/get_help_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/signup_screen.dart';
 import '../../features/search/presentation/screens/search_screen.dart';
@@ -101,6 +103,8 @@ class RoutePaths {
   static const String messageConversation = '/message-conversation';
   static const String supportChat = '/support-chat';
   static const String profile = '/profile';
+  static const String accountSettings = '/account-settings';
+  static const String getHelp = '/get-help';
   static const String login = '/login';
   static const String signup = '/signup';
   static const String qrScan = '/qr-scan';
@@ -237,6 +241,50 @@ final GoRouter appRouter = GoRouter(
           },
         );
       },
+    ),
+    // Account settings screen (outside shell, no bottom nav)
+    GoRoute(
+      path: RoutePaths.accountSettings,
+      name: 'accountSettings',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        child: const AccountSettingsScreen(),
+        transitionDuration: const Duration(milliseconds: 300),
+        reverseTransitionDuration: const Duration(milliseconds: 250),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // Slide in from right transition
+          final slideAnimation =
+              Tween<Offset>(
+                begin: const Offset(1, 0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              );
+
+          return SlideTransition(position: slideAnimation, child: child);
+        },
+      ),
+    ),
+    // Get help screen (outside shell, no bottom nav)
+    GoRoute(
+      path: RoutePaths.getHelp,
+      name: 'getHelp',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        child: const GetHelpScreen(),
+        transitionDuration: const Duration(milliseconds: 300),
+        reverseTransitionDuration: const Duration(milliseconds: 250),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // Slide in from right transition
+          final slideAnimation =
+              Tween<Offset>(
+                begin: const Offset(1, 0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              );
+
+          return SlideTransition(position: slideAnimation, child: child);
+        },
+      ),
     ),
   ],
   errorBuilder: (context, state) =>

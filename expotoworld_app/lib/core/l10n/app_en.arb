@@ -842,9 +842,9 @@
     "description": "Support auto reply message"
   },
 
-  "homeFeaturedProducts": "Featured Products",
-  "@homeFeaturedProducts": {
-    "description": "Featured products section title"
+  "homeRecommendedProducts": "Recommended for you",
+  "@homeRecommendedProducts": {
+    "description": "Recommended products section title"
   },
 
   "homeSearch": "Search",
