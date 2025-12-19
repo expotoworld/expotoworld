@@ -8,6 +8,7 @@ import '../../domain/models/product_model.dart';
 import '../../core/providers/mini_app_providers.dart';
 import '../../core/widgets/category_pills.dart';
 import '../../core/widgets/subcategory_grid.dart';
+import '../../core/widgets/mini_app_app_bar.dart';
 
 /// Home screen for toX mini-app (services only, no cart/map)
 /// Displays: Header → Category pills → Subcategory grid → Services
@@ -20,15 +21,54 @@ class ToXHomeScreen extends ConsumerStatefulWidget {
 
 class _ToXHomeScreenState extends ConsumerState<ToXHomeScreen> {
   final ScrollController _scrollController = ScrollController();
+  double _borderRadius = 24.0;
+  
+  // Configuration for the corner animation (consistent with super-app home)
+  static const double _maxRadius = 24.0;
+  static const double _scrollThreshold = 50.0; // Flatten within 50px of scroll
+  
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
   
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
+  
+  void _onScroll() {
+    final scrollOffset = _scrollController.offset;
+    final newRadius = (_maxRadius - (scrollOffset / _scrollThreshold * _maxRadius))
+        .clamp(0.0, _maxRadius);
+    
+    if (newRadius != _borderRadius) {
+      setState(() {
+        _borderRadius = newRadius;
+      });
+    }
+  }
 
   void _handleClose() {
-    context.go('/home');
+    // Use rootNavigator to ensure proper vertical slide-down animation.
+    // With StatefulShellRoute, the navigation stack is preserved, so
+    // rootNavigator.canPop() will be true.
+    if (Navigator.of(context, rootNavigator: true).canPop()) {
+      Navigator.of(context, rootNavigator: true).pop();
+      return;
+    }
+    
+    // Fallback to standard pop
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+
+    // Absolute failsafe (only if opened directly via deep link with no history)
+    context.go('/');
   }
 
   void _handleCategorySelected(String? categoryId) {
@@ -74,7 +114,7 @@ class _ToXHomeScreenState extends ConsumerState<ToXHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final statusBarHeight = MediaQuery.of(context).padding.top;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final categories = ref.watch(miniAppCategoriesProvider(MiniAppType.toX));
     final selectedCategoryId = ref.watch(selectedCategoryIdProvider(MiniAppType.toX));
     final subcategories = ref.watch(miniAppSubcategoriesProvider((
@@ -83,69 +123,84 @@ class _ToXHomeScreenState extends ConsumerState<ToXHomeScreen> {
     )));
 
     return Scaffold(
+      backgroundColor: AppColors.themeRed,
       body: Column(
         children: [
-          // Header (no store dropdown for toX)
-          Container(
-            padding: EdgeInsets.only(top: statusBarHeight),
-            decoration: const BoxDecoration(
-              color: AppColors.themeRed,
-            ),
-            child: _ToXHeader(onClose: _handleClose),
+          // Header using shared MiniAppAppBar for consistency
+          MiniAppAppBar(
+            miniAppType: MiniAppType.toX,
+            onClose: _handleClose,
+            showSearch: true,
           ),
           
-          // Scrollable content
+          // Scrollable content area with dynamic rounded top corners
           Expanded(
-            child: CustomScrollView(
-              controller: _scrollController,
-              slivers: [
-                // Category pills
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      top: AppSpacing.md,
-                      bottom: AppSpacing.lg,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 50),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF121212) : AppColors.neutralWhite,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(_borderRadius),
+                  topRight: Radius.circular(_borderRadius),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(_borderRadius),
+                  topRight: Radius.circular(_borderRadius),
+                ),
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    // Category pills with proper spacing
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                          top: AppSpacing.lg,
+                          bottom: AppSpacing.md,
+                        ),
+                        child: CategoryPills(
+                          categories: categories,
+                          selectedCategoryId: selectedCategoryId,
+                          onCategorySelected: _handleCategorySelected,
+                        ),
+                      ),
                     ),
-                    child: CategoryPills(
-                      categories: categories,
-                      selectedCategoryId: selectedCategoryId,
-                      onCategorySelected: _handleCategorySelected,
+                    
+                    // Section header
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                        ),
+                        child: _SectionHeader(
+                          title: selectedCategoryId == null
+                              ? 'Browse Services'
+                              : 'Service Categories',
+                          subtitle: selectedCategoryId == null
+                              ? 'Find the best deals on services'
+                              : _getCategoryName(categories, selectedCategoryId),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                
-                // Section header
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
+                    
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: AppSpacing.md),
                     ),
-                    child: _SectionHeader(
-                      title: selectedCategoryId == null
-                          ? 'Browse Services'
-                          : 'Service Categories',
-                      subtitle: selectedCategoryId == null
-                          ? 'Find the best deals on services'
-                          : _getCategoryName(categories, selectedCategoryId),
+                    
+                    // Subcategory grid
+                    SliverSubcategoryGrid(
+                      subcategories: subcategories,
+                      onSubcategoryTap: _handleSubcategoryTap,
                     ),
-                  ),
+                    
+                    // Bottom padding for safe area
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 100),
+                    ),
+                  ],
                 ),
-                
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: AppSpacing.md),
-                ),
-                
-                // Subcategory grid
-                SliverSubcategoryGrid(
-                  subcategories: subcategories,
-                  onSubcategoryTap: _handleSubcategoryTap,
-                ),
-                
-                // Bottom padding
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: AppSpacing.xl),
-                ),
-              ],
+              ),
             ),
           ),
         ],
@@ -159,119 +214,6 @@ class _ToXHomeScreenState extends ConsumerState<ToXHomeScreen> {
       orElse: () => MiniAppCategory(id: '', name: '', imageUrl: null),
     );
     return category.name;
-  }
-}
-
-/// toX specific header (no store dropdown, just title and close button)
-class _ToXHeader extends StatelessWidget {
-  final VoidCallback onClose;
-
-  const _ToXHeader({required this.onClose});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: AppSpacing.appBarHeight + 52 + AppSpacing.md,
-      child: Column(
-        children: [
-          // Main header row
-          Container(
-            height: AppSpacing.appBarHeight,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Stack(
-              children: [
-                // Center - toX branding
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'to X',
-                        style: AppTypography.titleLarge.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'Group Buying Services',
-                        style: AppTypography.caption(
-                          color: Colors.white.withValues(alpha: 0.8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // Right side - Close button
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: GestureDetector(
-                      onTap: onClose,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close_rounded,
-                          size: 22,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-            ),
-            child: _ToXSearchBar(),
-          ),
-          const SizedBox(height: AppSpacing.md),
-        ],
-      ),
-    );
-  }
-}
-
-/// toX search bar
-class _ToXSearchBar extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 36,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.search_rounded,
-            size: 18,
-            color: Colors.white.withValues(alpha: 0.8),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            'Search services...',
-            style: AppTypography.bodySmall(
-              color: Colors.white.withValues(alpha: 0.7),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

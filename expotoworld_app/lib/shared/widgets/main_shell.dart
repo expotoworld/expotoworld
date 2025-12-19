@@ -133,7 +133,7 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 }
 
-/// Individual navigation item widget with wiggle animation
+/// Individual navigation item widget with scale tap animation
 class _NavItem extends StatefulWidget {
   final IconData icon;
   final IconData activeIcon;
@@ -152,36 +152,34 @@ class _NavItem extends StatefulWidget {
 }
 
 class _NavItemState extends State<_NavItem> with SingleTickerProviderStateMixin {
-  late AnimationController _wiggleController;
-  late Animation<double> _wiggleAnimation;
+  late AnimationController _scaleController;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
-    _wiggleController = AnimationController(
+    _scaleController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 150),
     );
-    _wiggleAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.12), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 0.12, end: -0.09), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: -0.09, end: 0.06), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 0.06, end: -0.03), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: -0.03, end: 0.0), weight: 1),
+    // Shrink first, then back to normal (press down effect)
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.85), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 0.85, end: 1.0), weight: 1),
     ]).animate(CurvedAnimation(
-      parent: _wiggleController,
+      parent: _scaleController,
       curve: Curves.easeOut,
     ));
   }
 
   @override
   void dispose() {
-    _wiggleController.dispose();
+    _scaleController.dispose();
     super.dispose();
   }
 
   void _handleTap() {
-    _wiggleController.forward(from: 0);
+    _scaleController.forward(from: 0);
     widget.onTap();
   }
 
@@ -192,31 +190,32 @@ class _NavItemState extends State<_NavItem> with SingleTickerProviderStateMixin 
     return GestureDetector(
       onTap: _handleTap,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedBuilder(
-        animation: _wiggleAnimation,
-        builder: (context, child) {
-          return Transform.rotate(
-            angle: _wiggleAnimation.value,
-            child: child,
-          );
-        },
-        child: Container(
-          // Fill available space from Expanded
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-            padding: EdgeInsets.symmetric(
-              horizontal: widget.isSelected ? 30 : AppSpacing.md, // 30 for bubble padding
-              vertical: widget.isSelected ? AppSpacing.md : AppSpacing.sm,
-            ),
-            decoration: BoxDecoration(
-              color: widget.isSelected
-                  ? AppColors.themeRed.withValues(alpha: 0.15)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-            ),
+      child: Container(
+        // Fill available space from Expanded
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.symmetric(
+            horizontal: widget.isSelected ? 30 : AppSpacing.md, // 30 for bubble padding
+            vertical: widget.isSelected ? AppSpacing.md : AppSpacing.sm,
+          ),
+          decoration: BoxDecoration(
+            color: widget.isSelected
+                ? AppColors.themeRed.withValues(alpha: 0.15)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+          ),
+          // Only scale the icon, not the backdrop
+          child: AnimatedBuilder(
+            animation: _scaleAnimation,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _scaleAnimation.value,
+                child: child,
+              );
+            },
             child: Icon(
               widget.isSelected ? widget.activeIcon : widget.icon,
               size: 28,

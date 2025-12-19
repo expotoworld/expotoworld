@@ -16,6 +16,7 @@ export 'widgets/subcategory_grid.dart';
 export 'widgets/product_card.dart';
 export 'widgets/mini_app_app_bar.dart';
 export 'widgets/mini_app_shell.dart';
+export 'widgets/mini_app_shell_with_tabs.dart';
 
 // Base screens
 export 'screens/base_mini_app_home.dart';

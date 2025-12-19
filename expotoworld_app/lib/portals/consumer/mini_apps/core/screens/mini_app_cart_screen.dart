@@ -1,15 +1,20 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../core/theme/theme.dart';
+import '../../../../../core/providers/locale_provider.dart';
+import '../../../../../shared/widgets/language_flag.dart';
 import '../../domain/enums/mini_app_type.dart';
 import '../../domain/models/cart_model.dart';
 import '../providers/mini_app_providers.dart';
 
 /// Cart screen for mini-apps
 /// Shows cart items with quantity controls and checkout popup
-class MiniAppCartScreen extends ConsumerWidget {
+class MiniAppCartScreen extends ConsumerStatefulWidget {
   final MiniAppType miniAppType;
 
   const MiniAppCartScreen({
@@ -17,11 +22,65 @@ class MiniAppCartScreen extends ConsumerWidget {
     required this.miniAppType,
   });
 
-  void _handleClose(BuildContext context) {
-    context.go('/home');
+  @override
+  ConsumerState<MiniAppCartScreen> createState() => _MiniAppCartScreenState();
+}
+
+class _MiniAppCartScreenState extends ConsumerState<MiniAppCartScreen> {
+  final ScrollController _scrollController = ScrollController();
+  double _borderRadius = 24.0;
+  
+  // Configuration for the corner animation
+  static const double _maxRadius = 24.0;
+  static const double _scrollThreshold = 50.0; // Flatten within 50px of scroll
+  
+  MiniAppType get miniAppType => widget.miniAppType;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
   }
 
-  void _showCheckoutPopup(BuildContext context, WidgetRef ref) {
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final scrollOffset = _scrollController.offset;
+    final newRadius = (_maxRadius - (scrollOffset / _scrollThreshold * _maxRadius))
+        .clamp(0.0, _maxRadius);
+    
+    if (newRadius != _borderRadius) {
+      setState(() {
+        _borderRadius = newRadius;
+      });
+    }
+  }
+
+  void _handleClose(BuildContext context) {
+    // Use rootNavigator to ensure proper vertical slide-down animation.
+    // With StatefulShellRoute, the navigation stack is preserved when switching
+    // between tabs, so rootNavigator.canPop() will be true.
+    if (Navigator.of(context, rootNavigator: true).canPop()) {
+      Navigator.of(context, rootNavigator: true).pop();
+      return;
+    }
+    
+    // Fallback to standard pop
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+
+    // Absolute failsafe (only if opened directly via deep link with no history)
+    context.go('/');
+  }
+
+  void _showCheckoutPopup(BuildContext context) {
     final cart = ref.read(miniAppCartProvider(miniAppType));
     
     showModalBottomSheet(
@@ -59,39 +118,65 @@ class MiniAppCartScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final statusBarHeight = MediaQuery.of(context).padding.top;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final cart = ref.watch(miniAppCartProvider(miniAppType));
     final isEmpty = cart.items.isEmpty;
 
     return Scaffold(
+      backgroundColor: AppColors.themeRed,
       body: Column(
         children: [
-          // Header
+          // Fixed header - stays at top while content scrolls
           Container(
             padding: EdgeInsets.only(top: statusBarHeight),
-            decoration: const BoxDecoration(
-              color: AppColors.themeRed,
-            ),
+            color: AppColors.themeRed,
             child: _CartHeader(
               itemCount: cart.totalItems,
               onClose: () => _handleClose(context),
             ),
           ),
           
-          // Cart content
+          // Scrollable content area with dynamic rounded top corners
           Expanded(
-            child: isEmpty
-                ? _buildEmptyState(context)
-                : _buildCartList(context, ref, cart),
-          ),
-          
-          // Checkout bar
-          if (!isEmpty)
-            _CheckoutBar(
-              cart: cart,
-              onCheckout: () => _showCheckoutPopup(context, ref),
+            child: Stack(
+              children: [
+                // Main content with curved top
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 50),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF121212) : AppColors.neutralWhite,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(_borderRadius),
+                      topRight: Radius.circular(_borderRadius),
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(_borderRadius),
+                      topRight: Radius.circular(_borderRadius),
+                    ),
+                    child: isEmpty
+                        ? _buildEmptyState(context)
+                        : _buildCartList(context, cart),
+                  ),
+                ),
+                
+                // Checkout bar pinned to bottom
+                if (!isEmpty)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: _CheckoutBar(
+                      cart: cart,
+                      onCheckout: () => _showCheckoutPopup(context),
+                    ),
+                  ),
+              ],
             ),
+          ),
         ],
       ),
     );
@@ -132,7 +217,10 @@ class MiniAppCartScreen extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
           GestureDetector(
-            onTap: () => context.go('/mini-app/${miniAppType.name}/home'),
+            onTap: () {
+              // Switch to home tab (index 0) using the shared provider
+              ref.read(miniAppActiveTabIndexProvider(miniAppType).notifier).state = 0;
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.xl,
@@ -156,9 +244,20 @@ class MiniAppCartScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCartList(BuildContext context, WidgetRef ref, MiniAppCart cart) {
+  Widget _buildCartList(BuildContext context, MiniAppCart cart) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    // Checkout bar height: ~80px base + bottomPadding + some extra space
+    final checkoutBarSpace = 80 + bottomPadding + AppSpacing.lg;
+    
     return ListView.builder(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      controller: _scrollController,
+      // Add bottom padding for checkout bar
+      padding: EdgeInsets.only(
+        left: AppSpacing.lg,
+        right: AppSpacing.lg,
+        top: AppSpacing.xl, // More space between header divider and first card
+        bottom: checkoutBarSpace, // Dynamic space for checkout bar
+      ),
       itemCount: cart.items.length,
       itemBuilder: (context, index) {
         final item = cart.items[index];
@@ -183,8 +282,9 @@ class MiniAppCartScreen extends ConsumerWidget {
   }
 }
 
-/// Cart header
-class _CartHeader extends StatelessWidget {
+/// Cart header - matches super-app header style
+/// With language toggle on left, centered logo + "My Cart" title, close button on right
+class _CartHeader extends ConsumerWidget {
   final int itemCount;
   final VoidCallback onClose;
 
@@ -193,54 +293,159 @@ class _CartHeader extends StatelessWidget {
     required this.onClose,
   });
 
+  void _showLanguagePicker(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _LanguagePickerSheet(ref: ref),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentLocale = ref.watch(localeProvider);
+    final currentLang = AppLanguage.values.firstWhere(
+      (lang) => lang.locale.languageCode == currentLocale.languageCode,
+      orElse: () => AppLanguage.english,
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Main header row
+        SizedBox(
+          height: AppSpacing.appBarHeight,
+          child: Stack(
+            children: [
+              // Center - Logo and "My Cart" title side by side (horizontal layout)
+              Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Block logo (same as super-app header)
+                    SvgPicture.asset(
+                      'assets/logo/block.svg',
+                      height: 32,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xFFF8F9FA), // Off-white
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    // "My Cart" text next to the logo
+                    Text(
+                      'MY CART',
+                      style: AppTypography.headlineSmall.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700, // Extra bold
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Left side - Language toggle
+              Positioned(
+                left: AppSpacing.lg,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () => _showLanguagePicker(context, ref),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          LanguageFlag(
+                            language: currentLang,
+                            size: 35,
+                          ),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            size: 20,
+                            color: Colors.white,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Right side - Close button (no background)
+              Positioned(
+                right: AppSpacing.lg,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: GestureDetector(
+                    onTap: onClose,
+                    child: const SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: Icon(
+                        Icons.close_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Search bar (same as mini-app home header)
+        Padding(
+          padding: const EdgeInsets.only(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            top: AppSpacing.xs,
+            bottom: AppSpacing.md,
+          ),
+          child: _CartSearchBar(),
+        ),
+      ],
+    );
+  }
+}
+
+/// Search bar for cart (same style as mini-app home)
+class _CartSearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: AppSpacing.appBarHeight,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Row(
-        children: [
-          // Title
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'My Cart',
-                  style: AppTypography.titleMedium.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  '$itemCount items',
-                  style: AppTypography.caption(
-                    color: Colors.white.withValues(alpha: 0.8),
-                  ),
-                ),
-              ],
+    return GestureDetector(
+      onTap: () {
+        // TODO: Navigate to search
+      },
+      child: Container(
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.search_rounded,
+              size: 18,
+              color: Colors.white.withValues(alpha: 0.8),
             ),
-          ),
-          
-          // Close button
-          GestureDetector(
-            onTap: onClose,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.close_rounded,
-                color: Colors.white,
-                size: 22,
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              'Search products...',
+              style: AppTypography.bodySmall(
+                color: Colors.white.withValues(alpha: 0.7),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -529,7 +734,8 @@ class _CheckoutBar extends StatelessWidget {
         left: AppSpacing.lg,
         right: AppSpacing.lg,
         top: AppSpacing.md,
-        bottom: bottomPadding + AppSpacing.md + 70, // Account for floating nav
+        // Compact bottom: just above the floating nav bar
+        bottom: bottomPadding > 0 ? bottomPadding + 10 : 1,
       ),
       decoration: BoxDecoration(
         color: isDark
@@ -1176,6 +1382,164 @@ class _PaymentOption extends StatelessWidget {
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Language picker bottom sheet (matches super-app ExpoAppBar pattern)
+class _LanguagePickerSheet extends StatelessWidget {
+  final WidgetRef ref;
+
+  const _LanguagePickerSheet({required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentLocale = ref.watch(localeProvider);
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(AppSpacing.radiusXl),
+      ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.6,
+          ),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.85)
+                : Colors.white.withValues(alpha: 0.9),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppSpacing.radiusXl),
+            ),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.08),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                margin: const EdgeInsets.only(top: AppSpacing.sm),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : Colors.black.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              // Title
+              Text(
+                'Select Language',
+                style: AppTypography.titleMedium.copyWith(
+                  color: isDark ? AppColors.neutralWhite : AppColors.neutralBlack,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              // Language options - scrollable
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.only(bottom: bottomPadding + AppSpacing.lg),
+                  itemCount: AppLanguage.values.length,
+                  itemBuilder: (context, index) {
+                    final lang = AppLanguage.values[index];
+                    final isSelected = currentLocale.languageCode == lang.locale.languageCode;
+                    return _buildLanguageOption(
+                      context: context,
+                      lang: lang,
+                      isSelected: isSelected,
+                      isDark: isDark,
+                      onTap: () {
+                        ref.read(localeProvider.notifier).setLocale(lang.locale);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageOption({
+    required BuildContext context,
+    required AppLanguage lang,
+    required bool isSelected,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.themeRed.withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          border: isSelected
+              ? Border.all(color: AppColors.themeRed.withValues(alpha: 0.3))
+              : null,
+        ),
+        child: Row(
+          children: [
+            LanguageFlag(
+              language: lang,
+              size: 32,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    lang.nativeName,
+                    style: AppTypography.bodyMedium().copyWith(
+                      color: isDark ? AppColors.neutralWhite : AppColors.neutralBlack,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                  Text(
+                    lang.englishName,
+                    style: AppTypography.bodySmall().copyWith(
+                      color: isDark
+                          ? AppColors.neutralGray400
+                          : AppColors.neutralGray600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.themeRed,
+                size: AppSpacing.iconMd,
+              ),
           ],
         ),
       ),
