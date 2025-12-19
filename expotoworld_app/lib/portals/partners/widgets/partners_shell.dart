@@ -1,0 +1,55 @@
+import 'package:flutter/material.dart';
+import '../../../core/theme/app_colors.dart';
+
+/// Shell widget for the Partners portal
+class PartnersShell extends StatelessWidget {
+  final Widget child;
+  final int currentIndex;
+
+  const PartnersShell({
+    super.key,
+    required this.child,
+    required this.currentIndex,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: child,
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: currentIndex,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: AppColors.themeRed,
+        unselectedItemColor: Colors.grey[500],
+        onTap: (index) => _onItemTapped(context, index),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard_outlined),
+            activeIcon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people_outline),
+            activeIcon: Icon(Icons.people),
+            label: 'Referrals',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.attach_money_outlined),
+            activeIcon: Icon(Icons.attach_money),
+            label: 'Commissions',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onItemTapped(BuildContext context, int index) {
+    if (index == currentIndex) return;
+    // TODO: Implement GoRouter navigation
+  }
+}

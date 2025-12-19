@@ -2,18 +2,28 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../features/home/presentation/screens/home_screen.dart';
-import '../../features/map/presentation/screens/map_screen.dart';
-import '../../features/messages/presentation/screens/messages_screen.dart';
-import '../../features/messages/presentation/screens/support_chat_screen.dart';
-import '../../features/messages/presentation/screens/message_conversation_screen.dart';
-import '../../features/profile/presentation/screens/profile_screen.dart';
-import '../../features/profile/presentation/screens/account_settings_screen.dart';
-import '../../features/profile/presentation/screens/get_help_screen.dart';
+// Consumer portal imports
+import '../../portals/consumer/home/presentation/screens/home_screen.dart';
+import '../../portals/consumer/map/presentation/screens/map_screen.dart';
+import '../../portals/consumer/messages/presentation/screens/messages_screen.dart';
+import '../../portals/consumer/messages/presentation/screens/support_chat_screen.dart';
+import '../../portals/consumer/messages/presentation/screens/message_conversation_screen.dart';
+import '../../portals/consumer/profile/presentation/screens/profile_screen.dart';
+import '../../portals/consumer/profile/presentation/screens/account_settings_screen.dart';
+import '../../portals/consumer/profile/presentation/screens/get_help_screen.dart';
+import '../../portals/consumer/search/presentation/screens/search_screen.dart';
+// Auth (cross-portal)
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/signup_screen.dart';
-import '../../features/search/presentation/screens/search_screen.dart';
+// Shared widgets
 import '../../shared/widgets/main_shell.dart';
+// Mini-app imports - Core (shared)
+import '../../portals/consumer/mini_apps/core/core.dart';
+// Mini-app type-specific screens
+import '../../portals/consumer/mini_apps/to_b/to_b.dart';
+import '../../portals/consumer/mini_apps/to_c/to_c.dart';
+import '../../portals/consumer/mini_apps/to_u/to_u.dart';
+import '../../portals/consumer/mini_apps/to_x/to_x.dart';
 
 /// Custom codec for serializing/deserializing complex extra data in GoRouter
 /// This prevents the warning about complex data types being dropped during serialization
@@ -109,6 +119,16 @@ class RoutePaths {
   static const String signup = '/signup';
   static const String qrScan = '/qr-scan';
   static const String search = '/search';
+  
+  // Mini-app routes
+  static const String miniApp = '/mini-app';
+  static String miniAppHome(String type) => '/mini-app/$type/home';
+  static String miniAppCart(String type) => '/mini-app/$type/cart';
+  static String miniAppMap(String type) => '/mini-app/$type/map';
+  static String miniAppProducts(String type, String subcategoryId) =>
+      '/mini-app/$type/products/$subcategoryId';
+  static String miniAppServices(String type, String subcategoryId) =>
+      '/mini-app/$type/services/$subcategoryId';
 }
 
 /// App router configuration
@@ -286,10 +306,174 @@ final GoRouter appRouter = GoRouter(
         },
       ),
     ),
+    // Mini-app routes for toB, toC, toU (with bottom nav shell)
+    ShellRoute(
+      builder: (context, state, child) {
+        // Extract mini-app type from the path
+        final pathSegments = state.uri.pathSegments;
+        final typeString = pathSegments.length > 1 ? pathSegments[1] : 'toB';
+        final miniAppType = MiniAppType.values.firstWhere(
+          (e) => e.name == typeString,
+          orElse: () => MiniAppType.toB,
+        );
+        return MiniAppShell(
+          miniAppType: miniAppType,
+          child: child,
+        );
+      },
+      routes: [
+        GoRoute(
+          path: '/mini-app/:type/home',
+          name: 'miniAppHome',
+          pageBuilder: (context, state) {
+            final typeString = state.pathParameters['type'] ?? 'toB';
+            final miniAppType = MiniAppType.values.firstWhere(
+              (e) => e.name == typeString,
+              orElse: () => MiniAppType.toB,
+            );
+            // Route to type-specific home screens
+            return NoTransitionPage(
+              child: ProviderScope(
+                overrides: [
+                  currentMiniAppTypeProvider.overrideWith((ref) => miniAppType),
+                ],
+                child: _buildHomeScreen(miniAppType),
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/mini-app/:type/cart',
+          name: 'miniAppCart',
+          pageBuilder: (context, state) {
+            final typeString = state.pathParameters['type'] ?? 'toB';
+            final miniAppType = MiniAppType.values.firstWhere(
+              (e) => e.name == typeString,
+              orElse: () => MiniAppType.toB,
+            );
+            return NoTransitionPage(
+              child: ProviderScope(
+                overrides: [
+                  currentMiniAppTypeProvider.overrideWith((ref) => miniAppType),
+                ],
+                child: MiniAppCartScreen(miniAppType: miniAppType),
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/mini-app/:type/map',
+          name: 'miniAppMap',
+          pageBuilder: (context, state) {
+            final typeString = state.pathParameters['type'] ?? 'toB';
+            final miniAppType = MiniAppType.values.firstWhere(
+              (e) => e.name == typeString,
+              orElse: () => MiniAppType.toB,
+            );
+            return NoTransitionPage(
+              child: ProviderScope(
+                overrides: [
+                  currentMiniAppTypeProvider.overrideWith((ref) => miniAppType),
+                ],
+                child: MiniAppMapScreen(miniAppType: miniAppType),
+              ),
+            );
+          },
+        ),
+      ],
+    ),
+    // Mini-app products screen (slide-in from right)
+    GoRoute(
+      path: '/mini-app/:type/products/:subcategoryId',
+      name: 'miniAppProducts',
+      pageBuilder: (context, state) {
+        final typeString = state.pathParameters['type'] ?? 'toB';
+        final subcategoryId = state.pathParameters['subcategoryId'] ?? '';
+        final miniAppType = MiniAppType.values.firstWhere(
+          (e) => e.name == typeString,
+          orElse: () => MiniAppType.toB,
+        );
+        return CustomTransitionPage(
+          child: ProviderScope(
+            overrides: [
+              currentMiniAppTypeProvider.overrideWith((ref) => miniAppType),
+            ],
+            child: _buildProductsScreen(miniAppType, subcategoryId),
+          ),
+          transitionDuration: const Duration(milliseconds: 300),
+          reverseTransitionDuration: const Duration(milliseconds: 250),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            final slideAnimation = Tween<Offset>(
+              begin: const Offset(1, 0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            );
+            return SlideTransition(position: slideAnimation, child: child);
+          },
+        );
+      },
+    ),
+    // Mini-app services screen for toX (slide-in from right)
+    GoRoute(
+      path: '/mini-app/:type/services/:subcategoryId',
+      name: 'miniAppServices',
+      pageBuilder: (context, state) {
+        final subcategoryId = state.pathParameters['subcategoryId'] ?? '';
+        return CustomTransitionPage(
+          child: ProviderScope(
+            overrides: [
+              currentMiniAppTypeProvider.overrideWith((ref) => MiniAppType.toX),
+            ],
+            child: SubcategoryServicesScreen(subcategoryId: subcategoryId),
+          ),
+          transitionDuration: const Duration(milliseconds: 300),
+          reverseTransitionDuration: const Duration(milliseconds: 250),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            final slideAnimation = Tween<Offset>(
+              begin: const Offset(1, 0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            );
+            return SlideTransition(position: slideAnimation, child: child);
+          },
+        );
+      },
+    ),
   ],
   errorBuilder: (context, state) =>
       Scaffold(body: Center(child: Text('Page not found: ${state.uri.path}'))),
 );
+
+/// Build the home screen based on mini-app type
+Widget _buildHomeScreen(MiniAppType miniAppType) {
+  switch (miniAppType) {
+    case MiniAppType.toB:
+      return const ToBHomeScreen();
+    case MiniAppType.toC:
+      return const ToCHomeScreen();
+    case MiniAppType.toU:
+      return const ToUHomeScreen();
+    case MiniAppType.toX:
+      return const ToXHomeScreen();
+  }
+}
+
+/// Build the products screen based on mini-app type
+Widget _buildProductsScreen(MiniAppType miniAppType, String subcategoryId) {
+  switch (miniAppType) {
+    case MiniAppType.toB:
+      return ToBProductsScreen(subcategoryId: subcategoryId);
+    case MiniAppType.toC:
+      return ToCProductsScreen(subcategoryId: subcategoryId);
+    case MiniAppType.toU:
+      return ToUProductsScreen(subcategoryId: subcategoryId);
+    case MiniAppType.toX:
+      // toX doesn't have products, only services
+      return const SizedBox(); // This shouldn't happen
+  }
+}
 
 /// App router provider for Riverpod
 final appRouterProvider = Provider<GoRouter>((ref) => appRouter);
