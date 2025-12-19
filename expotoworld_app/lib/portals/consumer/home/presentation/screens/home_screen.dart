@@ -157,7 +157,8 @@ class SubAppGrid extends StatelessWidget {
               child: _MiniAppTile(
                 assetPath: 'assets/mini-apps/toB.svg',
                 onTap: () {
-                  context.go(RoutePaths.miniAppHome('toB'));
+                  // Use push so pop will trigger reverse animation
+                  context.push(RoutePaths.miniAppHome('toB'));
                 },
               ),
             ),
@@ -167,7 +168,7 @@ class SubAppGrid extends StatelessWidget {
               child: _MiniAppTile(
                 assetPath: 'assets/mini-apps/toC.svg',
                 onTap: () {
-                  context.go(RoutePaths.miniAppHome('toC'));
+                  context.push(RoutePaths.miniAppHome('toC'));
                 },
               ),
             ),
@@ -178,7 +179,7 @@ class SubAppGrid extends StatelessWidget {
               child: _MiniAppTile(
                 assetPath: 'assets/mini-apps/toU.svg',
                 onTap: () {
-                  context.go(RoutePaths.miniAppHome('toU'));
+                  context.push(RoutePaths.miniAppHome('toU'));
                 },
               ),
             ),
@@ -188,7 +189,7 @@ class SubAppGrid extends StatelessWidget {
               child: _MiniAppTile(
                 assetPath: 'assets/mini-apps/toX.svg',
                 onTap: () {
-                  context.go(RoutePaths.miniAppHome('toX'));
+                  context.push(RoutePaths.miniAppHome('toX'));
                 },
               ),
             ),

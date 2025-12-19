@@ -1,5 +1,8 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../../core/l10n/generated/app_localizations.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../../../../core/providers/locale_provider.dart';
@@ -81,19 +84,36 @@ class MiniAppAppBar extends ConsumerWidget implements PreferredSizeWidget {
             height: AppSpacing.appBarHeight,
             child: Stack(
               children: [
-                // Center - Store dropdown or mini-app name
+                // Center - Store dropdown or mini-app name with block logo
                 Center(
                   child: miniAppType.hasPhysicalStores && stores.isNotEmpty
                       ? _StoreDropdown(
                           selectedStore: selectedStore,
                           onTap: () => _showStorePicker(context),
                         )
-                      : Text(
-                          miniAppType.shortName,
-                          style: AppTypography.titleMedium.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Block logo
+                            SvgPicture.asset(
+                              'assets/logo/block.svg',
+                              height: 32,
+                              colorFilter: const ColorFilter.mode(
+                                Color(0xFFF8F9FA), // Off-white
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            // Short name (e.g., "to X")
+                            Text(
+                              miniAppType.shortName,
+                              style: AppTypography.headlineMedium.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
                 ),
                 // Left side - Language toggle
@@ -128,7 +148,7 @@ class MiniAppAppBar extends ConsumerWidget implements PreferredSizeWidget {
                     ),
                   ),
                 ),
-                // Right side - Close button (X) instead of QR scanner
+                // Right side - Close button (X) without background
                 Positioned(
                   right: AppSpacing.lg,
                   top: 0,
@@ -136,16 +156,12 @@ class MiniAppAppBar extends ConsumerWidget implements PreferredSizeWidget {
                   child: Center(
                     child: GestureDetector(
                       onTap: onClose,
-                      child: Container(
+                      child: const SizedBox(
                         width: 36,
                         height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.close_rounded,
-                          size: 22,
+                          size: 24,
                           color: Colors.white,
                         ),
                       ),
@@ -427,16 +443,7 @@ class _StoreListItem extends StatelessWidget {
                 ],
               ),
             ),
-            // Selection indicator
-            if (isSelected)
-              Padding(
-                padding: const EdgeInsets.only(left: AppSpacing.sm),
-                child: Icon(
-                  Icons.check_circle_rounded,
-                  color: AppColors.themeRed,
-                  size: 22,
-                ),
-              ),
+            // Removed selection indicator checkmark - red border already indicates selection
           ],
         ),
       ),
@@ -482,7 +489,7 @@ class _MiniAppSearchBar extends StatelessWidget {
   }
 }
 
-/// Language picker bottom sheet (reused from ExpoAppBar pattern)
+/// Language picker bottom sheet (matches super-app ExpoAppBar pattern)
 class _LanguagePickerSheet extends StatelessWidget {
   final WidgetRef ref;
 
@@ -492,69 +499,149 @@ class _LanguagePickerSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentLocale = ref.watch(localeProvider);
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF1C1C1E)
-            : Colors.white.withValues(alpha: 0.9),
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppSpacing.radiusXl),
-        ),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.black.withValues(alpha: 0.08),
-        ),
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(AppSpacing.radiusXl),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle
-          Container(
-            margin: const EdgeInsets.only(top: AppSpacing.sm),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.6,
+          ),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.85)
+                : Colors.white.withValues(alpha: 0.9),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppSpacing.radiusXl),
+            ),
+            border: Border.all(
               color: isDark
-                  ? Colors.white.withValues(alpha: 0.2)
-                  : Colors.black.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(2),
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.08),
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          // Title
-          Text(
-            'Select Language',
-            style: AppTypography.titleMedium.copyWith(
-              color: isDark ? AppColors.neutralWhite : AppColors.neutralBlack,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          // Language list
-          ...AppLanguage.values.map((lang) {
-            final isSelected =
-                lang.locale.languageCode == currentLocale.languageCode;
-            return ListTile(
-              leading: LanguageFlag(language: lang, size: 40),
-              title: Text(
-            lang.nativeName,
-                style: AppTypography.bodyMedium(
-                  color: AppColors.foreground(context),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                margin: const EdgeInsets.only(top: AppSpacing.sm),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : Colors.black.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              trailing: isSelected
-                  ? const Icon(Icons.check_circle, color: AppColors.themeRed)
-                  : null,
-              onTap: () {
-                ref.read(localeProvider.notifier).setLocale(lang.locale);
-                Navigator.pop(context);
-              },
-            );
-          }),
-          SizedBox(height: MediaQuery.of(context).padding.bottom + AppSpacing.md),
-        ],
+              const SizedBox(height: AppSpacing.lg),
+              // Title
+              Text(
+                'Select Language',
+                style: AppTypography.titleMedium.copyWith(
+                  color: isDark ? AppColors.neutralWhite : AppColors.neutralBlack,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              // Language options - scrollable
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.only(bottom: bottomPadding + AppSpacing.lg),
+                  itemCount: AppLanguage.values.length,
+                  itemBuilder: (context, index) {
+                    final lang = AppLanguage.values[index];
+                    final isSelected = currentLocale.languageCode == lang.locale.languageCode;
+                    return _buildLanguageOption(
+                      context: context,
+                      lang: lang,
+                      isSelected: isSelected,
+                      isDark: isDark,
+                      onTap: () {
+                        ref.read(localeProvider.notifier).setLocale(lang.locale);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageOption({
+    required BuildContext context,
+    required AppLanguage lang,
+    required bool isSelected,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.themeRed.withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          border: isSelected
+              ? Border.all(color: AppColors.themeRed.withValues(alpha: 0.3))
+              : null,
+        ),
+        child: Row(
+          children: [
+            LanguageFlag(
+              language: lang,
+              size: 32,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    lang.nativeName,
+                    style: AppTypography.bodyMedium().copyWith(
+                      color: isDark ? AppColors.neutralWhite : AppColors.neutralBlack,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                  Text(
+                    lang.englishName,
+                    style: AppTypography.bodySmall().copyWith(
+                      color: isDark
+                          ? AppColors.neutralGray400
+                          : AppColors.neutralGray600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.themeRed,
+                size: AppSpacing.iconMd,
+              ),
+          ],
+        ),
       ),
     );
   }

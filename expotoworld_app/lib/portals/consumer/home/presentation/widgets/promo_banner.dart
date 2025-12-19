@@ -97,6 +97,7 @@ class _PromoBannerState extends State<PromoBanner> {
               final actualIndex = index % promos.length;
               final promo = promos[actualIndex];
               return Container(
+                clipBehavior: Clip.antiAlias, // Smoother edge rendering
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -107,13 +108,7 @@ class _PromoBannerState extends State<PromoBanner> {
                     ],
                   ),
                   borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-                  boxShadow: [
-                    BoxShadow(
-                      color: promo.color.withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+                  // No shadows - flat design per user request
                 ),
                 child: Stack(
                   children: [

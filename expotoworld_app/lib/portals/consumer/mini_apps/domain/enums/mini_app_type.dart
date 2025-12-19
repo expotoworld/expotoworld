@@ -127,17 +127,18 @@ extension StoreTypeExtension on StoreType {
     }
   }
 
-  /// Color for this store type
+  /// Color for this store type (matching super-app)
+  /// MEGA=blue, MARKET=green, toGO=purple, XPRESS=yellow
   Color get color {
     switch (this) {
       case StoreType.mega:
-        return AppColors.themeRed;
+        return AppColors.blue500;       // Blue for MEGA
       case StoreType.market:
-        return AppColors.purple;
+        return AppColors.green500;      // Green for MARKET
       case StoreType.toGo:
-        return AppColors.blue500;
+        return AppColors.purple;        // Purple for to GO
       case StoreType.xpress:
-        return AppColors.yellow500;
+        return AppColors.yellow500;     // Yellow for XPRESS
     }
   }
 

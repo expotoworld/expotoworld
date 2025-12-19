@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../domain/enums/mini_app_type.dart';
 import '../../domain/models/store_model.dart';
+import '../../domain/models/product_model.dart';
 import '../providers/mini_app_providers.dart';
 import '../widgets/category_pills.dart';
 import '../widgets/subcategory_grid.dart';
+import '../widgets/product_card.dart';
 
 /// Abstract base class for mini-app home screens
 /// Implements the 70% shared functionality with slots for 30% customization
@@ -44,11 +46,35 @@ abstract class BaseMiniAppHome extends ConsumerStatefulWidget {
 abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
     extends ConsumerState<T> {
   final ScrollController scrollController = ScrollController();
+  double _borderRadius = 24.0;
+  
+  // Configuration for the corner animation (consistent with super-app home)
+  static const double _maxRadius = 24.0;
+  static const double _scrollThreshold = 50.0; // Flatten within 50px of scroll
+
+  @override
+  void initState() {
+    super.initState();
+    scrollController.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
+    scrollController.removeListener(_onScroll);
     scrollController.dispose();
     super.dispose();
+  }
+  
+  void _onScroll() {
+    final scrollOffset = scrollController.offset;
+    final newRadius = (_maxRadius - (scrollOffset / _scrollThreshold * _maxRadius))
+        .clamp(0.0, _maxRadius);
+    
+    if (newRadius != _borderRadius) {
+      setState(() {
+        _borderRadius = newRadius;
+      });
+    }
   }
 
   //
@@ -85,11 +111,27 @@ abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
 
   /// Bottom padding for floating nav bar
   /// Override if no bottom nav (e.g., toX)
-  double get bottomPadding => 100;
+  double get bottomPadding => 140;
 
-  /// Handle close button tap
+  /// Handle close button tap - navigates back to super-app home
+  /// Uses custom animated navigation to ensure consistent vertical slide-down
+  /// animation regardless of internal navigation state.
   void handleClose() {
-    context.go('/home');
+    // Check if we can pop from root navigator (preferred - uses GoRouter animation)
+    if (Navigator.of(context, rootNavigator: true).canPop()) {
+      Navigator.of(context, rootNavigator: true).pop();
+      return;
+    }
+    
+    // Fallback to standard pop if available
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    
+    // If navigation stack is empty (due to context.go() usage), just go home
+    // The animation won't be perfect, but it's better than breaking
+    context.go('/');
   }
 
   /// Handle store selection change
@@ -109,12 +151,61 @@ abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
     context.push(getSubcategoryRoute(subcategory.id));
   }
 
+  /// Handle product quantity change for recommended products
+  void handleProductQuantityChanged(MiniAppProduct product, int quantity) {
+    final cartController = ref.read(miniAppCartNotifierProvider(widget.miniAppType));
+    if (quantity > 0) {
+      cartController.addProduct(product, quantity - cartController.getQuantity(product.id));
+    } else {
+      cartController.removeProduct(product.id);
+    }
+  }
+
+  /// Build the recommended products grid
+  Widget _buildRecommendedProductsGrid() {
+    final selectedStore = ref.watch(selectedStoreProvider(widget.miniAppType));
+    final recommendedProducts = ref.watch(recommendedProductsProvider((
+      miniAppType: widget.miniAppType,
+      storeId: selectedStore?.id,
+    )));
+
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: AppSpacing.md,
+          crossAxisSpacing: AppSpacing.md,
+          childAspectRatio: 0.58, // Balanced height for product info and add-to-cart
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final product = recommendedProducts[index];
+            final cartQuantity = ref.watch(productCartQuantityProvider((
+              miniAppType: widget.miniAppType,
+              productId: product.id,
+            )));
+
+            return MiniAppProductCard(
+              product: product,
+              cartQuantity: cartQuantity,
+              onQuantityChanged: (qty) => handleProductQuantityChanged(product, qty),
+              showMasonry: false,
+            );
+          },
+          childCount: recommendedProducts.length,
+        ),
+      ),
+    );
+  }
+
   //
   // SHARED IMPLEMENTATION - 70% common logic
   //
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final categories = ref.watch(miniAppCategoriesProvider(widget.miniAppType));
     final selectedCategoryId = ref.watch(selectedCategoryIdProvider(widget.miniAppType));
     final subcategories = ref.watch(miniAppSubcategoriesProvider((
@@ -123,51 +214,72 @@ abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
     )));
 
     return Scaffold(
+      backgroundColor: AppColors.themeRed,
       body: Column(
         children: [
           // SLOT: Header (customizable per mini-app)
           buildHeader(context),
 
-          // SHARED: Scrollable content
+          // SHARED: Scrollable content area with dynamic rounded top corners
           Expanded(
-            child: CustomScrollView(
-              controller: scrollController,
-              slivers: [
-                // SHARED: Category pills
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      top: AppSpacing.md,
-                      bottom: AppSpacing.lg,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 50),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF121212) : AppColors.neutralWhite,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(_borderRadius),
+                  topRight: Radius.circular(_borderRadius),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(_borderRadius),
+                  topRight: Radius.circular(_borderRadius),
+                ),
+                child: CustomScrollView(
+                  controller: scrollController,
+                  slivers: [
+                    // SHARED: Category pills with proper spacing
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                          top: AppSpacing.xl, // Increased top spacing
+                          bottom: AppSpacing.md,
+                        ),
+                        child: CategoryPills(
+                          categories: categories,
+                          selectedCategoryId: selectedCategoryId,
+                          onCategorySelected: handleCategorySelected,
+                        ),
+                      ),
                     ),
-                    child: CategoryPills(
-                      categories: categories,
-                      selectedCategoryId: selectedCategoryId,
-                      onCategorySelected: handleCategorySelected,
+
+                    // SLOT: Section header (customizable)
+                    SliverToBoxAdapter(
+                      child: buildSectionHeader(context, categories, selectedCategoryId),
                     ),
-                  ),
-                ),
 
-                // SLOT: Section header (customizable)
-                SliverToBoxAdapter(
-                  child: buildSectionHeader(context, categories, selectedCategoryId),
-                ),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: AppSpacing.md),
+                    ),
 
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: AppSpacing.md),
-                ),
+                    // Show recommended products when "Recommended" (null category) is selected,
+                    // otherwise show subcategory grid
+                    if (selectedCategoryId == null)
+                      _buildRecommendedProductsGrid()
+                    else
+                      SliverSubcategoryGrid(
+                        subcategories: subcategories,
+                        onSubcategoryTap: handleSubcategoryTap,
+                      ),
 
-                // SHARED: Subcategory grid
-                SliverSubcategoryGrid(
-                  subcategories: subcategories,
-                  onSubcategoryTap: handleSubcategoryTap,
+                    // Bottom padding (customizable)
+                    SliverToBoxAdapter(
+                      child: SizedBox(height: bottomPadding),
+                    ),
+                  ],
                 ),
-
-                // Bottom padding (customizable)
-                SliverToBoxAdapter(
-                  child: SizedBox(height: bottomPadding),
-                ),
-              ],
+              ),
             ),
           ),
         ],

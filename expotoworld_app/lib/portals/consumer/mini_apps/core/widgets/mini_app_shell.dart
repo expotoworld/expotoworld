@@ -7,6 +7,9 @@ import '../providers/mini_app_providers.dart';
 
 /// Shell widget for mini-apps with 3-tab bottom navigation (Home, Cart, Map)
 /// or 1-tab for to X (only Home screen)
+/// 
+/// Navigation uses context.push() to preserve navigation stack, allowing proper
+/// pop animation when closing the mini-app.
 class MiniAppShell extends ConsumerWidget {
   final MiniAppType miniAppType;
   final Widget child;
@@ -23,18 +26,20 @@ class MiniAppShell extends ConsumerWidget {
     return 0;
   }
 
-  void _onIndexChanged(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        context.go('/mini-app/${miniAppType.name}/home');
-        break;
-      case 1:
-        context.go('/mini-app/${miniAppType.name}/cart');
-        break;
-      case 2:
-        context.go('/mini-app/${miniAppType.name}/map');
-        break;
-    }
+  void _onIndexChanged(BuildContext context, int index, int currentIndex) {
+    // Don't navigate if already on the same tab
+    if (index == currentIndex) return;
+    
+    // Use context.pushReplacement to navigate within the shell
+    // This replaces the current route in the shell but preserves the shell itself
+    // in the navigation stack
+    final path = switch (index) {
+      0 => '/mini-app/${miniAppType.name}/home',
+      1 => '/mini-app/${miniAppType.name}/cart',
+      2 => '/mini-app/${miniAppType.name}/map',
+      _ => '/mini-app/${miniAppType.name}/home',
+    };
+    context.go(path);
   }
 
   @override
@@ -97,7 +102,7 @@ class MiniAppShell extends ConsumerWidget {
                     icon: Icons.home_outlined,
                     activeIcon: Icons.home_rounded,
                     isSelected: selectedIndex == 0,
-                    onTap: () => _onIndexChanged(context, 0),
+                    onTap: () => _onIndexChanged(context, 0, selectedIndex),
                   ),
                 ),
                 // Cart tab (with badge)
@@ -107,7 +112,7 @@ class MiniAppShell extends ConsumerWidget {
                       icon: Icons.shopping_cart_outlined,
                       activeIcon: Icons.shopping_cart_rounded,
                       isSelected: selectedIndex == 1,
-                      onTap: () => _onIndexChanged(context, 1),
+                      onTap: () => _onIndexChanged(context, 1, selectedIndex),
                       badgeCount: cartItemCount,
                     ),
                   ),
@@ -118,7 +123,7 @@ class MiniAppShell extends ConsumerWidget {
                       icon: Icons.map_outlined,
                       activeIcon: Icons.map_rounded,
                       isSelected: selectedIndex == 2,
-                      onTap: () => _onIndexChanged(context, 2),
+                      onTap: () => _onIndexChanged(context, 2, selectedIndex),
                     ),
                   ),
               ],

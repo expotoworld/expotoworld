@@ -139,14 +139,8 @@ final recommendedProductsProvider = Provider.family<List<MiniAppProduct>, ({
   MiniAppType miniAppType,
   String? storeId,
 })>((ref, params) {
-  // Get all products for the store and return a subset as "recommended"
-  final allProducts = MiniAppMockData.getProductsForSubcategory(
-    '',  // All subcategories
-    params.storeId ?? '',
-  );
-  
-  // For demo, return first 12 products as recommended
-  return allProducts.take(12).toList();
+  // Get recommended products for the store using dedicated method
+  return MiniAppMockData.getRecommendedProducts(params.storeId ?? '');
 });
 
 /// Provider for search query
@@ -174,3 +168,7 @@ final filteredProductsProvider = Provider.family<List<MiniAppProduct>, ({
            product.description.toLowerCase().contains(query);
   }).toList();
 });
+
+/// Provider for controlling the active tab index in mini-app shell
+/// Used by child screens (cart, map) to switch tabs programmatically
+final miniAppActiveTabIndexProvider = StateProvider.family<int, MiniAppType>((ref, miniAppType) => 0);

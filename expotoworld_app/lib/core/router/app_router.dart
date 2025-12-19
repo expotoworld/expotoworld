@@ -134,7 +134,7 @@ class RoutePaths {
 /// App router configuration
 final GoRouter appRouter = GoRouter(
   initialLocation: RoutePaths.home,
-  debugLogDiagnostics: true,
+  debugLogDiagnostics: false, // Disable debug logging for cleaner console
   extraCodec: const _AppRouterCodec(),
   routes: [
     // Main shell with bottom navigation
@@ -306,83 +306,73 @@ final GoRouter appRouter = GoRouter(
         },
       ),
     ),
-    // Mini-app routes for toB, toC, toU (with bottom nav shell)
-    ShellRoute(
-      builder: (context, state, child) {
-        // Extract mini-app type from the path
-        final pathSegments = state.uri.pathSegments;
-        final typeString = pathSegments.length > 1 ? pathSegments[1] : 'toB';
-        final miniAppType = MiniAppType.values.firstWhere(
-          (e) => e.name == typeString,
-          orElse: () => MiniAppType.toB,
-        );
-        return MiniAppShell(
-          miniAppType: miniAppType,
-          child: child,
+    // Mini-app route - single entry point with internal tab navigation
+    // Uses a single route to preserve navigation stack for proper close animation
+    // Tab navigation is handled internally via IndexedStack, not GoRouter
+    GoRoute(
+      path: '/mini-app/:type',
+      name: 'miniApp',
+      pageBuilder: (context, state) {
+        final miniAppType = _getMiniAppType(state);
+        // Default to home tab (index 0)
+        final initialTab = state.uri.queryParameters['tab'] ?? 'home';
+        final initialTabIndex = switch (initialTab) {
+          'cart' => 1,
+          'map' => 2,
+          _ => 0,
+        };
+        return CustomTransitionPage(
+          child: ProviderScope(
+            overrides: [
+              currentMiniAppTypeProvider.overrideWith((ref) => miniAppType),
+            ],
+            child: MiniAppShellWithTabs(
+              miniAppType: miniAppType,
+              initialTabIndex: initialTabIndex,
+            ),
+          ),
+          transitionDuration: const Duration(milliseconds: 300),
+          reverseTransitionDuration: const Duration(milliseconds: 250),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            // Symmetric vertical transition (slide from/to bottom)
+            final slideAnimation =
+                Tween<Offset>(
+                  begin: const Offset(0, 1),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+                );
+            return SlideTransition(position: slideAnimation, child: child);
+          },
         );
       },
-      routes: [
-        GoRoute(
-          path: '/mini-app/:type/home',
-          name: 'miniAppHome',
-          pageBuilder: (context, state) {
-            final typeString = state.pathParameters['type'] ?? 'toB';
-            final miniAppType = MiniAppType.values.firstWhere(
-              (e) => e.name == typeString,
-              orElse: () => MiniAppType.toB,
-            );
-            // Route to type-specific home screens
-            return NoTransitionPage(
-              child: ProviderScope(
-                overrides: [
-                  currentMiniAppTypeProvider.overrideWith((ref) => miniAppType),
-                ],
-                child: _buildHomeScreen(miniAppType),
-              ),
-            );
-          },
-        ),
-        GoRoute(
-          path: '/mini-app/:type/cart',
-          name: 'miniAppCart',
-          pageBuilder: (context, state) {
-            final typeString = state.pathParameters['type'] ?? 'toB';
-            final miniAppType = MiniAppType.values.firstWhere(
-              (e) => e.name == typeString,
-              orElse: () => MiniAppType.toB,
-            );
-            return NoTransitionPage(
-              child: ProviderScope(
-                overrides: [
-                  currentMiniAppTypeProvider.overrideWith((ref) => miniAppType),
-                ],
-                child: MiniAppCartScreen(miniAppType: miniAppType),
-              ),
-            );
-          },
-        ),
-        GoRoute(
-          path: '/mini-app/:type/map',
-          name: 'miniAppMap',
-          pageBuilder: (context, state) {
-            final typeString = state.pathParameters['type'] ?? 'toB';
-            final miniAppType = MiniAppType.values.firstWhere(
-              (e) => e.name == typeString,
-              orElse: () => MiniAppType.toB,
-            );
-            return NoTransitionPage(
-              child: ProviderScope(
-                overrides: [
-                  currentMiniAppTypeProvider.overrideWith((ref) => miniAppType),
-                ],
-                child: MiniAppMapScreen(miniAppType: miniAppType),
-              ),
-            );
-          },
-        ),
-      ],
     ),
-    // Mini-app products screen (slide-in from right)
+    // Legacy mini-app routes - redirect to new single route for backwards compatibility
+    GoRoute(
+      path: '/mini-app/:type/home',
+      name: 'miniAppHome',
+      redirect: (context, state) {
+        final type = state.pathParameters['type'] ?? 'toB';
+        return '/mini-app/$type?tab=home';
+      },
+    ),
+    GoRoute(
+      path: '/mini-app/:type/cart',
+      name: 'miniAppCart',
+      redirect: (context, state) {
+        final type = state.pathParameters['type'] ?? 'toB';
+        return '/mini-app/$type?tab=cart';
+      },
+    ),
+    GoRoute(
+      path: '/mini-app/:type/map',
+      name: 'miniAppMap',
+      redirect: (context, state) {
+        final type = state.pathParameters['type'] ?? 'toB';
+        return '/mini-app/$type?tab=map';
+      },
+    ),
+    // Mini-app products screen (vertical slide-up for consistency with shell)
     GoRoute(
       path: '/mini-app/:type/products/:subcategoryId',
       name: 'miniAppProducts',
@@ -403,9 +393,10 @@ final GoRouter appRouter = GoRouter(
           transitionDuration: const Duration(milliseconds: 300),
           reverseTransitionDuration: const Duration(milliseconds: 250),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            // Use vertical animation (same as mini-app shell) for consistency
             final slideAnimation = Tween<Offset>(
-              begin: const Offset(1, 0),
-              end: Offset.zero,
+              begin: const Offset(0, 1), // Start from bottom
+              end: Offset.zero, // End at center
             ).animate(
               CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
             );
@@ -414,7 +405,7 @@ final GoRouter appRouter = GoRouter(
         );
       },
     ),
-    // Mini-app services screen for toX (slide-in from right)
+    // Mini-app services screen for toX (vertical slide-up for consistency)
     GoRoute(
       path: '/mini-app/:type/services/:subcategoryId',
       name: 'miniAppServices',
@@ -430,9 +421,10 @@ final GoRouter appRouter = GoRouter(
           transitionDuration: const Duration(milliseconds: 300),
           reverseTransitionDuration: const Duration(milliseconds: 250),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            // Use vertical animation (same as mini-app shell) for consistency
             final slideAnimation = Tween<Offset>(
-              begin: const Offset(1, 0),
-              end: Offset.zero,
+              begin: const Offset(0, 1), // Start from bottom
+              end: Offset.zero, // End at center
             ).animate(
               CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
             );
@@ -446,18 +438,13 @@ final GoRouter appRouter = GoRouter(
       Scaffold(body: Center(child: Text('Page not found: ${state.uri.path}'))),
 );
 
-/// Build the home screen based on mini-app type
-Widget _buildHomeScreen(MiniAppType miniAppType) {
-  switch (miniAppType) {
-    case MiniAppType.toB:
-      return const ToBHomeScreen();
-    case MiniAppType.toC:
-      return const ToCHomeScreen();
-    case MiniAppType.toU:
-      return const ToUHomeScreen();
-    case MiniAppType.toX:
-      return const ToXHomeScreen();
-  }
+/// Helper function to extract MiniAppType from GoRouterState
+MiniAppType _getMiniAppType(GoRouterState state) {
+  final typeString = state.pathParameters['type'] ?? 'toB';
+  return MiniAppType.values.firstWhere(
+    (e) => e.name == typeString,
+    orElse: () => MiniAppType.toB,
+  );
 }
 
 /// Build the products screen based on mini-app type
