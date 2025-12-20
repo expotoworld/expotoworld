@@ -327,6 +327,7 @@ class AccountSettingsScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      useRootNavigator: true, // Show above bottom navigation bar
       builder: (context) {
         return ClipRRect(
           borderRadius: const BorderRadius.vertical(
@@ -488,6 +489,7 @@ class AccountSettingsScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      useRootNavigator: true, // Show above bottom navigation bar
       builder: (context) {
         return ClipRRect(
           borderRadius: const BorderRadius.vertical(

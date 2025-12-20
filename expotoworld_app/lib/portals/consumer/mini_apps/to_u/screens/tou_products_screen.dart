@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/screens/base_products_screen.dart';
 import '../../domain/enums/mini_app_type.dart';
 import '../../domain/models/product_model.dart';
-import '../../core/widgets/product_card.dart';
+import '../../core/widgets/unified_product_card.dart';
 
 /// toU Products Screen - Business to User (Volume-based)
 /// 
@@ -29,22 +29,13 @@ class _ToUProductsScreenState extends BaseProductsScreenState<ToUProductsScreen>
     MiniAppProduct product,
     int cartQuantity,
   ) {
-    // Currently using default product card
-    // Override to add volume tiers, loyalty points, etc.
-    return MiniAppProductCard(
+    // Using unified product card design
+    // TODO: Add volume tiers, loyalty points as overlay or additional element if needed
+    return UnifiedProductCard(
       product: product,
       cartQuantity: cartQuantity,
       onQuantityChanged: (quantity) => handleQuantityChanged(product, quantity),
       onTap: () => handleProductTap(product),
     );
-    
-    // FUTURE: Use toU-specific product card with volume tiers
-    // return ToUProductCard(
-    //   product: product,
-    //   cartQuantity: cartQuantity,
-    //   showVolumeTiers: true,
-    //   showLoyaltyPoints: true,
-    //   onQuantityChanged: (quantity) => handleQuantityChanged(product, quantity),
-    // );
   }
 }

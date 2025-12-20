@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/screens/base_products_screen.dart';
 import '../../domain/enums/mini_app_type.dart';
 import '../../domain/models/product_model.dart';
-import '../../core/widgets/product_card.dart';
+import '../../core/widgets/unified_product_card.dart';
 
 /// toB Products Screen - Business to Business
 /// 
@@ -28,22 +28,13 @@ class _ToBProductsScreenState extends BaseProductsScreenState<ToBProductsScreen>
     MiniAppProduct product,
     int cartQuantity,
   ) {
-    // Currently using default product card
-    // Override to add MOQ badge, bulk pricing, etc.
-    return MiniAppProductCard(
+    // Using unified product card design
+    // TODO: Add MOQ badge, bulk pricing as overlay or additional element if needed
+    return UnifiedProductCard(
       product: product,
       cartQuantity: cartQuantity,
       onQuantityChanged: (quantity) => handleQuantityChanged(product, quantity),
       onTap: () => handleProductTap(product),
     );
-    
-    // FUTURE: Use toB-specific product card with MOQ
-    // return ToBProductCard(
-    //   product: product,
-    //   cartQuantity: cartQuantity,
-    //   showMOQ: true,
-    //   showBulkPricing: true,
-    //   onQuantityChanged: (quantity) => handleQuantityChanged(product, quantity),
-    // );
   }
 }

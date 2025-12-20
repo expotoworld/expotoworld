@@ -87,6 +87,7 @@ class _ToXHomeScreenState extends ConsumerState<ToXHomeScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useRootNavigator: true, // Show above bottom navigation bar
       builder: (context) => _QuoteRequestPopup(
         service: service,
         onSubmit: (details) {
@@ -122,9 +123,12 @@ class _ToXHomeScreenState extends ConsumerState<ToXHomeScreen> {
       categoryId: selectedCategoryId,
     )));
 
-    return Scaffold(
-      backgroundColor: AppColors.themeRed,
-      body: Column(
+    // Return content directly without nested Scaffold
+    // MiniAppShell provides the outer Scaffold with bottomNavigationBar
+    // This ensures modal sheets appear above the bottom nav bar
+    return Container(
+      color: AppColors.themeRed,
+      child: Column(
         children: [
           // Header using shared MiniAppAppBar for consistency
           MiniAppAppBar(
@@ -167,23 +171,6 @@ class _ToXHomeScreenState extends ConsumerState<ToXHomeScreen> {
                       ),
                     ),
                     
-                    // Section header
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                        ),
-                        child: _SectionHeader(
-                          title: selectedCategoryId == null
-                              ? 'Browse Services'
-                              : 'Service Categories',
-                          subtitle: selectedCategoryId == null
-                              ? 'Find the best deals on services'
-                              : _getCategoryName(categories, selectedCategoryId),
-                        ),
-                      ),
-                    ),
-                    
                     const SliverToBoxAdapter(
                       child: SizedBox(height: AppSpacing.md),
                     ),
@@ -205,50 +192,6 @@ class _ToXHomeScreenState extends ConsumerState<ToXHomeScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  String _getCategoryName(List<MiniAppCategory> categories, String categoryId) {
-    final category = categories.firstWhere(
-      (c) => c.id == categoryId,
-      orElse: () => MiniAppCategory(id: '', name: '', imageUrl: null),
-    );
-    return category.name;
-  }
-}
-
-/// Section header widget
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final String? subtitle;
-
-  const _SectionHeader({
-    required this.title,
-    this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: AppTypography.titleMedium.copyWith(
-            color: AppColors.foreground(context),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        if (subtitle != null && subtitle!.isNotEmpty) ...[
-          const SizedBox(height: 2),
-          Text(
-            subtitle!,
-            style: AppTypography.caption(
-              color: AppColors.foregroundMuted(context),
-            ),
-          ),
-        ],
-      ],
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../domain/enums/mini_app_type.dart';
@@ -8,7 +9,7 @@ import '../../domain/models/product_model.dart';
 import '../providers/mini_app_providers.dart';
 import '../widgets/category_pills.dart';
 import '../widgets/subcategory_grid.dart';
-import '../widgets/product_card.dart';
+import '../widgets/unified_product_card.dart';
 
 /// Abstract base class for mini-app home screens
 /// Implements the 70% shared functionality with slots for 30% customization
@@ -86,21 +87,14 @@ abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
   Widget buildHeader(BuildContext context);
 
   /// Build the section header above the subcategory grid
-  /// Default implementation provided, override for customization
+  /// Returns empty by default (no section header needed)
   Widget buildSectionHeader(
     BuildContext context,
     List<MiniAppCategory> categories,
     String? selectedCategoryId,
   ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: DefaultSectionHeader(
-        title: selectedCategoryId == null ? 'Browse Categories' : 'Subcategories',
-        subtitle: selectedCategoryId == null
-            ? 'Explore products by brand'
-            : _getCategoryName(categories, selectedCategoryId),
-      ),
-    );
+    // Return empty container - no section header needed
+    return const SizedBox.shrink();
   }
 
   /// Get the navigation route for subcategory tap
@@ -171,30 +165,24 @@ abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: AppSpacing.md,
-          crossAxisSpacing: AppSpacing.md,
-          childAspectRatio: 0.58, // Balanced height for product info and add-to-cart
-        ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final product = recommendedProducts[index];
-            final cartQuantity = ref.watch(productCartQuantityProvider((
-              miniAppType: widget.miniAppType,
-              productId: product.id,
-            )));
+      sliver: SliverMasonryGrid.count(
+        crossAxisCount: 2,
+        mainAxisSpacing: AppSpacing.md,
+        crossAxisSpacing: AppSpacing.md,
+        childCount: recommendedProducts.length,
+        itemBuilder: (context, index) {
+          final product = recommendedProducts[index];
+          final cartQuantity = ref.watch(productCartQuantityProvider((
+            miniAppType: widget.miniAppType,
+            productId: product.id,
+          )));
 
-            return MiniAppProductCard(
-              product: product,
-              cartQuantity: cartQuantity,
-              onQuantityChanged: (qty) => handleProductQuantityChanged(product, qty),
-              showMasonry: false,
-            );
-          },
-          childCount: recommendedProducts.length,
-        ),
+          return UnifiedProductCard(
+            product: product,
+            cartQuantity: cartQuantity,
+            onQuantityChanged: (qty) => handleProductQuantityChanged(product, qty),
+          );
+        },
       ),
     );
   }
@@ -213,9 +201,12 @@ abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
       categoryId: selectedCategoryId,
     )));
 
-    return Scaffold(
-      backgroundColor: AppColors.themeRed,
-      body: Column(
+    // Return content directly without nested Scaffold
+    // MiniAppShell provides the outer Scaffold with bottomNavigationBar
+    // This ensures modal sheets appear above the bottom nav bar
+    return Container(
+      color: AppColors.themeRed,
+      child: Column(
         children: [
           // SLOT: Header (customizable per mini-app)
           buildHeader(context),
@@ -285,14 +276,6 @@ abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
         ],
       ),
     );
-  }
-
-  String _getCategoryName(List<MiniAppCategory> categories, String categoryId) {
-    final category = categories.firstWhere(
-      (c) => c.id == categoryId,
-      orElse: () => MiniAppCategory(id: '', name: '', imageUrl: null),
-    );
-    return category.name;
   }
 }
 

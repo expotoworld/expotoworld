@@ -14,6 +14,3 @@ export 'repositories/repositories.dart';
 
 // Sources
 export 'sources/sources.dart';
-
-// Mock Data
-export 'mock/mock.dart';
