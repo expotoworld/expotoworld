@@ -326,11 +326,27 @@ class MiniAppMockData {
     String subcategoryId,
     String storeId,
   ) {
+    // Get store info to include in products
+    final store = _getStoreById(storeId);
     // Generate mock products based on subcategory
-    return _generateMockProducts(subcategoryId, storeId);
+    return _generateMockProducts(subcategoryId, storeId, store);
   }
 
-  static List<MiniAppProduct> _generateMockProducts(String subcategoryId, String storeId) {
+  /// Get store by ID from all store lists
+  static MiniAppStore? _getStoreById(String storeId) {
+    final allStores = [...megaStores, ...marketStores, ...toGoStores, ...xpressStores];
+    try {
+      return allStores.firstWhere((s) => s.id == storeId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static List<MiniAppProduct> _generateMockProducts(
+    String subcategoryId, 
+    String storeId,
+    MiniAppStore? store,
+  ) {
     // Mock product generation based on subcategory
     final products = <MiniAppProduct>[];
 
@@ -339,45 +355,54 @@ class MiniAppMockData {
         products.addAll([
           MiniAppProduct(
             id: 'prod-001',
-            name: 'Farfalle N.65',
+            name: 'Farfalle N.65 BARILLA ALWAYS IS THE BEST',
             description: 'Pasta di semola di grano duro - Bronze die cut',
             originalPrice: 3.50,
             currentPrice: 2.89,
             stockLeft: 150,
             minimumOrderQuantity: 1,
-            weight: '500g',
+            unit: 'g',
+            quantity: 500,
             shelfCode: '01-02-03',
             categoryId: 'cat-barilla',
             subcategoryId: subcategoryId,
             storeId: storeId,
+            storeName: store?.name,
+            storeType: store?.storeType,
           ),
           MiniAppProduct(
             id: 'prod-002',
-            name: 'Penne Rigate N.73',
+            name: 'Penne Rigate N.73 QUESTO SI CHE E\' IL BUONO',
             description: 'Pasta di semola di grano duro',
             originalPrice: 3.20,
             currentPrice: 2.79,
             stockLeft: 85,
             minimumOrderQuantity: 1,
-            weight: '500g',
+            unit: 'g',
+            quantity: 500,
             shelfCode: '01-02-04',
             categoryId: 'cat-barilla',
             subcategoryId: subcategoryId,
             storeId: storeId,
+            storeName: store?.name,
+            storeType: store?.storeType,
           ),
           MiniAppProduct(
             id: 'prod-003',
-            name: 'Fusilli N.98',
+            name: 'Fusilli N.98 NON CI POSSO CREDERE QUANTO E\' BUONO',
             description: 'Pasta corta di semola di grano duro',
             originalPrice: 3.30,
             currentPrice: 2.85,
             stockLeft: 42,
             minimumOrderQuantity: 1,
-            weight: '500g',
+            unit: 'g',
+            quantity: 500,
             shelfCode: '01-02-05',
             categoryId: 'cat-barilla',
             subcategoryId: subcategoryId,
             storeId: storeId,
+            storeName: store?.name,
+            storeType: store?.storeType,
           ),
           MiniAppProduct(
             id: 'prod-004',
@@ -387,11 +412,14 @@ class MiniAppMockData {
             currentPrice: 3.99,
             stockLeft: 28,
             minimumOrderQuantity: 2,
-            weight: '250g',
+            unit: 'g',
+            quantity: 250,
             shelfCode: '01-03-01',
             categoryId: 'cat-barilla',
             subcategoryId: subcategoryId,
             storeId: storeId,
+            storeName: store?.name,
+            storeType: store?.storeType,
           ),
         ]);
         break;
@@ -406,11 +434,14 @@ class MiniAppMockData {
             currentPrice: 2.49,
             stockLeft: 200,
             minimumOrderQuantity: 1,
-            weight: '500g',
+            unit: 'g',
+            quantity: 500,
             shelfCode: '01-01-01',
             categoryId: 'cat-barilla',
             subcategoryId: subcategoryId,
             storeId: storeId,
+            storeName: store?.name,
+            storeType: store?.storeType,
           ),
           MiniAppProduct(
             id: 'prod-012',
@@ -420,11 +451,14 @@ class MiniAppMockData {
             currentPrice: 2.49,
             stockLeft: 120,
             minimumOrderQuantity: 1,
-            weight: '500g',
+            unit: 'g',
+            quantity: 500,
             shelfCode: '01-01-02',
             categoryId: 'cat-barilla',
             subcategoryId: subcategoryId,
             storeId: storeId,
+            storeName: store?.name,
+            storeType: store?.storeType,
           ),
           MiniAppProduct(
             id: 'prod-013',
@@ -434,11 +468,14 @@ class MiniAppMockData {
             currentPrice: 2.99,
             stockLeft: 65,
             minimumOrderQuantity: 1,
-            weight: '500g',
+            unit: 'g',
+            quantity: 500,
             shelfCode: '01-01-03',
             categoryId: 'cat-barilla',
             subcategoryId: subcategoryId,
             storeId: storeId,
+            storeName: store?.name,
+            storeType: store?.storeType,
           ),
         ]);
         break;
@@ -453,11 +490,14 @@ class MiniAppMockData {
             currentPrice: 3.49,
             stockLeft: 78,
             minimumOrderQuantity: 1,
-            weight: '400g',
+            unit: 'g',
+            quantity: 400,
             shelfCode: '02-01-01',
             categoryId: 'cat-barilla',
             subcategoryId: subcategoryId,
             storeId: storeId,
+            storeName: store?.name,
+            storeType: store?.storeType,
           ),
           MiniAppProduct(
             id: 'prod-022',
@@ -467,11 +507,14 @@ class MiniAppMockData {
             currentPrice: 3.79,
             stockLeft: 45,
             minimumOrderQuantity: 1,
-            weight: '400g',
+            unit: 'g',
+            quantity: 400,
             shelfCode: '02-01-02',
             categoryId: 'cat-barilla',
             subcategoryId: subcategoryId,
             storeId: storeId,
+            storeName: store?.name,
+            storeType: store?.storeType,
           ),
           MiniAppProduct(
             id: 'prod-023',
@@ -481,11 +524,14 @@ class MiniAppMockData {
             currentPrice: 4.99,
             stockLeft: 32,
             minimumOrderQuantity: 1,
-            weight: '400g',
+            unit: 'g',
+            quantity: 400,
             shelfCode: '02-01-03',
             categoryId: 'cat-barilla',
             subcategoryId: subcategoryId,
             storeId: storeId,
+            storeName: store?.name,
+            storeType: store?.storeType,
           ),
         ]);
         break;
@@ -500,11 +546,14 @@ class MiniAppMockData {
             currentPrice: 7.49,
             stockLeft: 95,
             minimumOrderQuantity: 1,
-            weight: '50 capsules',
+            unit: 'capsule',
+            quantity: 50,
             shelfCode: '03-01-01',
             categoryId: 'cat-borbone',
             subcategoryId: subcategoryId,
             storeId: storeId,
+            storeName: store?.name,
+            storeType: store?.storeType,
           ),
           MiniAppProduct(
             id: 'prod-032',
@@ -514,11 +563,15 @@ class MiniAppMockData {
             currentPrice: 7.49,
             stockLeft: 88,
             minimumOrderQuantity: 1,
-            weight: '50 capsules',
+            unit: 'capsule',
+            quantity: 50,
+            multiplier: 2,
             shelfCode: '03-01-02',
             categoryId: 'cat-borbone',
             subcategoryId: subcategoryId,
             storeId: storeId,
+            storeName: store?.name,
+            storeType: store?.storeType,
           ),
           MiniAppProduct(
             id: 'prod-033',
@@ -528,11 +581,15 @@ class MiniAppMockData {
             currentPrice: 8.49,
             stockLeft: 62,
             minimumOrderQuantity: 1,
-            weight: '50 capsules',
+            unit: 'capsule',
+            quantity: 50,
+            multiplier: 5,
             shelfCode: '03-01-03',
             categoryId: 'cat-borbone',
             subcategoryId: subcategoryId,
             storeId: storeId,
+            storeName: store?.name,
+            storeType: store?.storeType,
           ),
         ]);
         break;
@@ -549,11 +606,14 @@ class MiniAppMockData {
               currentPrice: 4.99 + (i * 0.3),
               stockLeft: 50 + (i * 10),
               minimumOrderQuantity: i % 3 == 0 ? 2 : 1,
-              weight: '${250 + (i * 50)}g',
+              unit: 'g',
+              quantity: 250 + (i * 50),
               shelfCode: '0$i-01-0$i',
               categoryId: subcategoryId.split('-')[1],
               subcategoryId: subcategoryId,
               storeId: storeId,
+              storeName: store?.name,
+              storeType: store?.storeType,
             ),
           );
         }
@@ -741,12 +801,15 @@ class MiniAppMockData {
   // ============================================
 
   static List<MiniAppProduct> getRecommendedProducts(String storeId) {
+    // Get store info to include in products
+    final store = _getStoreById(storeId);
+    
     // Return a mix of products from different categories
     final recommended = <MiniAppProduct>[];
     
-    recommended.addAll(_generateMockProducts('sub-pasta', storeId).take(2));
-    recommended.addAll(_generateMockProducts('sub-espresso', storeId).take(2));
-    recommended.addAll(_generateMockProducts('sub-sugo', storeId).take(2));
+    recommended.addAll(_generateMockProducts('sub-pasta', storeId, store).take(2));
+    recommended.addAll(_generateMockProducts('sub-espresso', storeId, store).take(2));
+    recommended.addAll(_generateMockProducts('sub-sugo', storeId, store).take(2));
     
     return recommended;
   }

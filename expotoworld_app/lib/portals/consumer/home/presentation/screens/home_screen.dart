@@ -52,9 +52,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    return Scaffold(
-      backgroundColor: AppColors.themeRed,
-      body: Column(
+    // Return content directly without nested Scaffold
+    // MainShell provides the outer Scaffold with bottomNavigationBar
+    // This ensures modal sheets appear above the bottom nav bar
+    return Container(
+      color: AppColors.themeRed,
+      child: Column(
         children: [
           // Fixed header - stays at top while content scrolls
           ExpoAppBar(

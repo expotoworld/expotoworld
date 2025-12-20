@@ -534,10 +534,12 @@ class _MapScreenState extends State<MapScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final statusBarHeight = MediaQuery.of(context).padding.top;
 
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
-      body: Stack(
+    // Return content directly without nested Scaffold
+    // MainShell provides the outer Scaffold with bottomNavigationBar
+    // This ensures modal sheets appear above the bottom nav bar
+    return Container(
+      color: isDark ? const Color(0xFF121212) : Colors.white,
+      child: Stack(
         children: [
           // 1. Google Map
           AnimatedOpacity(
@@ -1017,6 +1019,7 @@ class _MapScreenState extends State<MapScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      useRootNavigator: true, // Show above bottom navigation bar
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) {
           return Container(

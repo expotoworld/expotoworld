@@ -33,6 +33,7 @@ class ExpoAppBar extends ConsumerWidget implements PreferredSizeWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      useRootNavigator: true, // Show above bottom navigation bar
       builder: (context) => _LanguagePickerSheet(ref: ref),
     );
   }

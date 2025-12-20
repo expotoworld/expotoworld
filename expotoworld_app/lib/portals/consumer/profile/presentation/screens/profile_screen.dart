@@ -111,10 +111,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     final scrollProgress = (_scrollOffset / _maxScrollOffset).clamp(0.0, 1.0);
     final titleScale = 1.0 - (scrollProgress * 0.4); // Scale from 1.0 to 0.6
 
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF1F1F1),
-      body: CustomScrollView(
+    // Return content directly without nested Scaffold
+    // MainShell provides the outer Scaffold with bottomNavigationBar
+    // This ensures modal sheets appear above the bottom nav bar
+    return Container(
+      color: isDark ? const Color(0xFF121212) : const Color(0xFFF1F1F1),
+      child: CustomScrollView(
         controller: _scrollController,
         slivers: [
           // Sticky header

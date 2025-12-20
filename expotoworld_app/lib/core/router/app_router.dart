@@ -388,7 +388,11 @@ final GoRouter appRouter = GoRouter(
             overrides: [
               currentMiniAppTypeProvider.overrideWith((ref) => miniAppType),
             ],
-            child: _buildProductsScreen(miniAppType, subcategoryId),
+            // Wrap with MiniAppShell to show bottom navigation
+            child: MiniAppShell(
+              miniAppType: miniAppType,
+              child: _buildProductsScreen(miniAppType, subcategoryId),
+            ),
           ),
           transitionDuration: const Duration(milliseconds: 300),
           reverseTransitionDuration: const Duration(milliseconds: 250),

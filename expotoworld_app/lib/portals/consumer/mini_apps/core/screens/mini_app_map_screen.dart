@@ -224,6 +224,7 @@ class _MiniAppMapScreenState extends ConsumerState<MiniAppMapScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useRootNavigator: true, // Show above bottom navigation bar
       builder: (context) => _StoreDetailsSheet(
         store: store,
         miniAppType: widget.miniAppType,
@@ -405,10 +406,12 @@ class _MiniAppMapScreenState extends ConsumerState<MiniAppMapScreen> {
     final selectedStore = ref.watch(selectedStoreProvider(widget.miniAppType));
     final visibleStores = _getVisibleStores();
 
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
-      body: Stack(
+    // Return content directly without nested Scaffold
+    // MiniAppShell provides the outer Scaffold with bottomNavigationBar
+    // This ensures modal sheets appear above the bottom nav bar
+    return Container(
+      color: isDark ? const Color(0xFF121212) : Colors.white,
+      child: Stack(
         children: [
           // 1. Google Map (full screen)
           AnimatedOpacity(
@@ -646,6 +649,7 @@ class _MiniAppMapScreenState extends ConsumerState<MiniAppMapScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useRootNavigator: true, // Show above bottom navigation bar
       builder: (context) => _StoreListSheet(
         stores: stores,
         onStoreTap: (store) {

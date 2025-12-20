@@ -354,10 +354,12 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen>
     final titleTranslateY =
         scrollProgress * 12; // Move up (legacy, may not be used)
 
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: isDark ? const Color(0xFF121212) : AppColors.neutralWhite,
-      body: Stack(
+    // Return content directly without nested Scaffold
+    // MainShell provides the outer Scaffold with bottomNavigationBar
+    // This ensures modal sheets appear above the bottom nav bar
+    return Container(
+      color: isDark ? const Color(0xFF121212) : AppColors.neutralWhite,
+      child: Stack(
         children: [
           // Main content with CustomScrollView
           CustomScrollView(

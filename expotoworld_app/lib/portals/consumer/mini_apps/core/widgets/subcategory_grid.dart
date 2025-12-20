@@ -35,7 +35,7 @@ class SubcategoryGrid extends StatelessWidget {
           crossAxisCount: 3,
           mainAxisSpacing: AppSpacing.md,
           crossAxisSpacing: AppSpacing.md,
-          childAspectRatio: 0.85, // Slightly taller than wide
+          childAspectRatio: 1.0, // Square cards
         ),
         itemCount: subcategories.length,
         itemBuilder: (context, index) {
@@ -61,7 +61,7 @@ class SubcategoryGrid extends StatelessWidget {
           crossAxisCount: 3,
           mainAxisSpacing: AppSpacing.md,
           crossAxisSpacing: AppSpacing.md,
-          childAspectRatio: 0.85,
+          childAspectRatio: 1.0, // Square cards
         ),
         itemCount: 9,
         itemBuilder: (context, index) => Container(
@@ -102,7 +102,7 @@ class SubcategoryGrid extends StatelessWidget {
   }
 }
 
-/// Individual subcategory card
+/// Individual subcategory card - Square with image and text overlay
 class _SubcategoryCard extends StatelessWidget {
   final MiniAppSubcategory subcategory;
   final VoidCallback onTap;
@@ -118,71 +118,78 @@ class _SubcategoryCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : Colors.black.withValues(alpha: 0.06),
-            width: 1,
-          ),
-          boxShadow: isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Subcategory image
-            Expanded(
-              flex: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                child: _buildImage(context, isDark),
-              ),
+      child: AspectRatio(
+        aspectRatio: 1.0, // Square
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.black.withValues(alpha: 0.06),
+              width: 1,
             ),
-            // Subcategory name
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Full-size image or placeholder
+                _buildImage(context, isDark),
+                
+                // Bottom gradient overlay for text readability
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.7),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                
+                // Text at bottom, horizontally centered
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: AppSpacing.sm,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                    child: Text(
                       subcategory.name,
-                      style: AppTypography.labelSmallStyle.copyWith(
-                        color: AppColors.foreground(context),
-                        fontWeight: FontWeight.w600,
+                      style: AppTypography.titleMedium.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (subcategory.productCount > 0) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        '${subcategory.productCount} items',
-                        style: AppTypography.caption(
-                          color: AppColors.foregroundMuted(context),
-                        ),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -190,14 +197,11 @@ class _SubcategoryCard extends StatelessWidget {
 
   Widget _buildImage(BuildContext context, bool isDark) {
     if (subcategory.imageUrl != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-        child: Image.network(
-          subcategory.imageUrl!,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) =>
-              _buildPlaceholderIcon(context, isDark),
-        ),
+      return Image.network(
+        subcategory.imageUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            _buildPlaceholderIcon(context, isDark),
       );
     }
     return _buildPlaceholderIcon(context, isDark);
@@ -302,7 +306,7 @@ class SliverSubcategoryGrid extends StatelessWidget {
           crossAxisCount: 3,
           mainAxisSpacing: AppSpacing.md,
           crossAxisSpacing: AppSpacing.md,
-          childAspectRatio: 0.85,
+          childAspectRatio: 1.0, // Square cards
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {

@@ -8,7 +8,7 @@ import '../../domain/models/store_model.dart';
 import '../../domain/models/product_model.dart';
 import '../../data/mock_data.dart';
 import '../providers/mini_app_providers.dart';
-import '../widgets/product_card.dart';
+import '../widgets/unified_product_card.dart';
 
 /// Abstract base class for mini-app products screen
 /// Implements the shared functionality with slots for customization
@@ -32,11 +32,35 @@ abstract class BaseProductsScreen extends ConsumerStatefulWidget {
 abstract class BaseProductsScreenState<T extends BaseProductsScreen>
     extends ConsumerState<T> {
   final ScrollController scrollController = ScrollController();
+  double _borderRadius = 24.0;
+  
+  // Configuration for corner animation (consistent with mini-app home)
+  static const double _maxRadius = 24.0;
+  static const double _scrollThreshold = 50.0;
+
+  @override
+  void initState() {
+    super.initState();
+    scrollController.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
+    scrollController.removeListener(_onScroll);
     scrollController.dispose();
     super.dispose();
+  }
+  
+  void _onScroll() {
+    final scrollOffset = scrollController.offset;
+    final newRadius = (_maxRadius - (scrollOffset / _scrollThreshold * _maxRadius))
+        .clamp(0.0, _maxRadius);
+    
+    if (newRadius != _borderRadius) {
+      setState(() {
+        _borderRadius = newRadius;
+      });
+    }
   }
 
   //
@@ -50,7 +74,7 @@ abstract class BaseProductsScreenState<T extends BaseProductsScreen>
     MiniAppProduct product,
     int cartQuantity,
   ) {
-    return MiniAppProductCard(
+    return UnifiedProductCard(
       product: product,
       cartQuantity: cartQuantity,
       onQuantityChanged: (quantity) => handleQuantityChanged(product, quantity),
@@ -76,8 +100,8 @@ abstract class BaseProductsScreenState<T extends BaseProductsScreen>
     );
   }
 
-  /// Bottom padding for floating nav bar
-  double get bottomPadding => AppSpacing.lg;
+  /// Bottom padding for floating nav bar (extra space for bottom nav)
+  double get bottomPadding => 140;
 
   //
   // HANDLERS
@@ -122,6 +146,7 @@ abstract class BaseProductsScreenState<T extends BaseProductsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final subcategory = getSubcategory();
     final selectedStore = ref.watch(selectedStoreProvider(widget.miniAppType));
     final products = ref.watch(miniAppProductsProvider((
@@ -130,17 +155,37 @@ abstract class BaseProductsScreenState<T extends BaseProductsScreen>
       subcategoryId: widget.subcategoryId,
     )));
 
-    return Scaffold(
-      body: Column(
+    // Return content directly without nested Scaffold
+    // MiniAppShell provides the outer Scaffold with bottomNavigationBar
+    // This ensures modal sheets appear above the bottom nav bar
+    return Container(
+      color: AppColors.themeRed,
+      child: Column(
         children: [
-          // SLOT: Header
+          // SLOT: Header (on red background)
           buildHeader(context, subcategory?.name ?? 'Products', products.length),
 
-          // SHARED: Products grid
+          // SHARED: Content area with animated rounded corners
           Expanded(
-            child: products.isEmpty
-                ? buildEmptyState(context)
-                : buildProductsGrid(context, products),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 50),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF121212) : AppColors.neutralWhite,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(_borderRadius),
+                  topRight: Radius.circular(_borderRadius),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(_borderRadius),
+                  topRight: Radius.circular(_borderRadius),
+                ),
+                child: products.isEmpty
+                    ? buildEmptyState(context)
+                    : buildProductsGrid(context, products),
+              ),
+            ),
           ),
         ],
       ),
@@ -224,47 +269,32 @@ class ProductsHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
       child: Row(
         children: [
-          // Back button
+          // Back button (no background)
           GestureDetector(
             onTap: onBack,
             child: Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
+              alignment: Alignment.center,
               child: const Icon(
                 Icons.arrow_back_rounded,
                 color: Colors.white,
-                size: 22,
+                size: 24,
               ),
             ),
           ),
           const SizedBox(width: AppSpacing.md),
 
-          // Title and count
+          // Title only (no product count)
           Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTypography.titleMedium.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  '$productCount products',
-                  style: AppTypography.caption(
-                    color: Colors.white.withValues(alpha: 0.8),
-                  ),
-                ),
-              ],
+            child: Text(
+              title,
+              style: AppTypography.titleMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
 

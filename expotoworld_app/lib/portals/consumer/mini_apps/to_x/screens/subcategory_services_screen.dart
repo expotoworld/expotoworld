@@ -7,7 +7,7 @@ import '../../domain/models/product_model.dart';
 import '../../core/providers/mini_app_providers.dart';
 
 /// Services screen for toX mini-app (displays services for a subcategory)
-class SubcategoryServicesScreen extends ConsumerWidget {
+class SubcategoryServicesScreen extends ConsumerStatefulWidget {
   final String subcategoryId;
 
   const SubcategoryServicesScreen({
@@ -16,47 +16,145 @@ class SubcategoryServicesScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SubcategoryServicesScreen> createState() =>
+      _SubcategoryServicesScreenState();
+}
+
+class _SubcategoryServicesScreenState
+    extends ConsumerState<SubcategoryServicesScreen> {
+  final ScrollController _scrollController = ScrollController();
+  double _borderRadius = 24.0;
+
+  // Configuration for corner animation (consistent with mini-app home)
+  static const double _maxRadius = 24.0;
+  static const double _scrollThreshold = 50.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final scrollOffset = _scrollController.offset;
+    final newRadius =
+        (_maxRadius - (scrollOffset / _scrollThreshold * _maxRadius))
+            .clamp(0.0, _maxRadius);
+
+    if (newRadius != _borderRadius) {
+      setState(() {
+        _borderRadius = newRadius;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final statusBarHeight = MediaQuery.of(context).padding.top;
     final services = ref.watch(miniAppServicesProvider((
-      subcategoryId: subcategoryId,
+      subcategoryId: widget.subcategoryId,
     )));
     final subcategories = ref.watch(miniAppSubcategoriesProvider((
       miniAppType: MiniAppType.toX,
       categoryId: null,
     )));
-    
+
     final subcategory = subcategories.firstWhere(
-      (s) => s.id == subcategoryId,
+      (s) => s.id == widget.subcategoryId,
       orElse: () => subcategories.first,
     );
 
+    // Return content wrapped in Scaffold (needed for Material decoration)
+    // This screen is displayed standalone (outside MiniAppShell) as a separate route
+    // So it needs its own Scaffold, unlike screens inside shells
     return Scaffold(
+      backgroundColor: AppColors.themeRed,
       body: Column(
         children: [
-          // Header
-          _ServicesHeader(
-            subcategoryName: subcategory.name,
-            serviceCount: services.length,
-            onBack: () => context.pop(),
-          ),
-          
-          // Services list
-          Expanded(
-            child: services.isEmpty
-                ? _EmptyState()
-                : ListView.separated(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    itemCount: services.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: AppSpacing.md),
-                    itemBuilder: (context, index) {
-                      final service = services[index];
-                      return _ServiceListItem(
-                        service: service,
-                        onRequestQuote: () => _showQuotePopup(context, service),
-                      );
-                    },
+          // Header (on red background)
+          Container(
+            padding: EdgeInsets.only(top: statusBarHeight),
+            child: Container(
+              height: AppSpacing.appBarHeight,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+              child: Row(
+                children: [
+                  // Back button (no background)
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.arrow_back_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
                   ),
+                  const SizedBox(width: AppSpacing.md),
+
+                  // Title only (no service count)
+                  Expanded(
+                    child: Text(
+                      subcategory.name,
+                      style: AppTypography.titleMedium.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Content area with animated rounded corners
+          Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 50),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF121212) : AppColors.neutralWhite,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(_borderRadius),
+                  topRight: Radius.circular(_borderRadius),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(_borderRadius),
+                  topRight: Radius.circular(_borderRadius),
+                ),
+                child: services.isEmpty
+                    ? _EmptyState()
+                    : ListView.separated(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        itemCount: services.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AppSpacing.md),
+                        itemBuilder: (context, index) {
+                          final service = services[index];
+                          return _ServiceListItem(
+                            service: service,
+                            onRequestQuote: () =>
+                                _showQuotePopup(context, service),
+                          );
+                        },
+                      ),
+              ),
+            ),
           ),
         ],
       ),
@@ -68,6 +166,7 @@ class SubcategoryServicesScreen extends ConsumerWidget {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useRootNavigator: true, // Show above bottom navigation bar
       builder: (context) => _QuoteRequestSheet(
         service: service,
         onSubmit: () {
@@ -91,106 +190,6 @@ class SubcategoryServicesScreen extends ConsumerWidget {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _ServicesHeader extends StatelessWidget {
-  final String subcategoryName;
-  final int serviceCount;
-  final VoidCallback onBack;
-
-  const _ServicesHeader({
-    required this.subcategoryName,
-    required this.serviceCount,
-    required this.onBack,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final statusBarHeight = MediaQuery.of(context).padding.top;
-
-    return Container(
-      padding: EdgeInsets.only(top: statusBarHeight),
-      decoration: const BoxDecoration(
-        color: AppColors.themeRed,
-      ),
-      child: Column(
-        children: [
-          Container(
-            height: AppSpacing.appBarHeight,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: Row(
-              children: [
-                // Back button
-                GestureDetector(
-                  onTap: onBack,
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                    ),
-                    child: const Icon(
-                      Icons.arrow_back_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                
-                // Title
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        subcategoryName,
-                        style: AppTypography.titleMedium.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        '$serviceCount services available',
-                        style: AppTypography.caption(
-                          color: Colors.white.withValues(alpha: 0.8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // Filter button
-                GestureDetector(
-                  onTap: () {
-                    // Show filter options
-                  },
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                    ),
-                    child: const Icon(
-                      Icons.filter_list_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-        ],
       ),
     );
   }

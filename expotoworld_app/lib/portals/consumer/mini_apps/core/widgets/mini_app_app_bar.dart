@@ -43,6 +43,7 @@ class MiniAppAppBar extends ConsumerWidget implements PreferredSizeWidget {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useRootNavigator: true, // Show above bottom navigation bar
       builder: (context) => _StorePickerSheet(
         stores: stores,
         selectedStore: selectedStore,
@@ -58,6 +59,7 @@ class MiniAppAppBar extends ConsumerWidget implements PreferredSizeWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      useRootNavigator: true, // Show above bottom navigation bar
       builder: (context) => _LanguagePickerSheet(ref: ref),
     );
   }

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/screens/base_products_screen.dart';
 import '../../domain/enums/mini_app_type.dart';
 import '../../domain/models/product_model.dart';
-import '../../core/widgets/product_card.dart';
+import '../../core/widgets/unified_product_card.dart';
 
 /// toC Products Screen - Business to Consumer
 /// 
@@ -29,22 +29,13 @@ class _ToCProductsScreenState extends BaseProductsScreenState<ToCProductsScreen>
     MiniAppProduct product,
     int cartQuantity,
   ) {
-    // Currently using default product card
-    // Override to add reviews, wishlist, etc.
-    return MiniAppProductCard(
+    // Using unified product card design
+    // TODO: Add reviews, wishlist as overlay or additional element if needed
+    return UnifiedProductCard(
       product: product,
       cartQuantity: cartQuantity,
       onQuantityChanged: (quantity) => handleQuantityChanged(product, quantity),
       onTap: () => handleProductTap(product),
     );
-    
-    // FUTURE: Use toC-specific product card with reviews
-    // return ToCProductCard(
-    //   product: product,
-    //   cartQuantity: cartQuantity,
-    //   showReviews: true,
-    //   showWishlist: true,
-    //   onQuantityChanged: (quantity) => handleQuantityChanged(product, quantity),
-    // );
   }
 }

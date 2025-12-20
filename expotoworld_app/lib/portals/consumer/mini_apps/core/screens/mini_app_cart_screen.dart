@@ -87,6 +87,7 @@ class _MiniAppCartScreenState extends ConsumerState<MiniAppCartScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useRootNavigator: true, // Show above bottom navigation bar
       builder: (context) => _CheckoutPopup(
         miniAppType: miniAppType,
         cart: cart,
@@ -124,9 +125,12 @@ class _MiniAppCartScreenState extends ConsumerState<MiniAppCartScreen> {
     final cart = ref.watch(miniAppCartProvider(miniAppType));
     final isEmpty = cart.items.isEmpty;
 
-    return Scaffold(
-      backgroundColor: AppColors.themeRed,
-      body: Column(
+    // Return content directly without nested Scaffold
+    // MiniAppShell provides the outer Scaffold with bottomNavigationBar
+    // This ensures modal sheets appear above the bottom nav bar
+    return Container(
+      color: AppColors.themeRed,
+      child: Column(
         children: [
           // Fixed header - stays at top while content scrolls
           Container(
@@ -297,6 +301,7 @@ class _CartHeader extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      useRootNavigator: true, // Show above bottom navigation bar
       builder: (context) => _LanguagePickerSheet(ref: ref),
     );
   }
