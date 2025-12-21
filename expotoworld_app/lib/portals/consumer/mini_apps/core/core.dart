@@ -14,6 +14,8 @@ export 'providers/mini_app_providers.dart';
 export 'widgets/category_pills.dart';
 export 'widgets/subcategory_grid.dart';
 export 'widgets/product_card.dart';
+export 'widgets/unified_product_card.dart';
+export 'widgets/product_details_modal.dart';
 export 'widgets/mini_app_app_bar.dart';
 export 'widgets/mini_app_shell.dart';
 export 'widgets/mini_app_shell_with_tabs.dart';

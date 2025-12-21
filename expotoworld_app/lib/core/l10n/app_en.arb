@@ -402,6 +402,65 @@
     "description": "Contact manufacturer button"
   },
 
+  "productDescription": "Description",
+  "@productDescription": {
+    "description": "Product description section title"
+  },
+
+  "productOutOfStock": "Out of Stock",
+  "@productOutOfStock": {
+    "description": "Out of stock indicator"
+  },
+
+  "productInStock": "{count} in stock",
+  "@productInStock": {
+    "description": "Stock count indicator",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+
+  "productOnlyLeft": "Only {count} left",
+  "@productOnlyLeft": {
+    "description": "Low stock warning",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+
+  "productMinOrder": "Minimum order: {count} units",
+  "@productMinOrder": {
+    "description": "Minimum order quantity notice",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+
+  "productShelfLocation": "Shelf: {code}",
+  "@productShelfLocation": {
+    "description": "Product shelf location in store",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "A-12-3"
+      }
+    }
+  },
+
+  "productInCart": "in cart",
+  "@productInCart": {
+    "description": "Label showing item is in cart"
+  },
+
   "qrScanTitle": "Scan QR Code",
   "@qrScanTitle": {
     "description": "QR scan screen title"

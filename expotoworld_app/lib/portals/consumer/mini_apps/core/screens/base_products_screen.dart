@@ -9,6 +9,7 @@ import '../../domain/models/product_model.dart';
 import '../../data/mock_data.dart';
 import '../providers/mini_app_providers.dart';
 import '../widgets/unified_product_card.dart';
+import '../widgets/product_details_modal.dart';
 
 /// Abstract base class for mini-app products screen
 /// Implements the shared functionality with slots for customization
@@ -118,9 +119,25 @@ abstract class BaseProductsScreenState<T extends BaseProductsScreen>
     }
   }
 
-  /// Handle product tap
+  /// Handle product tap - shows product details modal
   void handleProductTap(MiniAppProduct product) {
-    // Override in subclass for product detail navigation
+    // Get current cart quantity for this product
+    final cartQuantity = ref.read(productCartQuantityProvider((
+      miniAppType: widget.miniAppType,
+      productId: product.id,
+    )));
+    
+    // Show product details modal
+    ProductDetailsModal.show(
+      context: context,
+      product: product,
+      cartQuantity: cartQuantity,
+      onQuantityChanged: (quantity) => handleQuantityChanged(product, quantity),
+      onBuyNow: () {
+        // TODO: Implement buy now flow
+        Navigator.of(context).pop();
+      },
+    );
   }
 
   //

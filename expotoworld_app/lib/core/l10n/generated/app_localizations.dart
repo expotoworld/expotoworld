@@ -574,6 +574,48 @@ abstract class AppLocalizations {
   /// **'Contact Manufacturer'**
   String get productContactManufacturer;
 
+  /// Product description section title
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get productDescription;
+
+  /// Out of stock indicator
+  ///
+  /// In en, this message translates to:
+  /// **'Out of Stock'**
+  String get productOutOfStock;
+
+  /// Stock count indicator
+  ///
+  /// In en, this message translates to:
+  /// **'{count} in stock'**
+  String productInStock(int count);
+
+  /// Low stock warning
+  ///
+  /// In en, this message translates to:
+  /// **'Only {count} left'**
+  String productOnlyLeft(int count);
+
+  /// Minimum order quantity notice
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum order: {count} units'**
+  String productMinOrder(int count);
+
+  /// Product shelf location in store
+  ///
+  /// In en, this message translates to:
+  /// **'Shelf: {code}'**
+  String productShelfLocation(String code);
+
+  /// Label showing item is in cart
+  ///
+  /// In en, this message translates to:
+  /// **'in cart'**
+  String get productInCart;
+
   /// QR scan screen title
   ///
   /// In en, this message translates to:
