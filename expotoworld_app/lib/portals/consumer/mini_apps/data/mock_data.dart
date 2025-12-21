@@ -377,7 +377,7 @@ class MiniAppMockData {
             originalPrice: 3.20,
             currentPrice: 2.79,
             stockLeft: 85,
-            minimumOrderQuantity: 1,
+            minimumOrderQuantity: 3, // MOQ of 3 for demo
             unit: 'g',
             quantity: 500,
             shelfCode: '01-02-04',

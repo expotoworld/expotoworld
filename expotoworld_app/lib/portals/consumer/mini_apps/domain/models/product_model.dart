@@ -46,7 +46,7 @@ class MiniAppProduct {
   String get weight {
     if (unit == null || quantity == null) return '';
     
-    final baseUnit = quantity == 1 ? unit! : '${quantity} ${unit}s';
+    final baseUnit = quantity == 1 ? unit! : '$quantity ${unit}s';
     if (multiplier != null && multiplier! > 1) {
       return '$baseUnit x $multiplier';
     }

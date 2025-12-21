@@ -7,8 +7,16 @@ import '../../../mini_apps/data/mock_data.dart';
 import '../../../mini_apps/core/widgets/unified_product_card.dart';
 
 /// Featured products section with masonry waterfall grid layout
-class FeaturedProductsSection extends StatelessWidget {
+class FeaturedProductsSection extends StatefulWidget {
   const FeaturedProductsSection({super.key});
+
+  @override
+  State<FeaturedProductsSection> createState() => _FeaturedProductsSectionState();
+}
+
+class _FeaturedProductsSectionState extends State<FeaturedProductsSection> {
+  // Track cart quantities locally for demo (in production, use provider)
+  final Map<String, int> _cartQuantities = {};
 
   @override
   Widget build(BuildContext context) {
@@ -43,13 +51,17 @@ class FeaturedProductsSection extends StatelessWidget {
             final product = featuredProducts[index];
             return UnifiedProductCard(
               product: product,
-              cartQuantity: 0, // Home screen doesn't track cart state
+              cartQuantity: _cartQuantities[product.id] ?? 0,
               onQuantityChanged: (qty) {
-                // TODO: Connect to cart provider when implemented for super-app home
+                setState(() {
+                  if (qty == 0) {
+                    _cartQuantities.remove(product.id);
+                  } else {
+                    _cartQuantities[product.id] = qty;
+                  }
+                });
               },
-              onTap: () {
-                // TODO: Navigate to product detail or mini-app
-              },
+              // onTap is null, so it will open the ProductDetailsModal by default
             );
           },
         ),

@@ -249,6 +249,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get productContactManufacturer => 'Contact Manufacturer';
 
   @override
+  String get productDescription => 'Description';
+
+  @override
+  String get productOutOfStock => 'Out of Stock';
+
+  @override
+  String productInStock(int count) {
+    return '$count in stock';
+  }
+
+  @override
+  String productOnlyLeft(int count) {
+    return 'Only $count left';
+  }
+
+  @override
+  String productMinOrder(int count) {
+    return 'Minimum order: $count units';
+  }
+
+  @override
+  String productShelfLocation(String code) {
+    return 'Shelf: $code';
+  }
+
+  @override
+  String get productInCart => 'in cart';
+
+  @override
   String get qrScanTitle => 'Scan QR Code';
 
   @override

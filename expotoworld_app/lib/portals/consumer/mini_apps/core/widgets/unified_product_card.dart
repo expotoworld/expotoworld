@@ -4,6 +4,7 @@ import '../../../../../core/theme/theme.dart';
 import '../../../../../shared/widgets/marquee_text.dart';
 import '../../domain/enums/mini_app_type.dart';
 import '../../domain/models/product_model.dart';
+import 'product_details_modal.dart';
 
 /// Unified product card for all mini-apps and the super-app home screen
 ///
@@ -15,11 +16,13 @@ import '../../domain/models/product_model.dart';
 /// - Strikethrough price next to actual price
 /// - Extra info bubble (unit/quantity/multiplier)
 /// - Oval add-to-cart button with cart icon
+/// - Tapping the card opens the product details modal
 class UnifiedProductCard extends StatelessWidget {
   final MiniAppProduct product;
   final int cartQuantity;
   final ValueChanged<int> onQuantityChanged;
   final VoidCallback? onTap;
+  final VoidCallback? onBuyNow;
 
   const UnifiedProductCard({
     super.key,
@@ -27,14 +30,30 @@ class UnifiedProductCard extends StatelessWidget {
     required this.cartQuantity,
     required this.onQuantityChanged,
     this.onTap,
+    this.onBuyNow,
   });
+
+  void _openProductDetails(BuildContext context) {
+    // If custom onTap provided, use it; otherwise open modal
+    if (onTap != null) {
+      onTap!();
+    } else {
+      ProductDetailsModal.show(
+        context: context,
+        product: product,
+        cartQuantity: cartQuantity,
+        onQuantityChanged: onQuantityChanged,
+        onBuyNow: onBuyNow,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => _openProductDetails(context),
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
