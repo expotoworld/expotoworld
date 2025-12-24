@@ -2,7 +2,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Box, Typography, Button, Card, CardContent, Grid, Chip, Avatar } from '@mui/material';
 import { Add as AddIcon, Business as BusinessIcon } from '@mui/icons-material';
-import { PageHeader } from '@components/common';
 import type { OrganizationType } from '@/types';
 
 // TODO: NEED TO FULLY IMPLEMENT - This is a placeholder page
@@ -30,22 +29,15 @@ const OrganizationsPage: React.FC = () => {
 
   return (
     <Box>
-      <PageHeader
-        title={t('organizations.title')}
-        subtitle={t('organizations.subtitle')}
-        breadcrumbs={[
-          { label: t('nav.dashboard'), path: '/' },
-          { label: t('nav.organizations') },
-        ]}
-        actions={
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-          >
-            {t('organizations.addOrganization')}
-          </Button>
-        }
-      />
+      {/* Actions */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+        >
+          {t('organizations.addOrganization')}
+        </Button>
+      </Box>
 
       <Grid container spacing={3}>
         {mockOrganizations.map((org) => (

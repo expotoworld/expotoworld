@@ -25,7 +25,7 @@ import {
   Visibility as ViewIcon,
   Star as FeaturedIcon,
 } from '@mui/icons-material';
-import { PageHeader, DataTable, ConfirmDialog, type Column } from '@components/common';
+import { DataTable, ConfirmDialog, type Column } from '@components/common';
 import type { Product, Category, Store } from '@/types';
 
 // TODO: DUMMY DATA - Replace with actual API calls
@@ -302,30 +302,23 @@ const ProductsPage: React.FC = () => {
 
   const handleDeleteConfirm = () => {
     // TODO: NEED TO FULLY IMPLEMENT - Call delete API
-    console.log('Deleting product:', selectedProduct?.id);
+    // TODO: Implement delete product API call for product: ${selectedProduct?.id}
     setDeleteDialogOpen(false);
     setSelectedProduct(null);
   };
 
   return (
     <Box>
-      <PageHeader
-        title={t('products.title')}
-        subtitle={t('products.subtitle')}
-        breadcrumbs={[
-          { label: t('nav.dashboard'), path: '/' },
-          { label: t('nav.products') },
-        ]}
-        actions={
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => navigate('/products/new')}
-          >
-            {t('products.addProduct')}
-          </Button>
-        }
-      />
+      {/* Actions */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => navigate('/products/new')}
+        >
+          {t('products.addProduct')}
+        </Button>
+      </Box>
 
       {/* Filters */}
       <Card elevation={0} sx={{ mb: 3 }}>

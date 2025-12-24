@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, memo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   AppBar,
   Toolbar,
-  IconButton,
-  Typography,
   Box,
+  Typography,
+  IconButton,
   Avatar,
   Menu,
   MenuItem,
@@ -14,235 +15,882 @@ import {
   Divider,
   Tooltip,
   Badge,
+  useTheme,
+  alpha,
+  Collapse,
+  List,
+  ListItem,
+  ListItemButton,
+  Paper,
+  Popper,
+  Fade,
+  ButtonBase,
+  Theme,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Brightness4 as DarkModeIcon,
-  Brightness7 as LightModeIcon,
+  Close as CloseIcon,
+  KeyboardArrowDown as ChevronDownIcon,
+  LightMode as SunIcon,
+  DarkMode as MoonIcon,
+  Translate as TranslateIcon,
   Notifications as NotificationsIcon,
-  Person as ProfileIcon,
+  Settings as SettingsIcon,
   Logout as LogoutIcon,
-  Language as LanguageIcon,
+  Inventory2 as ProductsIcon,
+  Category as CategoriesIcon,
+  Store as StoresIcon,
+  Image as ContentIcon,
+  People as UsersIcon,
+  Business as OrganizationsIcon,
+  Map as RegionsIcon,
+  Security as RolesIcon,
+  ShoppingCart as OrdersIcon,
+  Analytics as AnalyticsIcon,
+  Apps as PlaceholderLogoIcon,
 } from '@mui/icons-material';
 import { useThemeMode } from '@contexts/ThemeContext';
 import { useAuth } from '@contexts/AuthContext';
 import { componentSpacing } from '@theme/spacing';
 
-interface HeaderProps {
-  onMenuClick: () => void;
+interface NavMenuItem {
+  id: string;
+  labelKey: string;
+  descKey: string;
+  path: string;
+  icon: React.ReactNode;
 }
 
-const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+interface NavDropdown {
+  id: string;
+  labelKey: string;
+  items: NavMenuItem[];
+}
+
+// NavButton Props Interface
+interface NavButtonProps {
+  label: string;
+  isActive: boolean;
+  hasDropdown?: boolean;
+  isDropdownOpen?: boolean;
+  onClick: () => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
+  theme: Theme;
+}
+
+// NavButton extracted as memoized component to prevent re-renders
+const NavButton = memo<NavButtonProps>(({ 
+  label, 
+  isActive, 
+  hasDropdown, 
+  isDropdownOpen, 
+  onClick, 
+  onMouseEnter, 
+  onMouseLeave,
+  theme 
+}) => (
+  <Box
+    component="button"
+    onClick={onClick}
+    onMouseEnter={onMouseEnter}
+    onMouseLeave={onMouseLeave}
+    sx={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 0.5,
+      px: 3.5,
+      py: 1.25,
+      border: 'none',
+      borderRadius: '9999px',
+      bgcolor: isActive || isDropdownOpen
+        ? alpha(theme.palette.primary.main, 0.1)
+        : 'transparent',
+      color: isActive || isDropdownOpen
+        ? 'primary.main'
+        : 'text.primary',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      fontWeight: 600,
+      fontSize: '1rem',
+      fontFamily: 'inherit',
+      '&:hover': {
+        bgcolor: isActive || isDropdownOpen
+          ? alpha(theme.palette.primary.main, 0.15)
+          : alpha(theme.palette.action.hover, 0.08),
+      },
+    }}
+  >
+    {label}
+    {hasDropdown && (
+      <ChevronDownIcon
+        sx={{
+          fontSize: 16,
+          transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+          transition: 'transform 0.2s ease',
+        }}
+      />
+    )}
+  </Box>
+));
+NavButton.displayName = 'NavButton';
+
+// DropdownContent Props Interface
+interface DropdownContentProps {
+  items: NavMenuItem[];
+  onNavigate: (path: string) => void;
+  isPathActive: (path: string) => boolean;
+  t: (key: string) => string;
+  theme: Theme;
+}
+
+// DropdownContent extracted as memoized component to prevent re-renders
+const DropdownContent = memo<DropdownContentProps>(({ 
+  items, 
+  onNavigate, 
+  isPathActive, 
+  t, 
+  theme 
+}) => (
+  <Box
+    sx={{
+      display: 'grid',
+      gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
+      gap: 1.5,
+      p: 2.5,
+    }}
+  >
+    {items.map((item) => (
+      <ButtonBase
+        key={item.id}
+        onClick={() => onNavigate(item.path)}
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 2,
+          p: 2.5,
+          borderRadius: 2,
+          cursor: 'pointer',
+          bgcolor: isPathActive(item.path)
+            ? alpha(theme.palette.primary.main, 0.08)
+            : 'transparent',
+          textAlign: 'left',
+          width: '100%',
+          justifyContent: 'flex-start',
+          transition: 'all 0.2s ease',
+          '&:hover': {
+            bgcolor: alpha(theme.palette.action.hover, 0.12),
+          },
+        }}
+      >
+        <Box
+          sx={{
+            width: 44,
+            height: 44,
+            borderRadius: 2,
+            bgcolor: isPathActive(item.path)
+              ? alpha(theme.palette.primary.main, 0.1)
+              : alpha(theme.palette.action.hover, 0.06),
+            color: isPathActive(item.path) ? 'primary.main' : 'text.secondary',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          {item.icon}
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            variant="body1"
+            sx={{
+              fontWeight: 600,
+              color: isPathActive(item.path) ? 'primary.main' : 'text.primary',
+            }}
+          >
+            {t(item.labelKey)}
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ display: 'block', mt: 0.5 }}
+          >
+            {t(item.descKey)}
+          </Typography>
+        </Box>
+      </ButtonBase>
+    ))}
+  </Box>
+));
+DropdownContent.displayName = 'DropdownContent';
+
+const manageItems: NavMenuItem[] = [
+  { id: 'products', labelKey: 'nav.products', descKey: 'nav.productsDesc', path: '/products', icon: <ProductsIcon /> },
+  { id: 'categories', labelKey: 'nav.categories', descKey: 'nav.categoriesDesc', path: '/categories', icon: <CategoriesIcon /> },
+  { id: 'stores', labelKey: 'nav.stores', descKey: 'nav.storesDesc', path: '/stores', icon: <StoresIcon /> },
+  { id: 'content', labelKey: 'nav.content', descKey: 'nav.contentDesc', path: '/content', icon: <ContentIcon /> },
+];
+
+const networkItems: NavMenuItem[] = [
+  { id: 'users', labelKey: 'nav.users', descKey: 'nav.usersDesc', path: '/users', icon: <UsersIcon /> },
+  { id: 'organizations', labelKey: 'nav.organizations', descKey: 'nav.organizationsDesc', path: '/organizations', icon: <OrganizationsIcon /> },
+  { id: 'regions', labelKey: 'nav.regions', descKey: 'nav.regionsDesc', path: '/regions', icon: <RegionsIcon /> },
+  { id: 'roles', labelKey: 'nav.roles', descKey: 'nav.rolesDesc', path: '/roles', icon: <RolesIcon /> },
+];
+
+const navDropdowns: NavDropdown[] = [
+  { id: 'manage', labelKey: 'nav.manage', items: manageItems },
+  { id: 'network', labelKey: 'nav.network', items: networkItems },
+];
+
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = () => {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { mode, toggleTheme } = useThemeMode();
   const { user, logout } = useAuth();
 
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [langAnchorEl, setLangAnchorEl] = useState<null | HTMLElement>(null);
-  const [notifAnchorEl, setNotifAnchorEl] = useState<null | HTMLElement>(null);
+  // State for menus
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null);
+  const [langAnchor, setLangAnchor] = useState<null | HTMLElement>(null);
+  const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+  // Refs for dropdown positioning
+  const dropdownRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+  
+  // Timeout ref for delayed dropdown close
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Flag to prevent hover from reopening dropdown right after navigation
+  const justNavigatedRef = useRef(false);
+
+  // Check if current path is in a dropdown
+  const isPathInDropdown = (items: NavMenuItem[]) => {
+    return items.some((item) => {
+      if (item.path === '/') return location.pathname === '/';
+      return location.pathname.startsWith(item.path);
+    });
   };
 
-  const handleProfileMenuClose = () => {
-    setAnchorEl(null);
+  // Check if path is active
+  const isPathActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
   };
 
-  const handleLangMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setLangAnchorEl(event.currentTarget);
+  const handleDropdownOpen = (id: string) => {
+    // Don't reopen if we just navigated
+    if (justNavigatedRef.current) {
+      return;
+    }
+    // Clear any pending close timeout
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    setActiveDropdown(id);
   };
 
-  const handleLangMenuClose = () => {
-    setLangAnchorEl(null);
+  const handleDropdownClose = () => {
+    // Use timeout to allow moving between button and dropdown
+    closeTimeoutRef.current = setTimeout(() => {
+      setActiveDropdown(null);
+    }, 150);
+  };
+  
+  const cancelDropdownClose = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+  };
+
+  const handleNavigation = (path: string) => {
+    // Clear any pending close timeout first
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    
+    // Set flag to prevent hover from reopening dropdown
+    justNavigatedRef.current = true;
+    
+    // Close dropdown and navigate
+    setActiveDropdown(null);
+    setMobileOpen(false);
+    navigate(path);
+    
+    // Reset the flag after a short delay (after mouse events settle)
+    setTimeout(() => {
+      justNavigatedRef.current = false;
+    }, 300);
+  };
+
+  const handleProfileOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setProfileAnchor(event.currentTarget);
+  };
+
+  const handleProfileClose = () => {
+    setProfileAnchor(null);
+  };
+
+  const handleLangOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setLangAnchor(event.currentTarget);
+  };
+
+  const handleLangClose = () => {
+    setLangAnchor(null);
   };
 
   const handleLanguageChange = (lang: string) => {
     i18n.changeLanguage(lang);
-    handleLangMenuClose();
+    handleLangClose();
   };
 
-  const handleNotifMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setNotifAnchorEl(event.currentTarget);
+  const handleNotifOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setNotifAnchor(event.currentTarget);
   };
 
-  const handleNotifMenuClose = () => {
-    setNotifAnchorEl(null);
+  const handleNotifClose = () => {
+    setNotifAnchor(null);
   };
 
   const handleLogout = () => {
-    handleProfileMenuClose();
+    handleProfileClose();
     logout();
   };
 
+  const handleMobileToggle = () => {
+    setMobileOpen(!mobileOpen);
+    setActiveDropdown(null);
+  };
+
+  // Ref for the popper content
+  const popperContentRef = useRef<HTMLDivElement | null>(null);
+
+  // Cleanup timeout on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Close dropdown on click away
+  useEffect(() => {
+    const handleClickAway = (event: MouseEvent) => {
+      if (activeDropdown) {
+        const dropdownElement = dropdownRefs.current[activeDropdown];
+        const popperElement = popperContentRef.current;
+        const target = event.target as Node;
+        
+        // Check if click is outside both the nav button AND the popper content
+        const isOutsideNavButton = dropdownElement && !dropdownElement.contains(target);
+        const isOutsidePopper = !popperElement || !popperElement.contains(target);
+        
+        if (isOutsideNavButton && isOutsidePopper) {
+          setActiveDropdown(null);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickAway);
+    return () => document.removeEventListener('mousedown', handleClickAway);
+  }, [activeDropdown]);
+
   return (
-    <AppBar
-      position="fixed"
-      elevation={0}
-      sx={{
-        width: { sm: `calc(100% - ${componentSpacing.sidebarWidth}px)` },
-        ml: { sm: `${componentSpacing.sidebarWidth}px` },
-        bgcolor: 'background.default',
-      }}
-    >
-      <Toolbar sx={{ height: componentSpacing.headerHeight }}>
-        {/* Mobile Menu Button */}
-        <IconButton
-          color="inherit"
-          aria-label="open drawer"
-          edge="start"
-          onClick={onMenuClick}
-          sx={{ mr: 2, display: { sm: 'none' }, color: 'text.primary' }}
+    <>
+      <AppBar
+        position="fixed"
+        elevation={0}
+        sx={{
+          bgcolor: 'background.default',
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+        }}
+      >
+        <Toolbar
+          sx={{
+            height: componentSpacing.headerHeight,
+            px: { xs: 2, sm: 3 },
+          }}
         >
-          <MenuIcon />
-        </IconButton>
-
-        {/* Page Title - Could be dynamic based on route */}
-        <Typography
-          variant="h6"
-          noWrap
-          component="div"
-          sx={{ display: { xs: 'none', sm: 'block' }, color: 'text.primary', fontWeight: 600 }}
-        >
-          {t('nav.dashboard')}
-        </Typography>
-
-        <Box sx={{ flexGrow: 1 }} />
-
-        {/* Actions */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {/* Theme Toggle */}
-          <Tooltip title={mode === 'light' ? t('settings.darkMode') : t('settings.lightMode')}>
-            <IconButton onClick={toggleTheme} sx={{ color: 'text.secondary' }}>
-              {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
-            </IconButton>
-          </Tooltip>
-
-          {/* Language Selector */}
-          <Tooltip title={t('settings.language')}>
-            <IconButton onClick={handleLangMenuOpen} sx={{ color: 'text.secondary' }}>
-              <LanguageIcon />
-            </IconButton>
-          </Tooltip>
-          <Menu
-            anchorEl={langAnchorEl}
-            open={Boolean(langAnchorEl)}
-            onClose={handleLangMenuClose}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          {/* Mobile Menu Button */}
+          <IconButton
+            onClick={handleMobileToggle}
+            sx={{
+              display: { xs: 'flex', md: 'none' },
+              mr: 1,
+              color: 'text.primary',
+            }}
           >
-            <MenuItem
-              selected={i18n.language === 'en'}
-              onClick={() => handleLanguageChange('en')}
-            >
-              English
-            </MenuItem>
-            <MenuItem
-              selected={i18n.language === 'zh'}
-              onClick={() => handleLanguageChange('zh')}
-            >
-              中文
-            </MenuItem>
-          </Menu>
+            {mobileOpen ? <CloseIcon /> : <MenuIcon />}
+          </IconButton>
 
-          {/* Notifications */}
-          <Tooltip title={t('common.notifications')}>
-            <IconButton onClick={handleNotifMenuOpen} sx={{ color: 'text.secondary' }}>
-              <Badge badgeContent={3} color="error">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
-          </Tooltip>
-          <Menu
-            anchorEl={notifAnchorEl}
-            open={Boolean(notifAnchorEl)}
-            onClose={handleNotifMenuClose}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            PaperProps={{ sx: { width: 320, maxHeight: 400 } }}
+          {/* Logo & Brand */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              cursor: 'pointer',
+              mr: { xs: 'auto', md: 4 },
+            }}
+            onClick={() => handleNavigation('/')}
           >
-            {/* TODO: DUMMY DATA - Replace with real notifications */}
-            <MenuItem>
-              <Box>
-                <Typography variant="subtitle2">New Order #1234</Typography>
+            <Box
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: 1.5,
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                color: 'primary.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <PlaceholderLogoIcon sx={{ fontSize: 22 }} />
+            </Box>
+            <Typography
+              sx={{
+                fontWeight: 700,
+                fontSize: '1.1rem',
+                color: 'primary.main',
+                letterSpacing: '-0.01em',
+                display: { xs: 'none', sm: 'block' },
+              }}
+            >
+              EXPO to WORLD
+            </Typography>
+          </Box>
+
+          {/* Desktop Navigation - Centered */}
+          <Box
+            sx={{
+              display: { xs: 'none', md: 'flex' },
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 1,
+            }}
+          >
+            {/* Dropdown Menus */}
+            {navDropdowns.map((dropdown) => (
+              <Box
+                key={dropdown.id}
+                ref={(el) => (dropdownRefs.current[dropdown.id] = el as HTMLElement)}
+                onMouseEnter={() => handleDropdownOpen(dropdown.id)}
+                onMouseLeave={() => handleDropdownClose()}
+                sx={{ position: 'relative' }}
+              >
+                <NavButton
+                  label={t(dropdown.labelKey)}
+                  isActive={isPathInDropdown(dropdown.items)}
+                  hasDropdown
+                  isDropdownOpen={activeDropdown === dropdown.id}
+                  onClick={() => handleDropdownOpen(dropdown.id)}
+                  theme={theme}
+                />
+
+                {/* Dropdown Panel */}
+                <Popper
+                  open={activeDropdown === dropdown.id}
+                  anchorEl={dropdownRefs.current[dropdown.id]}
+                  placement="bottom-start"
+                  transition
+                  sx={{ zIndex: theme.zIndex.appBar + 1 }}
+                >
+                  {({ TransitionProps }) => (
+                    <Fade {...TransitionProps} timeout={200}>
+                      <Paper
+                        ref={popperContentRef}
+                        elevation={8}
+                        onMouseEnter={cancelDropdownClose}
+                        onMouseLeave={() => handleDropdownClose()}
+                        sx={{
+                          mt: 1,
+                          minWidth: 440,
+                          borderRadius: 3,
+                          border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
+                          bgcolor: theme.palette.mode === 'dark' 
+                            ? 'rgba(30, 30, 30, 0.98)' 
+                            : 'rgba(255, 255, 255, 0.98)',
+                          boxShadow: theme.palette.mode === 'dark'
+                            ? '0 20px 60px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4)'
+                            : '0 20px 60px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.12)',
+                          overflow: 'hidden',
+                          backdropFilter: 'blur(10px)',
+                        }}
+                      >
+                        <DropdownContent 
+                          items={dropdown.items} 
+                          onNavigate={handleNavigation}
+                          isPathActive={isPathActive}
+                          t={t}
+                          theme={theme}
+                        />
+                      </Paper>
+                    </Fade>
+                  )}
+                </Popper>
+              </Box>
+            ))}
+
+            {/* Standalone Nav Items */}
+            <NavButton
+              label={t('nav.orders')}
+              isActive={isPathActive('/orders')}
+              onClick={() => handleNavigation('/orders')}
+              theme={theme}
+            />
+            <NavButton
+              label={t('nav.analytics')}
+              isActive={isPathActive('/analytics')}
+              onClick={() => handleNavigation('/analytics')}
+              theme={theme}
+            />
+          </Box>
+
+          {/* Right Actions */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            {/* Theme Toggle */}
+            <Tooltip title={mode === 'light' ? t('settings.darkMode') : t('settings.lightMode')}>
+              <IconButton onClick={toggleTheme} sx={{ color: 'text.secondary' }}>
+                {mode === 'light' ? <MoonIcon /> : <SunIcon />}
+              </IconButton>
+            </Tooltip>
+
+            {/* Language Selector */}
+            <Tooltip title={t('settings.language')}>
+              <IconButton onClick={handleLangOpen} sx={{ color: 'text.secondary' }}>
+                <TranslateIcon />
+              </IconButton>
+            </Tooltip>
+            <Menu
+              anchorEl={langAnchor}
+              open={Boolean(langAnchor)}
+              onClose={handleLangClose}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              PaperProps={{
+                sx: {
+                  mt: 1,
+                  borderRadius: 2,
+                  border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
+                  bgcolor: theme.palette.mode === 'dark' 
+                    ? 'rgba(30, 30, 30, 0.98)' 
+                    : 'rgba(255, 255, 255, 0.98)',
+                  boxShadow: theme.palette.mode === 'dark'
+                    ? '0 20px 60px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4)'
+                    : '0 20px 60px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.12)',
+                  backdropFilter: 'blur(10px)',
+                }
+              }}
+            >
+              <MenuItem
+                selected={i18n.language === 'en'}
+                onClick={() => handleLanguageChange('en')}
+              >
+                {t('settings.languages.en')}
+              </MenuItem>
+              <MenuItem
+                selected={i18n.language === 'zh'}
+                onClick={() => handleLanguageChange('zh')}
+              >
+                {t('settings.languages.zh')}
+              </MenuItem>
+            </Menu>
+
+            {/* Notifications */}
+            <Tooltip title={t('common.notifications')}>
+              <IconButton onClick={handleNotifOpen} sx={{ color: 'text.secondary' }}>
+                <Badge badgeContent={3} color="error">
+                  <NotificationsIcon />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+            <Menu
+              anchorEl={notifAnchor}
+              open={Boolean(notifAnchor)}
+              onClose={handleNotifClose}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              PaperProps={{
+                sx: {
+                  width: 320,
+                  maxHeight: 400,
+                  mt: 1,
+                  borderRadius: 2,
+                  border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
+                  bgcolor: theme.palette.mode === 'dark' 
+                    ? 'rgba(30, 30, 30, 0.98)' 
+                    : 'rgba(255, 255, 255, 0.98)',
+                  boxShadow: theme.palette.mode === 'dark'
+                    ? '0 20px 60px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4)'
+                    : '0 20px 60px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.12)',
+                  backdropFilter: 'blur(10px)',
+                }
+              }}
+            >
+              {/* TODO: DUMMY DATA - Replace with real notifications */}
+              <MenuItem>
+                <Box>
+                  <Typography variant="subtitle2">{t('common.newOrder', { id: '1234' })}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('common.minutesAgo', { count: 2 })}
+                  </Typography>
+                </Box>
+              </MenuItem>
+              <MenuItem>
+                <Box>
+                  <Typography variant="subtitle2">{t('common.lowStockAlert')}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('common.productsNeedRestocking', { count: 5 })}
+                  </Typography>
+                </Box>
+              </MenuItem>
+              <MenuItem>
+                <Box>
+                  <Typography variant="subtitle2">{t('common.newUserRegistration')}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('common.minutesAgo', { count: 15 })}
+                  </Typography>
+                </Box>
+              </MenuItem>
+              <Divider />
+              <MenuItem sx={{ justifyContent: 'center' }}>
+                <Typography variant="body2" color="primary">
+                  {t('common.viewAll')}
+                </Typography>
+              </MenuItem>
+            </Menu>
+
+            {/* Profile Menu */}
+            <Tooltip title={t('nav.settings')}>
+              <IconButton onClick={handleProfileOpen} sx={{ p: 0.5, ml: 1 }}>
+                <Avatar
+                  alt={user?.username || 'Admin'}
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    bgcolor: 'primary.main',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  {user?.username?.charAt(0).toUpperCase() || 'A'}
+                </Avatar>
+              </IconButton>
+            </Tooltip>
+            <Menu
+              anchorEl={profileAnchor}
+              open={Boolean(profileAnchor)}
+              onClose={handleProfileClose}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              PaperProps={{
+                sx: {
+                  width: 200,
+                  mt: 1,
+                  borderRadius: 2,
+                  border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
+                  bgcolor: theme.palette.mode === 'dark' 
+                    ? 'rgba(30, 30, 30, 0.98)' 
+                    : 'rgba(255, 255, 255, 0.98)',
+                  boxShadow: theme.palette.mode === 'dark'
+                    ? '0 20px 60px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4)'
+                    : '0 20px 60px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.12)',
+                  backdropFilter: 'blur(10px)',
+                }
+              }}
+            >
+              <Box sx={{ px: 2, py: 1.5 }}>
+                <Typography variant="subtitle2" fontWeight={600}>
+                  {user?.username || 'Admin'}
+                </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  2 minutes ago
+                  {user?.email || 'admin@expotoworld.com'}
                 </Typography>
               </Box>
-            </MenuItem>
-            <MenuItem>
-              <Box>
-                <Typography variant="subtitle2">Low Stock Alert</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  5 products need restocking
-                </Typography>
-              </Box>
-            </MenuItem>
-            <MenuItem>
-              <Box>
-                <Typography variant="subtitle2">New User Registration</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  15 minutes ago
-                </Typography>
-              </Box>
-            </MenuItem>
-            <Divider />
-            <MenuItem sx={{ justifyContent: 'center' }}>
-              <Typography variant="body2" color="primary">
-                {t('common.viewAll')}
+              <Divider />
+              <MenuItem onClick={() => { handleProfileClose(); handleNavigation('/settings'); }}>
+                <ListItemIcon>
+                  <SettingsIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>{t('nav.settings')}</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={handleLogout}>
+                <ListItemIcon>
+                  <LogoutIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>{t('auth.logout')}</ListItemText>
+              </MenuItem>
+            </Menu>
+          </Box>
+        </Toolbar>
+      </AppBar>
+
+      {/* Mobile Navigation Drawer */}
+      <Collapse
+        in={mobileOpen}
+        sx={{
+          position: 'fixed',
+          top: componentSpacing.headerHeight,
+          left: 0,
+          right: 0,
+          zIndex: theme.zIndex.appBar,
+          bgcolor: 'background.paper',
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          maxHeight: `calc(100vh - ${componentSpacing.headerHeight}px)`,
+          overflowY: 'auto',
+          display: { xs: 'block', md: 'none' },
+        }}
+      >
+        <List sx={{ p: 2 }}>
+          {/* Dashboard */}
+          <ListItem disablePadding sx={{ mb: 0.5 }}>
+            <ListItemButton
+              onClick={() => handleNavigation('/')}
+              sx={{
+                borderRadius: 2,
+                bgcolor: isPathActive('/') && location.pathname === '/'
+                  ? alpha(theme.palette.primary.main, 0.1)
+                  : 'transparent',
+              }}
+            >
+              <ListItemText
+                primary={t('nav.dashboard')}
+                primaryTypographyProps={{
+                  fontWeight: isPathActive('/') && location.pathname === '/' ? 600 : 500,
+                  color: isPathActive('/') && location.pathname === '/' ? 'primary.main' : 'text.primary',
+                }}
+              />
+            </ListItemButton>
+          </ListItem>
+
+          {/* Dropdown Sections */}
+          {navDropdowns.map((dropdown) => (
+            <Box key={dropdown.id} sx={{ mb: 1 }}>
+              <Typography
+                variant="overline"
+                color="text.secondary"
+                sx={{ px: 2, display: 'block', mb: 1 }}
+              >
+                {t(dropdown.labelKey)}
               </Typography>
-            </MenuItem>
-          </Menu>
+              {dropdown.items.map((item) => (
+                <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
+                  <ListItemButton
+                    onClick={() => handleNavigation(item.path)}
+                    sx={{
+                      borderRadius: 2,
+                      bgcolor: isPathActive(item.path)
+                        ? alpha(theme.palette.primary.main, 0.1)
+                        : 'transparent',
+                    }}
+                  >
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 40,
+                        color: isPathActive(item.path) ? 'primary.main' : 'text.secondary',
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={t(item.labelKey)}
+                      secondary={t(item.descKey)}
+                      primaryTypographyProps={{
+                        fontWeight: isPathActive(item.path) ? 600 : 500,
+                        color: isPathActive(item.path) ? 'primary.main' : 'text.primary',
+                        fontSize: '0.875rem',
+                      }}
+                      secondaryTypographyProps={{
+                        fontSize: '0.75rem',
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </Box>
+          ))}
 
-          {/* Profile Menu */}
-          <Tooltip title={t('common.profile')}>
-            <IconButton onClick={handleProfileMenuOpen} sx={{ p: 0.5, ml: 1 }}>
-              <Avatar
-                alt={user?.username || 'Admin'}
+          {/* Standalone Items */}
+          <Divider sx={{ my: 1 }} />
+          <ListItem disablePadding sx={{ mb: 0.5 }}>
+            <ListItemButton
+              onClick={() => handleNavigation('/orders')}
+              sx={{
+                borderRadius: 2,
+                bgcolor: isPathActive('/orders')
+                  ? alpha(theme.palette.primary.main, 0.1)
+                  : 'transparent',
+              }}
+            >
+              <ListItemIcon
                 sx={{
-                  width: 36,
-                  height: 36,
-                  bgcolor: 'primary.main',
-                  fontSize: '0.875rem',
+                  minWidth: 40,
+                  color: isPathActive('/orders') ? 'primary.main' : 'text.secondary',
                 }}
               >
-                {user?.username?.charAt(0).toUpperCase() || 'A'}
-              </Avatar>
-            </IconButton>
-          </Tooltip>
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleProfileMenuClose}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            PaperProps={{ sx: { width: 200 } }}
-          >
-            <Box sx={{ px: 2, py: 1.5 }}>
-              <Typography variant="subtitle2" fontWeight={600}>
-                {user?.username || 'Admin'}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {user?.email || 'admin@expotoworld.com'}
-              </Typography>
-            </Box>
-            <Divider />
-            <MenuItem onClick={handleProfileMenuClose}>
-              <ListItemIcon>
-                <ProfileIcon fontSize="small" />
+                <OrdersIcon />
               </ListItemIcon>
-              <ListItemText>{t('common.profile')}</ListItemText>
-            </MenuItem>
-            <MenuItem onClick={handleLogout}>
-              <ListItemIcon>
-                <LogoutIcon fontSize="small" />
+              <ListItemText
+                primary={t('nav.orders')}
+                secondary={t('nav.ordersDesc')}
+                primaryTypographyProps={{
+                  fontWeight: isPathActive('/orders') ? 600 : 500,
+                  color: isPathActive('/orders') ? 'primary.main' : 'text.primary',
+                  fontSize: '0.875rem',
+                }}
+                secondaryTypographyProps={{
+                  fontSize: '0.75rem',
+                }}
+              />
+            </ListItemButton>
+          </ListItem>
+          <ListItem disablePadding>
+            <ListItemButton
+              onClick={() => handleNavigation('/analytics')}
+              sx={{
+                borderRadius: 2,
+                bgcolor: isPathActive('/analytics')
+                  ? alpha(theme.palette.primary.main, 0.1)
+                  : 'transparent',
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 40,
+                  color: isPathActive('/analytics') ? 'primary.main' : 'text.secondary',
+                }}
+              >
+                <AnalyticsIcon />
               </ListItemIcon>
-              <ListItemText>{t('auth.logout')}</ListItemText>
-            </MenuItem>
-          </Menu>
-        </Box>
-      </Toolbar>
-    </AppBar>
+              <ListItemText
+                primary={t('nav.analytics')}
+                secondary={t('nav.analyticsDesc')}
+                primaryTypographyProps={{
+                  fontWeight: isPathActive('/analytics') ? 600 : 500,
+                  color: isPathActive('/analytics') ? 'primary.main' : 'text.primary',
+                  fontSize: '0.875rem',
+                }}
+                secondaryTypographyProps={{
+                  fontSize: '0.75rem',
+                }}
+              />
+            </ListItemButton>
+          </ListItem>
+        </List>
+      </Collapse>
+    </>
   );
 };
 

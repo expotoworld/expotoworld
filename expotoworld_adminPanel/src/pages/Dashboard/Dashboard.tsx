@@ -36,7 +36,7 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { PageHeader, StatCard, StatusChip } from '@components/common';
+import { StatCard, StatusChip } from '@components/common';
 import type { DashboardStats, ChartDataPoint, RecentOrder, TopProduct } from '@/types';
 
 // TODO: DUMMY DATA - Replace with actual API calls
@@ -100,11 +100,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <Box>
-      <PageHeader
-        title={t('dashboard.title')}
-        subtitle={t('dashboard.subtitle')}
-      />
-
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
@@ -330,6 +325,8 @@ const Dashboard: React.FC = () => {
                       onClick={() => navigate(`/orders/${order.id}`)}
                     >
                       <ListItemText
+                        primaryTypographyProps={{ component: 'div' }}
+                        secondaryTypographyProps={{ component: 'div' }}
                         primary={
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Typography variant="body2" fontWeight={500}>
@@ -389,6 +386,8 @@ const Dashboard: React.FC = () => {
                         </Avatar>
                       </ListItemAvatar>
                       <ListItemText
+                        primaryTypographyProps={{ component: 'div' }}
+                        secondaryTypographyProps={{ component: 'div' }}
                         primary={
                           <Typography variant="body2" fontWeight={500} noWrap>
                             {product.name}

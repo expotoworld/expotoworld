@@ -36,7 +36,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { PageHeader, StatCard } from '@components/common';
+import { StatCard } from '@components/common';
 
 // TODO: NEED TO FULLY IMPLEMENT - This is a placeholder page
 
@@ -102,15 +102,6 @@ const ReportsPage: React.FC = () => {
 
   return (
     <Box>
-      <PageHeader
-        title={t('reports.title')}
-        subtitle={t('reports.subtitle')}
-        breadcrumbs={[
-          { label: t('nav.dashboard'), path: '/' },
-          { label: t('nav.reports') },
-        ]}
-      />
-
       {/* Filters */}
       <Card elevation={0} sx={{ mb: 3 }}>
         <CardContent>

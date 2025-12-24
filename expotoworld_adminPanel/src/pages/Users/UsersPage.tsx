@@ -26,7 +26,7 @@ import {
   Block as BlockIcon,
   CheckCircle as ActivateIcon,
 } from '@mui/icons-material';
-import { PageHeader, DataTable, ConfirmDialog, type Column } from '@components/common';
+import { DataTable, ConfirmDialog, type Column } from '@components/common';
 import type { User, UserRole } from '@/types';
 
 // TODO: DUMMY DATA - Replace with actual API calls
@@ -289,30 +289,23 @@ const UsersPage: React.FC = () => {
 
   const handleStatusConfirm = () => {
     // TODO: NEED TO FULLY IMPLEMENT - Call update user status API
-    console.log('Toggle status for user:', selectedUser?.id);
+    // TODO: Implement toggle status API call for user: ${selectedUser?.id}
     setStatusDialogOpen(false);
     setSelectedUser(null);
   };
 
   return (
     <Box>
-      <PageHeader
-        title={t('users.title')}
-        subtitle={t('users.subtitle')}
-        breadcrumbs={[
-          { label: t('nav.dashboard'), path: '/' },
-          { label: t('nav.users') },
-        ]}
-        actions={
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => navigate('/users/new')}
-          >
-            {t('users.addUser')}
-          </Button>
-        }
-      />
+      {/* Actions */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => navigate('/users/new')}
+        >
+          {t('users.addUser')}
+        </Button>
+      </Box>
 
       {/* Filters */}
       <Card elevation={0} sx={{ mb: 3 }}>

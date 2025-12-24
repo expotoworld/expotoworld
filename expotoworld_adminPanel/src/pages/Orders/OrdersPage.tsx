@@ -24,7 +24,7 @@ import {
   CheckCircle as CompleteIcon,
   Cancel as CancelIcon,
 } from '@mui/icons-material';
-import { PageHeader, DataTable, StatusChip, ConfirmDialog, type Column } from '@components/common';
+import { DataTable, StatusChip, ConfirmDialog, type Column } from '@components/common';
 import type { Order } from '@/types';
 
 // TODO: DUMMY DATA - Replace with actual API calls
@@ -358,7 +358,7 @@ const OrdersPage: React.FC = () => {
 
   const handleActionConfirm = () => {
     // TODO: NEED TO FULLY IMPLEMENT - Call update order status API
-    console.log(`${actionType} order:`, selectedOrder?.id);
+    // TODO: Implement ${actionType} order API call for order: ${selectedOrder?.id}
     setActionDialogOpen(false);
     setSelectedOrder(null);
   };
@@ -373,15 +373,6 @@ const OrdersPage: React.FC = () => {
 
   return (
     <Box>
-      <PageHeader
-        title={t('orders.title')}
-        subtitle={t('orders.subtitle')}
-        breadcrumbs={[
-          { label: t('nav.dashboard'), path: '/' },
-          { label: t('nav.orders') },
-        ]}
-      />
-
       {/* Status Tabs */}
       <Card elevation={0} sx={{ mb: 2 }}>
         <Tabs

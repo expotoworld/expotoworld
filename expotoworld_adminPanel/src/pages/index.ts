@@ -22,8 +22,8 @@ export { OrganizationsPage } from './Organizations';
 // Regions
 export { RegionsPage } from './Regions';
 
-// Carts
-export { CartsPage } from './Carts';
+// Roles & Permissions
+export { RolesPage } from './Roles';
 
 // Content
 export { ContentPage } from './Content';

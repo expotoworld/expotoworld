@@ -13,11 +13,11 @@ import {
   CategoriesPage,
   OrganizationsPage,
   RegionsPage,
-  CartsPage,
   ContentPage,
   ReportsPage,
   SettingsPage,
   LoginPage,
+  RolesPage,
 } from '@pages';
 import './App.css';
 
@@ -42,12 +42,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (isLoading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh' 
-      }}>
+      <div 
+        style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh' 
+        }}
+        role="status"
+        aria-busy="true"
+        aria-label="Loading application"
+      >
         Loading...
       </div>
     );
@@ -107,14 +112,14 @@ const AppRoutes: React.FC = () => {
         {/* Regions */}
         <Route path="regions" element={<RegionsPage />} />
 
-        {/* Carts */}
-        <Route path="carts" element={<CartsPage />} />
+        {/* Roles & Permissions */}
+        <Route path="roles" element={<RolesPage />} />
 
         {/* Content */}
         <Route path="content" element={<ContentPage />} />
 
-        {/* Reports */}
-        <Route path="reports" element={<ReportsPage />} />
+        {/* Analytics (Reports) */}
+        <Route path="analytics" element={<ReportsPage />} />
 
         {/* Settings */}
         <Route path="settings" element={<SettingsPage />} />

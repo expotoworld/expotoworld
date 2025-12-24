@@ -173,10 +173,10 @@ const LoginPage: React.FC = () => {
               {t('auth.demoCredentials')}:
             </Typography>
             <Typography variant="body2" fontFamily="monospace">
-              Email: admin@expotoworld.com
+              {t('auth.demoEmail')}
             </Typography>
             <Typography variant="body2" fontFamily="monospace">
-              Password: admin123
+              {t('auth.demoPassword')}
             </Typography>
           </Box>
         </CardContent>

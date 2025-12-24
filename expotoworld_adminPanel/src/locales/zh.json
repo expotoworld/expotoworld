@@ -44,7 +44,14 @@
     "active": "已激活",
     "inactive": "未激活",
     "hide": "隐藏",
-    "show": "显示"
+    "show": "显示",
+    "notifications": "通知",
+    "viewAll": "查看全部",
+    "minutesAgo": "{{count}}分钟前",
+    "newOrder": "新订单 #{{id}}",
+    "lowStockAlert": "库存不足警报",
+    "productsNeedRestocking": "{{count}}件商品需要补货",
+    "newUserRegistration": "新用户注册"
   },
   "nav": {
     "dashboard": "仪表盘",
@@ -300,7 +307,9 @@
     "sessionExpired": "会话已过期，请重新登录。",
     "adminPanel": "管理面板",
     "signIn": "登录",
-    "demoCredentials": "演示账号"
+    "demoCredentials": "演示账号",
+    "demoEmail": "邮箱: admin@expotoworld.com",
+    "demoPassword": "密码: admin123"
   },
   "settings": {
     "title": "设置",
@@ -335,7 +344,11 @@
     "rolesPermissions": "角色与权限",
     "rbacComingSoon": "制造商、物流合作伙伴和其他组织的基于角色的访问控制将在未来版本中提供。",
     "rbacDescription": "管理制造商、物流合作伙伴和供应商的用户角色和权限，包括监控访问和库存管理等细粒度访问控制。",
-    "account": "账户"
+    "account": "账户",
+    "languages": {
+      "en": "English",
+      "zh": "中文"
+    }
   },
   "errors": {
     "generic": "出错了，请重试。",

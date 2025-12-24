@@ -33,7 +33,7 @@ import {
   ViewList as ListViewIcon,
   Store as StoreIcon,
 } from '@mui/icons-material';
-import { PageHeader, DataTable, ConfirmDialog, type Column } from '@components/common';
+import { DataTable, ConfirmDialog, type Column } from '@components/common';
 import { storeTypeColors } from '@theme/colors';
 import type { Store, StoreType } from '@/types';
 
@@ -276,30 +276,23 @@ const StoresPage: React.FC = () => {
 
   const handleDeleteConfirm = () => {
     // TODO: NEED TO FULLY IMPLEMENT - Call delete API
-    console.log('Deleting store:', selectedStore?.id);
+    // TODO: Implement delete store API call for store: ${selectedStore?.id}
     setDeleteDialogOpen(false);
     setSelectedStore(null);
   };
 
   return (
     <Box>
-      <PageHeader
-        title={t('stores.title')}
-        subtitle={t('stores.subtitle')}
-        breadcrumbs={[
-          { label: t('nav.dashboard'), path: '/' },
-          { label: t('nav.stores') },
-        ]}
-        actions={
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => navigate('/stores/new')}
-          >
-            {t('stores.addStore')}
-          </Button>
-        }
-      />
+      {/* Actions */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => navigate('/stores/new')}
+        >
+          {t('stores.addStore')}
+        </Button>
+      </Box>
 
       {/* Filters */}
       <Card elevation={0} sx={{ mb: 3 }}>

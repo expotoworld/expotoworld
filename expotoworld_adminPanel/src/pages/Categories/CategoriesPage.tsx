@@ -2,7 +2,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Box, Typography, Button, Card, CardContent, Grid } from '@mui/material';
 import { Add as AddIcon, Category as CategoryIcon } from '@mui/icons-material';
-import { PageHeader } from '@components/common';
 
 // TODO: NEED TO FULLY IMPLEMENT - This is a placeholder page
 
@@ -21,22 +20,15 @@ const CategoriesPage: React.FC = () => {
 
   return (
     <Box>
-      <PageHeader
-        title={t('categories.title')}
-        subtitle={t('categories.subtitle')}
-        breadcrumbs={[
-          { label: t('nav.dashboard'), path: '/' },
-          { label: t('nav.categories') },
-        ]}
-        actions={
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-          >
-            {t('categories.addCategory')}
-          </Button>
-        }
-      />
+      {/* Actions */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+        >
+          {t('categories.addCategory')}
+        </Button>
+      </Box>
 
       <Grid container spacing={3}>
         {mockCategories.map((category) => (

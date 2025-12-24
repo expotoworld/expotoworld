@@ -165,6 +165,31 @@ const commonOptions: ThemeOptions = {
         },
       },
     },
+    // Fix for dropdown and popup backgrounds - ensure solid backgrounds
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+        },
+      },
+    },
+    MuiPopover: {
+      styleOverrides: {
+        paper: {
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+        },
+      },
+    },
+    MuiAutocomplete: {
+      styleOverrides: {
+        paper: {
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+        },
+      },
+    },
   },
 };
 
@@ -261,6 +286,36 @@ export const darkTheme: Theme = createTheme({
         },
       },
     },
+    // Ensure dropdown menus have solid backgrounds in dark mode
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: 'rgba(26, 26, 26, 0.98)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+        },
+      },
+    },
+    MuiPopover: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: 'rgba(26, 26, 26, 0.98)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+        },
+      },
+    },
+    MuiSelect: {
+      styleOverrides: {
+        root: {
+          '& .MuiMenu-paper': {
+            backgroundColor: 'rgba(26, 26, 26, 0.98)',
+          },
+        },
+      },
+    },
   },
 });
 
@@ -354,6 +409,36 @@ export const lightTheme: Theme = createTheme({
         root: {
           background: `linear-gradient(180deg, ${colors.lightMode.cardGradientStart} 0%, ${colors.lightMode.cardGradientEnd} 100%)`,
           border: `1px solid ${colors.lightMode.glassBorder}`,
+        },
+      },
+    },
+    // Ensure dropdown menus have solid backgrounds in light mode
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: 'rgba(255, 255, 255, 0.98)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+        },
+      },
+    },
+    MuiPopover: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: 'rgba(255, 255, 255, 0.98)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+        },
+      },
+    },
+    MuiSelect: {
+      styleOverrides: {
+        root: {
+          '& .MuiMenu-paper': {
+            backgroundColor: 'rgba(255, 255, 255, 0.98)',
+          },
         },
       },
     },

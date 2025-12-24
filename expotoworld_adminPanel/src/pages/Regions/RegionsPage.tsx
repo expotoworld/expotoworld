@@ -2,8 +2,12 @@ import React, { useMemo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Box, Typography, Button, Card, CardContent, Grid, Chip, CircularProgress } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
-import { PageHeader } from '@components/common';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+
+// NOTE: The Marker component uses the deprecated google.maps.Marker under the hood.
+// When @react-google-maps/api adds support for AdvancedMarkerElement, or when migrating
+// to @vis.gl/react-google-maps (Google's recommended React library), update this file.
+// See: https://developers.google.com/maps/documentation/javascript/advanced-markers/migration
 
 const RegionsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -53,8 +57,7 @@ const RegionsPage: React.FC = () => {
   ];
 
   const onMapLoad = useCallback((_map: google.maps.Map) => {
-    // Can add additional map setup here if needed
-    console.log('Map loaded successfully');
+    // Map loaded - can add additional setup here if needed
   }, []);
 
   const handleMarkerClick = (regionId: string) => {
@@ -133,22 +136,15 @@ const RegionsPage: React.FC = () => {
 
   return (
     <Box>
-      <PageHeader
-        title={t('regions.title')}
-        subtitle={t('regions.subtitle')}
-        breadcrumbs={[
-          { label: t('nav.dashboard'), path: '/' },
-          { label: t('nav.regions') },
-        ]}
-        actions={
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-          >
-            {t('regions.addRegion')}
-          </Button>
-        }
-      />
+      {/* Actions */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+        >
+          {t('regions.addRegion')}
+        </Button>
+      </Box>
 
       {/* Map Section */}
       <Card elevation={0} sx={{ mb: 3 }}>

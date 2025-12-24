@@ -29,7 +29,7 @@ import {
   Image as ImageIcon,
   Star as StarIcon,
 } from '@mui/icons-material';
-import { PageHeader, ConfirmDialog } from '@components/common';
+import { ConfirmDialog } from '@components/common';
 import type { Banner, FeaturedProduct } from '@/types';
 
 // TODO: NEED TO FULLY IMPLEMENT - This is a placeholder page
@@ -186,21 +186,12 @@ const ContentPage: React.FC = () => {
 
   const handleDelete = () => {
     // TODO: NEED TO FULLY IMPLEMENT - Call API to delete
-    console.log('Deleting:', deleteDialog.type, deleteDialog.id);
+    // TODO: Implement delete API call for ${deleteDialog.type}: ${deleteDialog.id}
     setDeleteDialog({ open: false, type: 'banner', id: null, title: '' });
   };
 
   return (
     <Box>
-      <PageHeader
-        title={t('content.title')}
-        subtitle={t('content.subtitle')}
-        breadcrumbs={[
-          { label: t('nav.dashboard'), path: '/' },
-          { label: t('nav.content') },
-        ]}
-      />
-
       <Card elevation={0}>
         <CardContent sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>

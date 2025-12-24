@@ -27,7 +27,6 @@ import {
   Save as SaveIcon,
   Key as KeyIcon,
 } from '@mui/icons-material';
-import { PageHeader } from '@components/common';
 import { useThemeMode } from '@contexts/ThemeContext';
 
 // TODO: NEED TO FULLY IMPLEMENT - This is a placeholder page
@@ -57,15 +56,6 @@ const SettingsPage: React.FC = () => {
 
   return (
     <Box>
-      <PageHeader
-        title={t('settings.title')}
-        subtitle={t('settings.subtitle')}
-        breadcrumbs={[
-          { label: t('nav.dashboard'), path: '/' },
-          { label: t('nav.settings') },
-        ]}
-      />
-
       <Grid container spacing={3}>
         {/* Profile Settings */}
         <Grid item xs={12} md={6}>

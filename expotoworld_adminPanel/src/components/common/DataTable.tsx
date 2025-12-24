@@ -18,7 +18,18 @@ export interface Column<T> {
   label: string;
   minWidth?: number;
   align?: 'left' | 'center' | 'right';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   format?: (value: any, row: T) => React.ReactNode;
+}
+
+// Helper function to safely get nested property value
+function getNestedValue<T>(obj: T, path: string): unknown {
+  return path.split('.').reduce<unknown>((current, key) => {
+    if (current && typeof current === 'object' && key in (current as Record<string, unknown>)) {
+      return (current as Record<string, unknown>)[key];
+    }
+    return undefined;
+  }, obj);
 }
 
 interface DataTableProps<T> {
@@ -35,6 +46,7 @@ interface DataTableProps<T> {
   onRowClick?: (row: T) => void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function DataTable<T extends Record<string, any>>({
   columns,
   data,
@@ -136,11 +148,11 @@ function DataTable<T extends Record<string, any>>({
               >
                 {columns.map((column) => {
                   const value = column.id.toString().includes('.')
-                    ? column.id.toString().split('.').reduce((obj, key) => obj?.[key], row as any)
-                    : row[column.id];
+                    ? getNestedValue(row, column.id.toString())
+                    : row[column.id as keyof T];
                   return (
                     <TableCell key={String(column.id)} align={column.align || 'left'}>
-                      {column.format ? column.format(value, row) : value}
+                      {column.format ? column.format(value, row) : (value as React.ReactNode)}
                     </TableCell>
                   );
                 })}

@@ -44,22 +44,41 @@
     "active": "Active",
     "inactive": "Inactive",
     "hide": "Hide",
-    "show": "Show"
+    "show": "Show",
+    "notifications": "Notifications",
+    "viewAll": "View All",
+    "minutesAgo": "{{count}} minutes ago",
+    "newOrder": "New Order #{{id}}",
+    "lowStockAlert": "Low Stock Alert",
+    "productsNeedRestocking": "{{count}} products need restocking",
+    "newUserRegistration": "New User Registration"
   },
   "nav": {
     "dashboard": "Dashboard",
     "products": "Products",
+    "productsDesc": "Manage product catalog",
     "orders": "Orders",
+    "ordersDesc": "Track and fulfill orders",
     "users": "Users",
+    "usersDesc": "Manage customer accounts",
     "stores": "Stores",
+    "storesDesc": "Physical store locations",
     "categories": "Categories",
+    "categoriesDesc": "Organize products by type",
     "organizations": "Organizations",
+    "organizationsDesc": "Partners and manufacturers",
     "regions": "Regions",
-    "carts": "Carts",
+    "regionsDesc": "Delivery areas and zones",
     "content": "Content",
-    "reports": "Reports",
+    "contentDesc": "Banners and promotions",
+    "analytics": "Analytics",
+    "analyticsDesc": "Reports and insights",
+    "roles": "Roles & Permissions",
+    "rolesDesc": "Access control settings",
     "settings": "Settings",
-    "logout": "Logout"
+    "logout": "Logout",
+    "manage": "Manage",
+    "network": "Network"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -300,7 +319,9 @@
     "sessionExpired": "Session expired. Please login again.",
     "adminPanel": "Admin Panel",
     "signIn": "Sign In",
-    "demoCredentials": "Demo Credentials"
+    "demoCredentials": "Demo Credentials",
+    "demoEmail": "Email: admin@expotoworld.com",
+    "demoPassword": "Password: admin123"
   },
   "settings": {
     "title": "Settings",
@@ -335,7 +356,11 @@
     "rolesPermissions": "Roles & Permissions",
     "rbacComingSoon": "Role-based access control for manufacturers, logistics partners, and other organizations will be available in a future update.",
     "rbacDescription": "Manage user roles and permissions for manufacturers, logistics partners, and suppliers with granular access control including CCTV access and inventory management.",
-    "account": "Account"
+    "account": "Account",
+    "languages": {
+      "en": "English",
+      "zh": "中文"
+    }
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -343,5 +368,15 @@
     "notFound": "Resource not found.",
     "unauthorized": "You are not authorized to perform this action.",
     "validation": "Please check the form for errors."
+  },
+  "roles": {
+    "title": "Roles & Permissions",
+    "addRole": "Add Role",
+    "editRole": "Edit Role",
+    "deleteRole": "Delete Role",
+    "users": "users",
+    "permissionsMatrix": "Permissions Matrix",
+    "module": "Module",
+    "availablePermissions": "Available Permissions"
   }
 }

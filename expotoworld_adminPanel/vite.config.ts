@@ -37,6 +37,19 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       sourcemap: true,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Vendor chunks - split large dependencies
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-mui': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+            'vendor-tanstack': ['@tanstack/react-query'],
+            'vendor-i18n': ['i18next', 'react-i18next'],
+            'vendor-charts': ['recharts'],
+            'vendor-maps': ['@react-google-maps/api'],
+          },
+        },
+      },
     },
   };
 });

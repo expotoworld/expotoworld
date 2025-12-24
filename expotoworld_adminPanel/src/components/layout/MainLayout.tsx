@@ -1,31 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Box, useMediaQuery, useTheme } from '@mui/material';
-import Sidebar from './Sidebar';
+import { Box, Container } from '@mui/material';
 import Header from './Header';
 import { componentSpacing } from '@theme/spacing';
 
 const MainLayout: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
-
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Sidebar */}
-      {isMobile ? (
-        <Sidebar
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          variant="temporary"
-        />
-      ) : (
-        <Sidebar open={true} variant="permanent" />
-      )}
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {/* Header */}
+      <Header />
 
       {/* Main Content Area */}
       <Box
@@ -34,24 +17,23 @@ const MainLayout: React.FC = () => {
           flexGrow: 1,
           display: 'flex',
           flexDirection: 'column',
-          width: { sm: `calc(100% - ${componentSpacing.sidebarWidth}px)` },
           minHeight: '100vh',
+          pt: `${componentSpacing.headerHeight}px`,
         }}
       >
-        {/* Header */}
-        <Header onMenuClick={handleDrawerToggle} />
-
         {/* Page Content */}
         <Box
           sx={{
             flexGrow: 1,
-            p: 3,
-            mt: `${componentSpacing.headerHeight}px`,
+            py: 4,
+            px: { xs: 3, sm: 4, md: 6, lg: 8 },
             bgcolor: 'background.default',
             overflow: 'auto',
           }}
         >
-          <Outlet />
+          <Container maxWidth="xl" disableGutters>
+            <Outlet />
+          </Container>
         </Box>
       </Box>
     </Box>
