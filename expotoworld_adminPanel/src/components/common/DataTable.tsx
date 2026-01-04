@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -11,6 +11,7 @@ import {
   Skeleton,
   Box,
   Typography,
+  Checkbox,
 } from '@mui/material';
 
 export interface Column<T> {
@@ -44,6 +45,9 @@ interface DataTableProps<T> {
   rowKey: keyof T;
   emptyMessage?: string;
   onRowClick?: (row: T) => void;
+  selectable?: boolean;
+  selectedIds?: Set<string | number>;
+  onSelectionChange?: (selectedIds: Set<string | number>) => void;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -59,14 +63,49 @@ function DataTable<T extends Record<string, any>>({
   rowKey,
   emptyMessage = 'No data available',
   onRowClick,
+  selectable = false,
+  selectedIds: externalSelectedIds,
+  onSelectionChange,
 }: DataTableProps<T>) {
+  const [internalSelectedIds, setInternalSelectedIds] = useState<Set<string | number>>(new Set());
+  
+  // Use external state if provided, otherwise use internal state
+  const selectedIds = externalSelectedIds ?? internalSelectedIds;
+  const setSelectedIds = onSelectionChange ?? setInternalSelectedIds;
+
+  const handleSelectAll = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.checked) {
+      const allIds = new Set(data.map((row) => row[rowKey] as string | number));
+      setSelectedIds(allIds);
+    } else {
+      setSelectedIds(new Set());
+    }
+  }, [data, rowKey, setSelectedIds]);
+
+  const handleSelectRow = useCallback((id: string | number) => {
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedIds(newSet);
+  }, [selectedIds, setSelectedIds]);
+
+  const isAllSelected = data.length > 0 && selectedIds.size === data.length;
+  const isIndeterminate = selectedIds.size > 0 && selectedIds.size < data.length;
   if (loading) {
     return (
-      <Paper elevation={0}>
+      <Paper elevation={0} sx={{ borderRadius: '12px', overflow: 'hidden' }}>
         <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
+                {selectable && (
+                  <TableCell padding="checkbox" sx={{ fontWeight: 600 }}>
+                    <Checkbox disabled />
+                  </TableCell>
+                )}
                 {columns.map((column) => (
                   <TableCell
                     key={String(column.id)}
@@ -81,6 +120,11 @@ function DataTable<T extends Record<string, any>>({
             <TableBody>
               {Array.from({ length: rowsPerPage }).map((_, index) => (
                 <TableRow key={index}>
+                  {selectable && (
+                    <TableCell padding="checkbox">
+                      <Skeleton variant="rectangular" width={24} height={24} />
+                    </TableCell>
+                  )}
                   {columns.map((column) => (
                     <TableCell key={String(column.id)}>
                       <Skeleton variant="text" width="80%" />
@@ -97,7 +141,7 @@ function DataTable<T extends Record<string, any>>({
 
   if (data.length === 0) {
     return (
-      <Paper elevation={0}>
+      <Paper elevation={0} sx={{ borderRadius: '12px', overflow: 'hidden' }}>
         <Box
           sx={{
             display: 'flex',
@@ -115,11 +159,20 @@ function DataTable<T extends Record<string, any>>({
   }
 
   return (
-    <Paper elevation={0}>
+    <Paper elevation={0} sx={{ borderRadius: '12px', overflow: 'hidden' }}>
       <TableContainer>
         <Table stickyHeader>
           <TableHead>
             <TableRow>
+              {selectable && (
+                <TableCell padding="checkbox" sx={{ bgcolor: 'background.default' }}>
+                  <Checkbox
+                    indeterminate={isIndeterminate}
+                    checked={isAllSelected}
+                    onChange={handleSelectAll}
+                  />
+                </TableCell>
+              )}
               {columns.map((column) => (
                 <TableCell
                   key={String(column.id)}
@@ -136,28 +189,42 @@ function DataTable<T extends Record<string, any>>({
             </TableRow>
           </TableHead>
           <TableBody>
-            {data.map((row) => (
-              <TableRow
-                hover
-                key={String(row[rowKey])}
-                onClick={() => onRowClick?.(row)}
-                sx={{
-                  cursor: onRowClick ? 'pointer' : 'default',
-                  '&:last-child td, &:last-child th': { border: 0 },
-                }}
-              >
-                {columns.map((column) => {
-                  const value = column.id.toString().includes('.')
-                    ? getNestedValue(row, column.id.toString())
-                    : row[column.id as keyof T];
-                  return (
-                    <TableCell key={String(column.id)} align={column.align || 'left'}>
-                      {column.format ? column.format(value, row) : (value as React.ReactNode)}
+            {data.map((row) => {
+              const rowId = row[rowKey] as string | number;
+              const isSelected = selectedIds.has(rowId);
+              return (
+                <TableRow
+                  hover
+                  key={String(rowId)}
+                  onClick={() => onRowClick?.(row)}
+                  selected={isSelected}
+                  sx={{
+                    cursor: onRowClick ? 'pointer' : 'default',
+                    '&:last-child td, &:last-child th': { border: 0 },
+                  }}
+                >
+                  {selectable && (
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={isSelected}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={() => handleSelectRow(rowId)}
+                      />
                     </TableCell>
-                  );
-                })}
-              </TableRow>
-            ))}
+                  )}
+                  {columns.map((column) => {
+                    const value = column.id.toString().includes('.')
+                      ? getNestedValue(row, column.id.toString())
+                      : row[column.id as keyof T];
+                    return (
+                      <TableCell key={String(column.id)} align={column.align || 'left'}>
+                        {column.format ? column.format(value, row) : (value as React.ReactNode)}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
@@ -169,6 +236,32 @@ function DataTable<T extends Record<string, any>>({
         page={page}
         onPageChange={onPageChange}
         onRowsPerPageChange={onRowsPerPageChange}
+        slotProps={{
+          select: {
+            MenuProps: {
+              disableScrollLock: true,
+              disablePortal: true,
+              BackdropProps: {
+                invisible: true,
+                sx: { backgroundColor: 'transparent' },
+              },
+              slotProps: {
+                backdrop: {
+                  invisible: true,
+                  sx: { backgroundColor: 'transparent' },
+                },
+                root: {
+                  sx: {
+                    '& .MuiBackdrop-root': {
+                      backgroundColor: 'transparent',
+                      opacity: '0 !important',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        }}
       />
     </Paper>
   );

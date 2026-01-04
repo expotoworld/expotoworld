@@ -155,6 +155,16 @@ const commonOptions: ThemeOptions = {
       styleOverrides: {
         paper: {
           borderRadius: borderRadius.lg,
+          // Remove glassmorphism from dialogs - make them solid
+          backdropFilter: 'none',
+          WebkitBackdropFilter: 'none',
+        },
+      },
+    },
+    MuiBackdrop: {
+      styleOverrides: {
+        root: {
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
         },
       },
     },
@@ -165,20 +175,72 @@ const commonOptions: ThemeOptions = {
         },
       },
     },
-    // Fix for dropdown and popup backgrounds - ensure solid backgrounds
+    // Fix for dropdown and popup backgrounds - ensure solid backgrounds and proper border radius clipping
     MuiMenu: {
+      defaultProps: {
+        // Disable backdrop dimming for menus
+        slotProps: {
+          backdrop: {
+            invisible: true,
+          },
+        },
+      },
       styleOverrides: {
         paper: {
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
+          overflow: 'hidden', // This clips children to match border-radius
+          borderRadius: borderRadius.lg,
+        },
+        list: {
+          padding: 0,
+        },
+      },
+    },
+    MuiMenuItem: {
+      styleOverrides: {
+        root: {
+          padding: '10px 16px',
+          // NO border-radius on items - let parent overflow:hidden clip them
+        },
+      },
+    },
+    MuiSelect: {
+      defaultProps: {
+        // Make Select menus have invisible backdrop
+        MenuProps: {
+          disableScrollLock: true,
+          BackdropProps: {
+            invisible: true,
+          },
+          slotProps: {
+            backdrop: {
+              invisible: true,
+            },
+          },
+        },
+      },
+      styleOverrides: {
+        select: {
+          '&:focus': {
+            backgroundColor: 'transparent',
+          },
         },
       },
     },
     MuiPopover: {
+      defaultProps: {
+        // Make Popover backdrop invisible by default
+        BackdropProps: {
+          invisible: true,
+        },
+      },
       styleOverrides: {
         paper: {
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
+          overflow: 'hidden',
+          borderRadius: borderRadius.lg,
         },
       },
     },
@@ -316,6 +378,20 @@ export const darkTheme: Theme = createTheme({
         },
       },
     },
+    // Make dialogs/modals have more glassmorphism
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: 'rgba(26, 26, 26, 0.75)',
+          backdropFilter: 'blur(32px)',
+          WebkitBackdropFilter: 'blur(32px)',
+          border: `1px solid rgba(255, 255, 255, 0.1)`,
+          boxShadow: '0 24px 64px rgba(0, 0, 0, 0.5)',
+          // Subtle gradient shine for glassmorphism
+          backgroundImage: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0.04) 100%)',
+        },
+      },
+    },
   },
 });
 
@@ -439,6 +515,20 @@ export const lightTheme: Theme = createTheme({
           '& .MuiMenu-paper': {
             backgroundColor: 'rgba(255, 255, 255, 0.98)',
           },
+        },
+      },
+    },
+    // Make dialogs/modals have more glassmorphism with depth
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(40px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+          border: `1px solid rgba(255, 255, 255, 0.5)`,
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 24px 64px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+          // Bright top edge shine for depth
+          backgroundImage: 'linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 5%, rgba(255, 255, 255, 0.75) 100%)',
         },
       },
     },

@@ -26,6 +26,7 @@ import {
   Fade,
   ButtonBase,
   Theme,
+  ClickAwayListener,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -232,9 +233,14 @@ const manageItems: NavMenuItem[] = [
 ];
 
 const networkItems: NavMenuItem[] = [
+  // Row 1: Users, Orders
   { id: 'users', labelKey: 'nav.users', descKey: 'nav.usersDesc', path: '/users', icon: <UsersIcon /> },
-  { id: 'organizations', labelKey: 'nav.organizations', descKey: 'nav.organizationsDesc', path: '/organizations', icon: <OrganizationsIcon /> },
+  { id: 'orders', labelKey: 'nav.orders', descKey: 'nav.ordersDesc', path: '/orders', icon: <OrdersIcon /> },
+  // Row 2: Regions, Notifications
   { id: 'regions', labelKey: 'nav.regions', descKey: 'nav.regionsDesc', path: '/regions', icon: <RegionsIcon /> },
+  { id: 'notifications', labelKey: 'nav.notifications', descKey: 'nav.notificationsDesc', path: '/notifications', icon: <NotificationsIcon /> },
+  // Row 3: Organizations, Roles
+  { id: 'organizations', labelKey: 'nav.organizations', descKey: 'nav.organizationsDesc', path: '/organizations', icon: <OrganizationsIcon /> },
   { id: 'roles', labelKey: 'nav.roles', descKey: 'nav.rolesDesc', path: '/roles', icon: <RolesIcon /> },
 ];
 
@@ -342,7 +348,7 @@ const Header: React.FC<HeaderProps> = () => {
   };
 
   const handleLangOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setLangAnchor(event.currentTarget);
+    setLangAnchor(langAnchor ? null : event.currentTarget);
   };
 
   const handleLangClose = () => {
@@ -546,12 +552,6 @@ const Header: React.FC<HeaderProps> = () => {
 
             {/* Standalone Nav Items */}
             <NavButton
-              label={t('nav.orders')}
-              isActive={isPathActive('/orders')}
-              onClick={() => handleNavigation('/orders')}
-              theme={theme}
-            />
-            <NavButton
               label={t('nav.analytics')}
               isActive={isPathActive('/analytics')}
               onClick={() => handleNavigation('/analytics')}
@@ -569,48 +569,129 @@ const Header: React.FC<HeaderProps> = () => {
             </Tooltip>
 
             {/* Language Selector */}
-            <Tooltip title={t('settings.language')}>
-              <IconButton onClick={handleLangOpen} sx={{ color: 'text.secondary' }}>
-                <TranslateIcon />
-              </IconButton>
-            </Tooltip>
-            <Menu
-              anchorEl={langAnchor}
-              open={Boolean(langAnchor)}
-              onClose={handleLangClose}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-              PaperProps={{
-                sx: {
-                  mt: 1,
-                  borderRadius: 2,
-                  border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
-                  bgcolor: theme.palette.mode === 'dark' 
-                    ? 'rgba(30, 30, 30, 0.98)' 
-                    : 'rgba(255, 255, 255, 0.98)',
-                  boxShadow: theme.palette.mode === 'dark'
-                    ? '0 20px 60px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4)'
-                    : '0 20px 60px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.12)',
-                  backdropFilter: 'blur(10px)',
-                }
-              }}
-            >
-              <MenuItem
-                selected={i18n.language === 'en'}
-                onClick={() => handleLanguageChange('en')}
+            <Box sx={{ position: 'relative' }}>
+              <Tooltip 
+                title={t('settings.language')}
+                open={!Boolean(langAnchor) ? undefined : false}
               >
-                {t('settings.languages.en')}
-              </MenuItem>
-              <MenuItem
-                selected={i18n.language === 'zh'}
-                onClick={() => handleLanguageChange('zh')}
+                <IconButton 
+                  onClick={handleLangOpen} 
+                  sx={{ 
+                    color: Boolean(langAnchor) ? 'primary.main' : 'text.secondary',
+                    bgcolor: Boolean(langAnchor) ? alpha(theme.palette.primary.main, 0.1) : 'transparent',
+                    '&:hover': {
+                      bgcolor: Boolean(langAnchor) 
+                        ? alpha(theme.palette.primary.main, 0.15) 
+                        : alpha(theme.palette.action.hover, 0.08),
+                    },
+                  }}
+                >
+                  <TranslateIcon />
+                </IconButton>
+              </Tooltip>
+              <Popper
+                open={Boolean(langAnchor)}
+                anchorEl={langAnchor}
+                placement="bottom-end"
+                transition
+                sx={{ zIndex: theme.zIndex.modal + 1 }}
               >
-                {t('settings.languages.zh')}
-              </MenuItem>
-            </Menu>
+                {({ TransitionProps }) => (
+                  <Fade {...TransitionProps} timeout={200}>
+                    <Box>
+                      <ClickAwayListener onClickAway={handleLangClose}>
+                        <Box
+                          sx={{
+                            mt: 1,
+                            p: 0.75,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 0.5,
+                          }}
+                        >
+                          {/* English Option */}
+                          <ButtonBase
+                            onClick={() => handleLanguageChange('en')}
+                            sx={{
+                              height: 36,
+                              px: 2,
+                              borderRadius: 1.5,
+                              bgcolor: i18n.language === 'en'
+                                ? theme.palette.primary.main
+                                : theme.palette.mode === 'dark'
+                                  ? 'rgba(255, 255, 255, 0.08)'
+                                  : 'rgba(255, 255, 255, 0.9)',
+                              color: i18n.language === 'en'
+                                ? '#fff'
+                                : 'text.primary',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              minWidth: 100,
+                              justifyContent: 'center',
+                              backdropFilter: i18n.language === 'en' ? 'none' : 'blur(8px)',
+                              border: i18n.language === 'en'
+                                ? 'none'
+                                : `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                bgcolor: i18n.language === 'en'
+                                  ? theme.palette.primary.dark
+                                  : theme.palette.mode === 'dark'
+                                    ? 'rgba(255, 255, 255, 0.12)'
+                                    : 'rgba(255, 255, 255, 1)',
+                              },
+                            }}
+                          >
+                            {t('settings.languages.en')}
+                          </ButtonBase>
+                          {/* Chinese Option */}
+                          <ButtonBase
+                            onClick={() => handleLanguageChange('zh')}
+                            sx={{
+                              height: 36,
+                              px: 2,
+                              borderRadius: 1.5,
+                              bgcolor: i18n.language === 'zh'
+                                ? theme.palette.primary.main
+                                : theme.palette.mode === 'dark'
+                                  ? 'rgba(255, 255, 255, 0.08)'
+                                  : 'rgba(255, 255, 255, 0.9)',
+                              color: i18n.language === 'zh'
+                                ? '#fff'
+                                : 'text.primary',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                              minWidth: 100,
+                              justifyContent: 'center',
+                              backdropFilter: i18n.language === 'zh' ? 'none' : 'blur(8px)',
+                              border: i18n.language === 'zh'
+                                ? 'none'
+                                : `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                bgcolor: i18n.language === 'zh'
+                                  ? theme.palette.primary.dark
+                                  : theme.palette.mode === 'dark'
+                                    ? 'rgba(255, 255, 255, 0.12)'
+                                    : 'rgba(255, 255, 255, 1)',
+                              },
+                            }}
+                          >
+                            {t('settings.languages.zh')}
+                          </ButtonBase>
+                        </Box>
+                      </ClickAwayListener>
+                    </Box>
+                  </Fade>
+                )}
+              </Popper>
+            </Box>
 
             {/* Notifications */}
-            <Tooltip title={t('common.notifications')}>
+            <Tooltip 
+              title={t('common.notifications')}
+              open={!Boolean(notifAnchor) ? undefined : false}
+            >
               <IconButton onClick={handleNotifOpen} sx={{ color: 'text.secondary' }}>
                 <Badge badgeContent={3} color="error">
                   <NotificationsIcon />
@@ -623,21 +704,31 @@ const Header: React.FC<HeaderProps> = () => {
               onClose={handleNotifClose}
               anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
               transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-              PaperProps={{
-                sx: {
-                  width: 320,
-                  maxHeight: 400,
-                  mt: 1,
-                  borderRadius: 2,
-                  border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
-                  bgcolor: theme.palette.mode === 'dark' 
-                    ? 'rgba(30, 30, 30, 0.98)' 
-                    : 'rgba(255, 255, 255, 0.98)',
-                  boxShadow: theme.palette.mode === 'dark'
-                    ? '0 20px 60px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4)'
-                    : '0 20px 60px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.12)',
-                  backdropFilter: 'blur(10px)',
-                }
+              disableScrollLock
+              slotProps={{
+                paper: {
+                  sx: {
+                    width: 320,
+                    maxHeight: 400,
+                    mt: 1,
+                    borderRadius: 2,
+                    border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
+                    bgcolor: theme.palette.mode === 'dark' 
+                      ? 'rgba(30, 30, 30, 0.98)' 
+                      : 'rgba(255, 255, 255, 0.98)',
+                    boxShadow: theme.palette.mode === 'dark'
+                      ? '0 20px 60px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4)'
+                      : '0 20px 60px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.12)',
+                    backdropFilter: 'blur(10px)',
+                  },
+                },
+                root: {
+                  sx: {
+                    '& .MuiBackdrop-root': {
+                      backgroundColor: 'transparent',
+                    },
+                  },
+                },
               }}
             >
               {/* TODO: DUMMY DATA - Replace with real notifications */}
@@ -674,7 +765,10 @@ const Header: React.FC<HeaderProps> = () => {
             </Menu>
 
             {/* Profile Menu */}
-            <Tooltip title={t('nav.settings')}>
+            <Tooltip 
+              title={t('nav.settings')}
+              open={!Boolean(profileAnchor) ? undefined : false}
+            >
               <IconButton onClick={handleProfileOpen} sx={{ p: 0.5, ml: 1 }}>
                 <Avatar
                   alt={user?.username || 'Admin'}
@@ -695,20 +789,30 @@ const Header: React.FC<HeaderProps> = () => {
               onClose={handleProfileClose}
               anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
               transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-              PaperProps={{
-                sx: {
-                  width: 200,
-                  mt: 1,
-                  borderRadius: 2,
-                  border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
-                  bgcolor: theme.palette.mode === 'dark' 
-                    ? 'rgba(30, 30, 30, 0.98)' 
-                    : 'rgba(255, 255, 255, 0.98)',
-                  boxShadow: theme.palette.mode === 'dark'
-                    ? '0 20px 60px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4)'
-                    : '0 20px 60px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.12)',
-                  backdropFilter: 'blur(10px)',
-                }
+              disableScrollLock
+              slotProps={{
+                paper: {
+                  sx: {
+                    width: 200,
+                    mt: 1,
+                    borderRadius: 2,
+                    border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
+                    bgcolor: theme.palette.mode === 'dark' 
+                      ? 'rgba(30, 30, 30, 0.98)' 
+                      : 'rgba(255, 255, 255, 0.98)',
+                    boxShadow: theme.palette.mode === 'dark'
+                      ? '0 20px 60px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4)'
+                      : '0 20px 60px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.12)',
+                    backdropFilter: 'blur(10px)',
+                  },
+                },
+                root: {
+                  sx: {
+                    '& .MuiBackdrop-root': {
+                      backgroundColor: 'transparent',
+                    },
+                  },
+                },
               }}
             >
               <Box sx={{ px: 2, py: 1.5 }}>
@@ -824,38 +928,6 @@ const Header: React.FC<HeaderProps> = () => {
 
           {/* Standalone Items */}
           <Divider sx={{ my: 1 }} />
-          <ListItem disablePadding sx={{ mb: 0.5 }}>
-            <ListItemButton
-              onClick={() => handleNavigation('/orders')}
-              sx={{
-                borderRadius: 2,
-                bgcolor: isPathActive('/orders')
-                  ? alpha(theme.palette.primary.main, 0.1)
-                  : 'transparent',
-              }}
-            >
-              <ListItemIcon
-                sx={{
-                  minWidth: 40,
-                  color: isPathActive('/orders') ? 'primary.main' : 'text.secondary',
-                }}
-              >
-                <OrdersIcon />
-              </ListItemIcon>
-              <ListItemText
-                primary={t('nav.orders')}
-                secondary={t('nav.ordersDesc')}
-                primaryTypographyProps={{
-                  fontWeight: isPathActive('/orders') ? 600 : 500,
-                  color: isPathActive('/orders') ? 'primary.main' : 'text.primary',
-                  fontSize: '0.875rem',
-                }}
-                secondaryTypographyProps={{
-                  fontSize: '0.75rem',
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
           <ListItem disablePadding>
             <ListItemButton
               onClick={() => handleNavigation('/analytics')}

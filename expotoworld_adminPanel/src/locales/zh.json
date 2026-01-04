@@ -56,17 +56,33 @@
   "nav": {
     "dashboard": "仪表盘",
     "products": "产品",
+    "productsDesc": "管理产品目录",
     "orders": "订单",
+    "ordersDesc": "跟踪和处理订单",
     "users": "用户",
+    "usersDesc": "管理用户账户",
     "stores": "门店",
+    "storesDesc": "实体店铺位置",
     "categories": "分类",
+    "categoriesDesc": "按类型整理产品",
     "organizations": "组织",
+    "organizationsDesc": "合作伙伴和制造商",
     "regions": "区域",
+    "regionsDesc": "配送区域和范围",
     "carts": "购物车",
     "content": "内容",
+    "contentDesc": "横幅和促销活动",
+    "analytics": "分析",
+    "analyticsDesc": "报表和洞察",
     "reports": "报表",
+    "roles": "角色和权限",
+    "rolesDesc": "访问控制设置",
+    "notifications": "通知",
+    "notificationsDesc": "提醒和消息",
     "settings": "设置",
-    "logout": "退出登录"
+    "logout": "退出登录",
+    "manage": "管理",
+    "network": "网络"
   },
   "dashboard": {
     "title": "仪表盘",
@@ -120,6 +136,7 @@
     "orderStatus": "状态",
     "orderTotal": "总金额",
     "items": "商品",
+    "total": "总额",
     "shippingAddress": "收货地址",
     "paymentMethod": "支付方式",
     "statusPending": "待处理",
@@ -136,7 +153,29 @@
     "viewDetails": "查看详情",
     "orderHistory": "订单历史",
     "searchPlaceholder": "搜索订单...",
-    "store": "门店"
+    "store": "门店",
+    "noOrders": "暂无订单",
+    "createOrder": "创建新订单",
+    "uploadOrders": "从文件上传订单",
+    "markAsShipped": "标记为已发货",
+    "markAsCompleted": "标记为已完成",
+    "cancelOrder": "取消订单",
+    "confirmShipTitle": "确认发货",
+    "confirmShipMessage": "确定要将订单 {{id}} 标记为已发货吗？",
+    "confirmCompleteTitle": "确认完成",
+    "confirmCompleteMessage": "确定要将订单 {{id}} 标记为已完成吗？",
+    "confirmCancelTitle": "确认取消",
+    "confirmCancelMessage": "确定要取消订单 {{id}} 吗？",
+    "status": {
+      "pending": "待处理",
+      "confirmed": "已确认",
+      "processing": "处理中",
+      "readyForPickup": "待自提",
+      "shipped": "已发货",
+      "delivered": "已送达",
+      "completed": "已完成",
+      "cancelled": "已取消"
+    }
   },
   "users": {
     "title": "用户",
@@ -356,5 +395,29 @@
     "notFound": "资源未找到。",
     "unauthorized": "您无权执行此操作。",
     "validation": "请检查表单中的错误。"
+  },
+  "notifications": {
+    "title": "通知",
+    "notification": "通知",
+    "type": "类型",
+    "date": "日期",
+    "searchPlaceholder": "搜索通知...",
+    "noNotifications": "未找到通知",
+    "markRead": "标记为已读",
+    "markUnread": "标记为未读",
+    "mute": "静音",
+    "unmute": "取消静音",
+    "deleteTitle": "删除通知",
+    "deleteMessage": "您确定要删除此通知吗？",
+    "read": "已读",
+    "unread": "未读",
+    "types": {
+      "order": "订单",
+      "user": "用户",
+      "product": "产品",
+      "promotion": "促销",
+      "alert": "警报",
+      "info": "信息"
+    }
   }
 }

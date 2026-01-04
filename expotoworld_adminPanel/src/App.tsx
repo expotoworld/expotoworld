@@ -8,6 +8,7 @@ import {
   Dashboard,
   ProductsPage,
   OrdersPage,
+  NotificationsPage,
   UsersPage,
   StoresPage,
   CategoriesPage,
@@ -96,6 +97,9 @@ const AppRoutes: React.FC = () => {
 
         {/* Orders */}
         <Route path="orders" element={<OrdersPage />} />
+
+        {/* Notifications */}
+        <Route path="notifications" element={<NotificationsPage />} />
 
         {/* Users */}
         <Route path="users" element={<UsersPage />} />

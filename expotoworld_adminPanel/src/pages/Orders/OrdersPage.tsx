@@ -7,15 +7,9 @@ import {
   CardContent,
   TextField,
   InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   IconButton,
   Tooltip,
   Typography,
-  Tabs,
-  Tab,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -23,8 +17,10 @@ import {
   LocalShipping as ShipIcon,
   CheckCircle as CompleteIcon,
   Cancel as CancelIcon,
+  Add as AddIcon,
+  Upload as UploadIcon,
 } from '@mui/icons-material';
-import { DataTable, StatusChip, ConfirmDialog, type Column } from '@components/common';
+import { DataTable, StatusChip, ConfirmDialog, PageTitle, ActionMenu, FilterDropdown, type Column, type FilterOption } from '@components/common';
 import type { Order } from '@/types';
 
 // TODO: DUMMY DATA - Replace with actual API calls
@@ -146,7 +142,7 @@ const mockOrders: Order[] = [
   },
 ];
 
-const statusTabs: { value: string; labelKey: string }[] = [
+const statusOptions: { value: string; labelKey: string }[] = [
   { value: 'all', labelKey: 'common.all' },
   { value: 'pending', labelKey: 'orders.status.pending' },
   { value: 'confirmed', labelKey: 'orders.status.confirmed' },
@@ -163,7 +159,7 @@ const OrdersPage: React.FC = () => {
   const navigate = useNavigate();
   
   const [search, setSearch] = useState('');
-  const [statusTab, setStatusTab] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [storeFilter, setStoreFilter] = useState('all');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -252,9 +248,8 @@ const OrdersPage: React.FC = () => {
       id: 'actions',
       label: t('common.actions'),
       minWidth: 150,
-      align: 'right',
       format: (_, row) => (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
           <Tooltip title={t('common.view')}>
             <IconButton
               size="small"
@@ -325,7 +320,7 @@ const OrdersPage: React.FC = () => {
       order.id.toLowerCase().includes(search.toLowerCase()) ||
       order.customerName.toLowerCase().includes(search.toLowerCase()) ||
       order.customerEmail.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusTab === 'all' || order.status === statusTab;
+    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     const matchesStore = storeFilter === 'all' || order.storeId === storeFilter;
     return matchesSearch && matchesStatus && matchesStore;
   });
@@ -371,30 +366,29 @@ const OrdersPage: React.FC = () => {
     index === self.findIndex(s => s.id === store.id)
   );
 
+  // Action menu items
+  const actionMenuItems = [
+    {
+      label: t('orders.createOrder'),
+      icon: <AddIcon />,
+      onClick: () => navigate('/orders/new'),
+    },
+    {
+      label: t('orders.uploadOrders'),
+      icon: <UploadIcon />,
+      onClick: () => {
+        // TODO: NEED TO FULLY IMPLEMENT - Upload orders from file
+      },
+    },
+  ];
+
   return (
     <Box>
-      {/* Status Tabs */}
-      <Card elevation={0} sx={{ mb: 2 }}>
-        <Tabs
-          value={statusTab}
-          onChange={(_, newValue) => {
-            setStatusTab(newValue);
-            setPage(0);
-          }}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
-        >
-          {statusTabs.map((tab) => (
-            <Tab
-              key={tab.value}
-              value={tab.value}
-              label={t(tab.labelKey)}
-              sx={{ textTransform: 'none' }}
-            />
-          ))}
-        </Tabs>
-      </Card>
+      {/* Page Title with Action Menu */}
+      <PageTitle 
+        title={t('orders.title')} 
+        actions={<ActionMenu actions={actionMenuItems} />}
+      />
 
       {/* Filters */}
       <Card elevation={0} sx={{ mb: 3 }}>
@@ -421,21 +415,26 @@ const OrdersPage: React.FC = () => {
                 ),
               }}
             />
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel>{t('orders.store')}</InputLabel>
-              <Select
-                value={storeFilter}
-                label={t('orders.store')}
-                onChange={(e) => setStoreFilter(e.target.value)}
-              >
-                <MenuItem value="all">{t('common.all')}</MenuItem>
-                {uniqueStores.map((store) => (
-                  <MenuItem key={store.id} value={store.id}>
-                    {store.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <FilterDropdown
+              label={t('common.status')}
+              value={statusFilter}
+              options={statusOptions.map(opt => ({ value: opt.value, label: t(opt.labelKey) }))}
+              onChange={(value) => {
+                setStatusFilter(value);
+                setPage(0);
+              }}
+              minWidth={180}
+            />
+            <FilterDropdown
+              label={t('orders.store')}
+              value={storeFilter}
+              options={[
+                { value: 'all', label: t('common.all') },
+                ...uniqueStores.map(store => ({ value: store.id, label: store.name }))
+              ]}
+              onChange={setStoreFilter}
+              minWidth={180}
+            />
           </Box>
         </CardContent>
       </Card>
@@ -455,6 +454,7 @@ const OrdersPage: React.FC = () => {
         rowKey="id"
         emptyMessage={t('orders.noOrders')}
         onRowClick={(row) => navigate(`/orders/${row.id}`)}
+        selectable
       />
 
       {/* Action Confirmation Dialog */}

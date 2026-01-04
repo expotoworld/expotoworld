@@ -45,6 +45,8 @@
     "inactive": "Inactive",
     "hide": "Hide",
     "show": "Show",
+    "fillOutNow": "Fill out now",
+    "uploadFromDevice": "Upload from device",
     "notifications": "Notifications",
     "viewAll": "View All",
     "minutesAgo": "{{count}} minutes ago",
@@ -75,6 +77,8 @@
     "analyticsDesc": "Reports and insights",
     "roles": "Roles & Permissions",
     "rolesDesc": "Access control settings",
+    "notifications": "Notifications",
+    "notificationsDesc": "Alerts and messages",
     "settings": "Settings",
     "logout": "Logout",
     "manage": "Manage",
@@ -132,6 +136,7 @@
     "orderStatus": "Status",
     "orderTotal": "Total",
     "items": "Items",
+    "total": "Total",
     "shippingAddress": "Shipping Address",
     "paymentMethod": "Payment Method",
     "statusPending": "Pending",
@@ -148,7 +153,29 @@
     "viewDetails": "View Details",
     "orderHistory": "Order History",
     "searchPlaceholder": "Search orders...",
-    "store": "Store"
+    "store": "Store",
+    "noOrders": "No orders found",
+    "createOrder": "Create new order",
+    "uploadOrders": "Upload orders from file",
+    "markAsShipped": "Mark as shipped",
+    "markAsCompleted": "Mark as completed",
+    "cancelOrder": "Cancel order",
+    "confirmShipTitle": "Confirm Shipment",
+    "confirmShipMessage": "Are you sure you want to mark order {{id}} as shipped?",
+    "confirmCompleteTitle": "Confirm Completion",
+    "confirmCompleteMessage": "Are you sure you want to mark order {{id}} as completed?",
+    "confirmCancelTitle": "Confirm Cancellation",
+    "confirmCancelMessage": "Are you sure you want to cancel order {{id}}?",
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "processing": "Processing",
+      "readyForPickup": "Ready for Pickup",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    }
   },
   "users": {
     "title": "Users",
@@ -378,5 +405,29 @@
     "permissionsMatrix": "Permissions Matrix",
     "module": "Module",
     "availablePermissions": "Available Permissions"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "notification": "Notification",
+    "type": "Type",
+    "date": "Date",
+    "searchPlaceholder": "Search notifications...",
+    "noNotifications": "No notifications found",
+    "markRead": "Mark as read",
+    "markUnread": "Mark as unread",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "deleteTitle": "Delete Notification",
+    "deleteMessage": "Are you sure you want to delete this notification?",
+    "read": "Read",
+    "unread": "Unread",
+    "types": {
+      "order": "Order",
+      "user": "User",
+      "product": "Product",
+      "promotion": "Promotion",
+      "alert": "Alert",
+      "info": "Info"
+    }
   }
 }

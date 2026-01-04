@@ -36,7 +36,7 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { StatCard, StatusChip } from '@components/common';
+import { StatCard, StatusChip, PageTitle } from '@components/common';
 import type { DashboardStats, ChartDataPoint, RecentOrder, TopProduct } from '@/types';
 
 // TODO: DUMMY DATA - Replace with actual API calls
@@ -100,6 +100,9 @@ const Dashboard: React.FC = () => {
 
   return (
     <Box>
+      {/* Page Title */}
+      <PageTitle title={t('dashboard.title')} />
+
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>

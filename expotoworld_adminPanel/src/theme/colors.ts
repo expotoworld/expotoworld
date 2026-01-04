@@ -106,6 +106,7 @@ export const darkMode = {
   backgroundBase: '#0D0D0D',
   backgroundElevated: '#1A1A1A',
   backgroundPaper: 'rgba(26, 26, 26, 0.8)',  // Semi-transparent for glassmorphism
+  backgroundModal: '#1A1A1A',  // Solid background for modals/dialogs
   surface: 'rgba(248, 249, 250, 0.03)',
   surfaceHover: 'rgba(248, 249, 250, 0.06)',
   foreground: '#F5F5F7',
@@ -131,6 +132,7 @@ export const lightMode = {
   backgroundBase: '#F5F5F7',
   backgroundElevated: '#FFFFFF',
   backgroundPaper: 'rgba(255, 255, 255, 0.9)',  // Semi-transparent for glassmorphism
+  backgroundModal: '#FFFFFF',  // Solid background for modals/dialogs
   surface: 'rgba(18, 18, 18, 0.02)',
   surfaceHover: 'rgba(18, 18, 18, 0.04)',
   foreground: '#1D1D1F',

@@ -3,29 +3,25 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
-  Button,
   Card,
   CardContent,
   TextField,
   InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Chip,
   IconButton,
   Tooltip,
   Avatar,
 } from '@mui/material';
 import {
-  Add as AddIcon,
   Search as SearchIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Visibility as ViewIcon,
   Star as FeaturedIcon,
+  Add as AddIcon,
+  Upload as UploadIcon,
 } from '@mui/icons-material';
-import { DataTable, ConfirmDialog, type Column } from '@components/common';
+import { DataTable, ConfirmDialog, ActionMenu, PageTitle, FilterDropdown, type Column } from '@components/common';
 import type { Product, Category, Store } from '@/types';
 
 // TODO: DUMMY DATA - Replace with actual API calls
@@ -243,9 +239,8 @@ const ProductsPage: React.FC = () => {
       id: 'actions',
       label: t('common.actions'),
       minWidth: 120,
-      align: 'right',
       format: (_, row) => (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
           <Tooltip title={t('common.view')}>
             <IconButton
               size="small"
@@ -307,18 +302,25 @@ const ProductsPage: React.FC = () => {
     setSelectedProduct(null);
   };
 
+  const actionMenuItems = [
+    {
+      label: t('products.create'),
+      icon: <AddIcon />,
+      onClick: () => navigate('/products/new'),
+    },
+    {
+      label: t('products.upload'),
+      icon: <UploadIcon />,
+      onClick: () => {
+        // TODO: NEED TO FULLY IMPLEMENT - Upload from file
+      },
+    },
+  ];
+
   return (
     <Box>
-      {/* Actions */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate('/products/new')}
-        >
-          {t('products.addProduct')}
-        </Button>
-      </Box>
+      {/* Page Title */}
+      <PageTitle title={t('products.title')} actions={<ActionMenu actions={actionMenuItems} />} />
 
       {/* Filters */}
       <Card elevation={0} sx={{ mb: 3 }}>
@@ -336,7 +338,7 @@ const ProductsPage: React.FC = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               size="small"
-              sx={{ minWidth: 250 }}
+              sx={{ minWidth: 280 }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -345,50 +347,45 @@ const ProductsPage: React.FC = () => {
                 ),
               }}
             />
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>{t('products.category')}</InputLabel>
-              <Select
-                value={categoryFilter}
-                label={t('products.category')}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-              >
-                <MenuItem value="all">{t('common.all')}</MenuItem>
-                {mockCategories.map((category) => (
-                  <MenuItem key={category.id} value={category.id}>
-                    {category.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>{t('products.store')}</InputLabel>
-              <Select
-                value={storeFilter}
-                label={t('products.store')}
-                onChange={(e) => setStoreFilter(e.target.value)}
-              >
-                <MenuItem value="all">{t('common.all')}</MenuItem>
-                {mockStores.map((store) => (
-                  <MenuItem key={store.id} value={store.id}>
-                    {store.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>{t('common.status')}</InputLabel>
-              <Select
-                value={statusFilter}
-                label={t('common.status')}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <MenuItem value="all">{t('common.all')}</MenuItem>
-                <MenuItem value="active">{t('common.active')}</MenuItem>
-                <MenuItem value="inactive">{t('common.inactive')}</MenuItem>
-                <MenuItem value="low_stock">{t('products.lowStock')}</MenuItem>
-                <MenuItem value="out_of_stock">{t('products.outOfStock')}</MenuItem>
-              </Select>
-            </FormControl>
+            <FilterDropdown
+              label={t('products.category')}
+              value={categoryFilter}
+              options={[
+                { value: 'all', label: t('common.all') },
+                ...mockCategories.map((category) => ({
+                  value: category.id,
+                  label: category.name,
+                })),
+              ]}
+              onChange={(value) => setCategoryFilter(value)}
+              minWidth={180}
+            />
+            <FilterDropdown
+              label={t('products.store')}
+              value={storeFilter}
+              options={[
+                { value: 'all', label: t('common.all') },
+                ...mockStores.map((store) => ({
+                  value: store.id,
+                  label: store.name,
+                })),
+              ]}
+              onChange={(value) => setStoreFilter(value)}
+              minWidth={180}
+            />
+            <FilterDropdown
+              label={t('common.status')}
+              value={statusFilter}
+              options={[
+                { value: 'all', label: t('common.all') },
+                { value: 'active', label: t('common.active') },
+                { value: 'inactive', label: t('common.inactive') },
+                { value: 'low_stock', label: t('products.lowStock') },
+                { value: 'out_of_stock', label: t('products.outOfStock') },
+              ]}
+              onChange={(value) => setStatusFilter(value)}
+              minWidth={180}
+            />
           </Box>
         </CardContent>
       </Card>
@@ -408,6 +405,7 @@ const ProductsPage: React.FC = () => {
         rowKey="id"
         emptyMessage={t('products.noProducts')}
         onRowClick={(row) => navigate(`/products/${row.id}`)}
+        selectable
       />
 
       {/* Delete Confirmation Dialog */}
@@ -423,6 +421,7 @@ const ProductsPage: React.FC = () => {
           setSelectedProduct(null);
         }}
       />
+
     </Box>
   );
 };
