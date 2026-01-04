@@ -3,37 +3,27 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
-  Button,
   Card,
   CardContent,
   TextField,
   InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   IconButton,
   Tooltip,
   Typography,
   Chip,
-  Grid,
-  CardMedia,
-  CardActions,
   alpha,
-  useTheme,
 } from '@mui/material';
 import {
-  Add as AddIcon,
   Search as SearchIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Visibility as ViewIcon,
   LocationOn as LocationIcon,
-  GridView as GridViewIcon,
-  ViewList as ListViewIcon,
   Store as StoreIcon,
+  Add as AddIcon,
+  Upload as UploadIcon,
 } from '@mui/icons-material';
-import { DataTable, ConfirmDialog, type Column } from '@components/common';
+import { DataTable, ConfirmDialog, ActionMenu, PageTitle, FilterDropdown, type Column } from '@components/common';
 import { storeTypeColors } from '@theme/colors';
 import type { Store, StoreType } from '@/types';
 
@@ -113,13 +103,11 @@ const mockStores: Store[] = [
 
 const StoresPage: React.FC = () => {
   const { t } = useTranslation();
-  const theme = useTheme();
   const navigate = useNavigate();
-  
+
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -219,9 +207,8 @@ const StoresPage: React.FC = () => {
       id: 'actions',
       label: t('common.actions'),
       minWidth: 120,
-      align: 'right',
       format: (_, row) => (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
           <Tooltip title={t('common.view')}>
             <IconButton
               size="small"
@@ -264,11 +251,12 @@ const StoresPage: React.FC = () => {
 
   // Filter stores
   const filteredStores = mockStores.filter((store) => {
-    const matchesSearch = 
+    const matchesSearch =
       store.name.toLowerCase().includes(search.toLowerCase()) ||
       store.address.toLowerCase().includes(search.toLowerCase());
     const matchesType = typeFilter === 'all' || store.storeType === typeFilter;
-    const matchesStatus = statusFilter === 'all' ||
+    const matchesStatus =
+      statusFilter === 'all' ||
       (statusFilter === 'active' && store.isActive) ||
       (statusFilter === 'inactive' && !store.isActive);
     return matchesSearch && matchesType && matchesStatus;
@@ -281,18 +269,25 @@ const StoresPage: React.FC = () => {
     setSelectedStore(null);
   };
 
+  const actionMenuItems = [
+    {
+      label: t('stores.create'),
+      icon: <AddIcon />,
+      onClick: () => navigate('/stores/new'),
+    },
+    {
+      label: t('stores.upload'),
+      icon: <UploadIcon />,
+      onClick: () => {
+        // TODO: NEED TO FULLY IMPLEMENT - Upload from file
+      },
+    },
+  ];
+
   return (
     <Box>
-      {/* Actions */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate('/stores/new')}
-        >
-          {t('stores.addStore')}
-        </Button>
-      </Box>
+      {/* Page Title */}
+      <PageTitle title={t('stores.title')} actions={<ActionMenu actions={actionMenuItems} />} />
 
       {/* Filters */}
       <Card elevation={0} sx={{ mb: 3 }}>
@@ -303,180 +298,73 @@ const StoresPage: React.FC = () => {
               flexWrap: 'wrap',
               gap: 2,
               alignItems: 'center',
-              justifyContent: 'space-between',
             }}
           >
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-              <TextField
-                placeholder={t('stores.searchPlaceholder')}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                size="small"
-                sx={{ minWidth: 250 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel>{t('stores.storeType')}</InputLabel>
-                <Select
-                  value={typeFilter}
-                  label={t('stores.storeType')}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                >
-                  <MenuItem value="all">{t('common.all')}</MenuItem>
-                  <MenuItem value="mega">MEGA</MenuItem>
-                  <MenuItem value="market">MARKET</MenuItem>
-                  <MenuItem value="toGo">toGO</MenuItem>
-                  <MenuItem value="xpress">XPRESS</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel>{t('common.status')}</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label={t('common.status')}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="all">{t('common.all')}</MenuItem>
-                  <MenuItem value="active">{t('common.active')}</MenuItem>
-                  <MenuItem value="inactive">{t('common.inactive')}</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 0.5 }}>
-              <Tooltip title={t('common.gridView')}>
-                <IconButton
-                  onClick={() => setViewMode('grid')}
-                  color={viewMode === 'grid' ? 'primary' : 'default'}
-                >
-                  <GridViewIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title={t('common.listView')}>
-                <IconButton
-                  onClick={() => setViewMode('list')}
-                  color={viewMode === 'list' ? 'primary' : 'default'}
-                >
-                  <ListViewIcon />
-                </IconButton>
-              </Tooltip>
-            </Box>
+            <TextField
+              placeholder={t('stores.searchPlaceholder')}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              size="small"
+              sx={{ minWidth: 280 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <FilterDropdown
+              label={t('stores.storeType')}
+              value={typeFilter}
+              options={[
+                { value: 'all', label: t('common.all') },
+                { value: 'mega', label: 'MEGA' },
+                { value: 'market', label: 'MARKET' },
+                { value: 'toGo', label: 'toGO' },
+                { value: 'xpress', label: 'XPRESS' },
+              ]}
+              onChange={(value) => setTypeFilter(value)}
+              minWidth={180}
+            />
+            <FilterDropdown
+              label={t('common.status')}
+              value={statusFilter}
+              options={[
+                { value: 'all', label: t('common.all') },
+                { value: 'active', label: t('common.active') },
+                { value: 'inactive', label: t('common.inactive') },
+              ]}
+              onChange={(value) => setStatusFilter(value)}
+              minWidth={180}
+            />
           </Box>
         </CardContent>
       </Card>
 
-      {/* Stores Display */}
-      {viewMode === 'grid' ? (
-        <Grid container spacing={3}>
-          {filteredStores.map((store) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={store.id}>
-              <Card
-                elevation={0}
-                sx={{
-                  height: '100%',
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: theme.shadows[4],
-                  },
-                }}
-                onClick={() => navigate(`/stores/${store.id}`)}
-              >
-                <CardMedia
-                  component="img"
-                  height="120"
-                  image={store.imageUrl || 'https://placehold.co/400x200/gray/white?text=Store'}
-                  alt={store.name}
-                />
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                    <Typography variant="subtitle1" fontWeight={600} noWrap>
-                      {store.name}
-                    </Typography>
-                    <Chip
-                      label={getStoreTypeLabel(store.storeType)}
-                      size="small"
-                      sx={{
-                        bgcolor: alpha(getStoreTypeColor(store.storeType), 0.1),
-                        color: getStoreTypeColor(store.storeType),
-                        fontWeight: 600,
-                        fontSize: '0.65rem',
-                      }}
-                    />
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5, mb: 1 }}>
-                    <LocationIcon fontSize="small" color="action" sx={{ fontSize: 16, mt: 0.25 }} />
-                    <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.4 }}>
-                      {store.address}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {store.operatingHours}
-                    </Typography>
-                    <Chip
-                      label={store.isActive ? t('common.active') : t('common.inactive')}
-                      size="small"
-                      color={store.isActive ? 'success' : 'default'}
-                      sx={{ fontSize: '0.65rem' }}
-                    />
-                  </Box>
-                </CardContent>
-                <CardActions sx={{ px: 2, pb: 2 }}>
-                  <Button
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/stores/${store.id}/edit`);
-                    }}
-                  >
-                    {t('common.edit')}
-                  </Button>
-                  <Button
-                    size="small"
-                    color="error"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedStore(store);
-                      setDeleteDialogOpen(true);
-                    }}
-                  >
-                    {t('common.delete')}
-                  </Button>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      ) : (
-        <DataTable
-          columns={columns}
-          data={filteredStores}
-          page={page}
-          rowsPerPage={rowsPerPage}
-          totalCount={filteredStores.length}
-          onPageChange={(_, newPage) => setPage(newPage)}
-          onRowsPerPageChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
-            setPage(0);
-          }}
-          rowKey="id"
-          emptyMessage={t('stores.noStores')}
-          onRowClick={(row) => navigate(`/stores/${row.id}`)}
-        />
-      )}
+      {/* Stores Table */}
+      <DataTable
+        columns={columns}
+        data={filteredStores}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        totalCount={filteredStores.length}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        onRowsPerPageChange={(e) => {
+          setRowsPerPage(parseInt(e.target.value, 10));
+          setPage(0);
+        }}
+        rowKey="id"
+        emptyMessage={t('stores.noStores') || 'No stores found'}
+        onRowClick={(row) => navigate(`/stores/${row.id}`)}
+        selectable
+      />
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         open={deleteDialogOpen}
-        title={t('stores.deleteTitle')}
-        message={t('stores.deleteMessage', { name: selectedStore?.name })}
+        title={t('stores.deleteTitle') || 'Delete Store'}
+        message={t('stores.deleteMessage', { name: selectedStore?.name }) || `Are you sure you want to delete "${selectedStore?.name}"?`}
         confirmText={t('common.delete')}
         confirmColor="error"
         onConfirm={handleDeleteConfirm}
@@ -485,6 +373,7 @@ const StoresPage: React.FC = () => {
           setSelectedStore(null);
         }}
       />
+
     </Box>
   );
 };

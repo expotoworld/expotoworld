@@ -3,15 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
-  Button,
   Card,
   CardContent,
   TextField,
   InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   IconButton,
   Tooltip,
   Typography,
@@ -19,14 +14,15 @@ import {
   Avatar,
 } from '@mui/material';
 import {
-  Add as AddIcon,
   Search as SearchIcon,
   Edit as EditIcon,
   Visibility as ViewIcon,
   Block as BlockIcon,
   CheckCircle as ActivateIcon,
+  Add as AddIcon,
+  Upload as UploadIcon,
 } from '@mui/icons-material';
-import { DataTable, ConfirmDialog, type Column } from '@components/common';
+import { DataTable, ConfirmDialog, ActionMenu, PageTitle, FilterDropdown, type Column } from '@components/common';
 import type { User, UserRole } from '@/types';
 
 // TODO: DUMMY DATA - Replace with actual API calls
@@ -217,9 +213,8 @@ const UsersPage: React.FC = () => {
       id: 'actions',
       label: t('common.actions'),
       minWidth: 150,
-      align: 'right',
       format: (_, row) => (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
           <Tooltip title={t('common.view')}>
             <IconButton
               size="small"
@@ -294,18 +289,25 @@ const UsersPage: React.FC = () => {
     setSelectedUser(null);
   };
 
+  const actionMenuItems = [
+    {
+      label: t('users.create'),
+      icon: <AddIcon />,
+      onClick: () => navigate('/users/new'),
+    },
+    {
+      label: t('users.upload'),
+      icon: <UploadIcon />,
+      onClick: () => {
+        // TODO: NEED TO FULLY IMPLEMENT - Upload from file
+      },
+    },
+  ];
+
   return (
     <Box>
-      {/* Actions */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate('/users/new')}
-        >
-          {t('users.addUser')}
-        </Button>
-      </Box>
+      {/* Page Title */}
+      <PageTitle title={t('users.title')} actions={<ActionMenu actions={actionMenuItems} />} />
 
       {/* Filters */}
       <Card elevation={0} sx={{ mb: 3 }}>
@@ -332,33 +334,31 @@ const UsersPage: React.FC = () => {
                 ),
               }}
             />
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>{t('users.role')}</InputLabel>
-              <Select
-                value={roleFilter}
-                label={t('users.role')}
-                onChange={(e) => setRoleFilter(e.target.value)}
-              >
-                <MenuItem value="all">{t('common.all')}</MenuItem>
-                <MenuItem value="customer">{t('users.roles.customer')}</MenuItem>
-                <MenuItem value="manufacturer">{t('users.roles.manufacturer')}</MenuItem>
-                <MenuItem value="logistics">{t('users.roles.logistics')}</MenuItem>
-                <MenuItem value="partner">{t('users.roles.partner')}</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>{t('common.status')}</InputLabel>
-              <Select
-                value={statusFilter}
-                label={t('common.status')}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <MenuItem value="all">{t('common.all')}</MenuItem>
-                <MenuItem value="active">{t('users.statuses.active')}</MenuItem>
-                <MenuItem value="suspended">{t('users.statuses.suspended')}</MenuItem>
-                <MenuItem value="pending">{t('users.statuses.pending')}</MenuItem>
-              </Select>
-            </FormControl>
+            <FilterDropdown
+              label={t('users.role')}
+              value={roleFilter}
+              options={[
+                { value: 'all', label: t('common.all') },
+                { value: 'customer', label: t('users.roles.customer') },
+                { value: 'manufacturer', label: t('users.roles.manufacturer') },
+                { value: 'logistics', label: t('users.roles.logistics') },
+                { value: 'partner', label: t('users.roles.partner') },
+              ]}
+              onChange={(value) => setRoleFilter(value)}
+              minWidth={180}
+            />
+            <FilterDropdown
+              label={t('common.status')}
+              value={statusFilter}
+              options={[
+                { value: 'all', label: t('common.all') },
+                { value: 'active', label: t('users.statuses.active') },
+                { value: 'suspended', label: t('users.statuses.suspended') },
+                { value: 'pending', label: t('users.statuses.pending') },
+              ]}
+              onChange={(value) => setStatusFilter(value)}
+              minWidth={180}
+            />
           </Box>
         </CardContent>
       </Card>
@@ -378,6 +378,7 @@ const UsersPage: React.FC = () => {
         rowKey="id"
         emptyMessage={t('users.noUsers')}
         onRowClick={(row) => navigate(`/users/${row.id}`)}
+        selectable
       />
 
       {/* Status Change Dialog */}
@@ -397,6 +398,7 @@ const UsersPage: React.FC = () => {
           setSelectedUser(null);
         }}
       />
+
     </Box>
   );
 };

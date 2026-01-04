@@ -1,4 +1,5 @@
 export { default as PageHeader } from './PageHeader';
+export { default as PageTitle } from './PageTitle';
 export { default as StatCard } from './StatCard';
 export { default as DataTable } from './DataTable';
 export type { Column } from './DataTable';
@@ -6,3 +7,8 @@ export { default as StatusChip } from './StatusChip';
 export { default as ConfirmDialog } from './ConfirmDialog';
 export { default as LoadingOverlay } from './LoadingOverlay';
 export { default as ErrorDisplay } from './ErrorDisplay';
+export { default as AddFab } from './AddFab';
+export { default as ActionMenu } from './ActionMenu';
+export type { ActionItem } from './ActionMenu';
+export { default as FilterDropdown } from './FilterDropdown';
+export type { FilterOption } from './FilterDropdown';

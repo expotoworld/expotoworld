@@ -7,6 +7,9 @@ export { ProductsPage } from './Products';
 // Orders
 export { OrdersPage } from './Orders';
 
+// Notifications
+export { NotificationsPage } from './Notifications';
+
 // Users
 export { UsersPage } from './Users';
 

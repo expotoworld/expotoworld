@@ -1,38 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Card,
   CardContent,
-  Tabs,
-  Tab,
   TextField,
   InputAdornment,
-  Button,
-  Typography,
   IconButton,
   Tooltip,
-  Switch,
-  FormControlLabel,
-  Grid,
+  Typography,
   Chip,
-  CardMedia,
-  CardActions,
+  Switch,
 } from '@mui/material';
 import {
   Search as SearchIcon,
-  Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Visibility as ViewIcon,
-  VisibilityOff as HideIcon,
-  Image as ImageIcon,
-  Star as StarIcon,
+  Add as AddIcon,
+  Upload as UploadIcon,
 } from '@mui/icons-material';
-import { ConfirmDialog } from '@components/common';
-import type { Banner, FeaturedProduct } from '@/types';
-
-// TODO: NEED TO FULLY IMPLEMENT - This is a placeholder page
+import { DataTable, ConfirmDialog, ActionMenu, PageTitle, FilterDropdown, type Column } from '@components/common';
+import type { Banner } from '@/types';
 
 // TODO: DUMMY DATA - Replace with actual API calls
 const mockBanners: Banner[] = [
@@ -75,91 +64,44 @@ const mockBanners: Banner[] = [
     createdAt: '2024-01-01T10:00:00Z',
     updatedAt: '2024-03-15T12:00:00Z',
   },
-];
-
-const mockFeaturedProducts: FeaturedProduct[] = [
   {
-    id: 'featured-1',
-    productId: 'product-1',
-    productName: 'Wireless Headphones',
-    productImage: 'https://picsum.photos/seed/prod1/200/200',
-    productPrice: 99.99,
-    displayOrder: 1,
+    id: 'banner-4',
+    title: 'Holiday Special',
+    subtitle: 'Exclusive deals for the holiday season',
+    imageUrl: 'https://picsum.photos/seed/banner4/800/300',
+    linkUrl: '/promotions/holiday',
     isActive: true,
-    scope: 'global',
-    createdAt: '2024-01-10T10:00:00Z',
-    updatedAt: '2024-01-15T14:30:00Z',
+    startDate: '2024-12-01T00:00:00Z',
+    endDate: '2024-12-31T23:59:59Z',
+    position: 4,
+    createdAt: '2024-11-15T10:00:00Z',
+    updatedAt: '2024-11-20T14:30:00Z',
   },
   {
-    id: 'featured-2',
-    productId: 'product-3',
-    productName: 'Smart Watch Pro',
-    productImage: 'https://picsum.photos/seed/prod3/200/200',
-    productPrice: 249.99,
-    displayOrder: 2,
-    isActive: true,
-    scope: 'global',
-    createdAt: '2024-01-12T09:00:00Z',
-    updatedAt: '2024-01-14T11:00:00Z',
-  },
-  {
-    id: 'featured-3',
-    productId: 'product-5',
-    productName: 'Bluetooth Speaker',
-    productImage: 'https://picsum.photos/seed/prod5/200/200',
-    productPrice: 49.99,
-    displayOrder: 3,
-    isActive: true,
-    scope: 'store',
-    storeId: 'store-1',
-    storeName: 'MEGA Store Downtown',
-    createdAt: '2024-01-08T14:00:00Z',
-    updatedAt: '2024-01-09T10:00:00Z',
-  },
-  {
-    id: 'featured-4',
-    productId: 'product-2',
-    productName: 'Organic Coffee',
-    productImage: 'https://picsum.photos/seed/prod2/200/200',
-    productPrice: 30.0,
-    displayOrder: 4,
+    id: 'banner-5',
+    title: 'Membership Rewards',
+    subtitle: 'Earn double points this month',
+    imageUrl: 'https://picsum.photos/seed/banner5/800/300',
+    linkUrl: '/membership',
     isActive: false,
-    scope: 'global',
-    createdAt: '2024-01-05T11:00:00Z',
-    updatedAt: '2024-01-06T09:30:00Z',
+    startDate: '2024-01-01T00:00:00Z',
+    endDate: '2024-01-31T23:59:59Z',
+    position: 5,
+    createdAt: '2023-12-20T10:00:00Z',
+    updatedAt: '2024-01-02T08:00:00Z',
   },
 ];
-
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
-  return (
-    <Box role="tabpanel" hidden={value !== index} sx={{ pt: 3 }}>
-      {value === index && children}
-    </Box>
-  );
-};
 
 const ContentPage: React.FC = () => {
   const { t } = useTranslation();
-  const [tabValue, setTabValue] = React.useState(0);
-  const [bannerSearch, setBannerSearch] = React.useState('');
-  const [productSearch, setProductSearch] = React.useState('');
-  const [deleteDialog, setDeleteDialog] = React.useState<{
-    open: boolean;
-    type: 'banner' | 'featured';
-    id: string | null;
-    title: string;
-  }>({
-    open: false,
-    type: 'banner',
-    id: null,
-    title: '',
-  });
+  const navigate = useNavigate();
+
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedBanner, setSelectedBanner] = useState<Banner | null>(null);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -169,303 +111,229 @@ const ContentPage: React.FC = () => {
     });
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(value);
+  const columns: Column<Banner>[] = [
+    {
+      id: 'title',
+      label: t('content.banner') || 'Banner',
+      minWidth: 300,
+      format: (_, row) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box
+            component="img"
+            src={row.imageUrl}
+            alt={row.title}
+            sx={{
+              width: 80,
+              height: 45,
+              borderRadius: 1,
+              objectFit: 'cover',
+            }}
+          />
+          <Box>
+            <Typography variant="body2" fontWeight={500}>
+              {row.title}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {row.subtitle}
+            </Typography>
+          </Box>
+        </Box>
+      ),
+    },
+    {
+      id: 'position',
+      label: t('content.position') || 'Position',
+      minWidth: 80,
+      align: 'center',
+      format: (value) => (
+        <Chip label={`#${value}`} size="small" variant="outlined" />
+      ),
+    },
+    {
+      id: 'startDate',
+      label: t('content.dateRange') || 'Date Range',
+      minWidth: 180,
+      format: (_, row) => (
+        <Typography variant="body2">
+          {formatDate(row.startDate || '')} - {formatDate(row.endDate || '')}
+        </Typography>
+      ),
+    },
+    {
+      id: 'isActive',
+      label: t('common.status'),
+      minWidth: 120,
+      format: (value, row) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Switch
+            checked={value}
+            size="small"
+            onClick={(e) => e.stopPropagation()}
+            onChange={() => {
+              // TODO: NEED TO FULLY IMPLEMENT - Toggle banner status
+              console.log('Toggle status for banner:', row.id);
+            }}
+          />
+          <Chip
+            label={value ? t('common.active') : t('common.inactive')}
+            size="small"
+            color={value ? 'success' : 'default'}
+          />
+        </Box>
+      ),
+    },
+    {
+      id: 'updatedAt',
+      label: t('common.date'),
+      minWidth: 120,
+      format: (value) => formatDate(value),
+    },
+    {
+      id: 'actions',
+      label: t('common.actions'),
+      minWidth: 100,
+      format: (_, row) => (
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Tooltip title={t('common.edit')}>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/content/banners/${row.id}/edit`);
+              }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={t('common.delete')}>
+            <IconButton
+              size="small"
+              color="error"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedBanner(row);
+                setDeleteDialogOpen(true);
+              }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      ),
+    },
+  ];
+
+  // Filter banners
+  const filteredBanners = mockBanners.filter((banner) => {
+    const matchesSearch =
+      banner.title.toLowerCase().includes(search.toLowerCase()) ||
+      (banner.subtitle?.toLowerCase().includes(search.toLowerCase()) ?? false);
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && banner.isActive) ||
+      (statusFilter === 'inactive' && !banner.isActive);
+    return matchesSearch && matchesStatus;
+  });
+
+  const handleDeleteConfirm = () => {
+    // TODO: NEED TO FULLY IMPLEMENT - Call delete API
+    // TODO: Implement delete banner API call for banner: ${selectedBanner?.id}
+    setDeleteDialogOpen(false);
+    setSelectedBanner(null);
   };
 
-  const filteredBanners = mockBanners.filter((banner) =>
-    banner.title.toLowerCase().includes(bannerSearch.toLowerCase())
-  );
-
-  const filteredFeaturedProducts = mockFeaturedProducts.filter((product) =>
-    product.productName.toLowerCase().includes(productSearch.toLowerCase())
-  );
-
-  const handleDelete = () => {
-    // TODO: NEED TO FULLY IMPLEMENT - Call API to delete
-    // TODO: Implement delete API call for ${deleteDialog.type}: ${deleteDialog.id}
-    setDeleteDialog({ open: false, type: 'banner', id: null, title: '' });
-  };
+  const actionMenuItems = [
+    {
+      label: t('content.create'),
+      icon: <AddIcon />,
+      onClick: () => navigate('/content/banners/new'),
+    },
+    {
+      label: t('content.upload'),
+      icon: <UploadIcon />,
+      onClick: () => {
+        // TODO: NEED TO FULLY IMPLEMENT - Upload from file
+      },
+    },
+  ];
 
   return (
     <Box>
-      <Card elevation={0}>
-        <CardContent sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
-            <Tab
-              icon={<ImageIcon />}
-              iconPosition="start"
-              label={t('content.banners')}
+      {/* Page Title */}
+      <PageTitle title={t('content.title')} actions={<ActionMenu actions={actionMenuItems} />} />
+
+      {/* Filters */}
+      <Card elevation={0} sx={{ mb: 3 }}>
+        <CardContent>
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 2,
+              alignItems: 'center',
+            }}
+          >
+            <TextField
+              placeholder={t('content.searchBanners') || 'Search banners...'}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              size="small"
+              sx={{ minWidth: 280 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+              }}
             />
-            <Tab
-              icon={<StarIcon />}
-              iconPosition="start"
-              label={t('content.featuredProducts')}
+            <FilterDropdown
+              label={t('common.status')}
+              value={statusFilter}
+              options={[
+                { value: 'all', label: t('common.all') },
+                { value: 'active', label: t('common.active') },
+                { value: 'inactive', label: t('common.inactive') },
+              ]}
+              onChange={(value) => setStatusFilter(value)}
+              minWidth={180}
             />
-          </Tabs>
+          </Box>
         </CardContent>
-
-        {/* Banners Tab */}
-        <TabPanel value={tabValue} index={0}>
-          <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-              <TextField
-                placeholder={t('content.searchBanners')}
-                value={bannerSearch}
-                onChange={(e) => setBannerSearch(e.target.value)}
-                size="small"
-                sx={{ minWidth: 280 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <Button variant="contained" startIcon={<AddIcon />}>
-                {t('content.addBanner')}
-              </Button>
-            </Box>
-
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              {t('content.bannersGlobalOnly')}
-            </Typography>
-
-            <Grid container spacing={3}>
-              {filteredBanners.map((banner) => (
-                <Grid item xs={12} md={6} key={banner.id}>
-                  <Card
-                    elevation={0}
-                    sx={{
-                      border: 1,
-                      borderColor: 'divider',
-                      opacity: banner.isActive ? 1 : 0.6,
-                    }}
-                  >
-                    <CardMedia
-                      component="img"
-                      height={150}
-                      image={banner.imageUrl}
-                      alt={banner.title}
-                      sx={{ objectFit: 'cover' }}
-                    />
-                    <CardContent>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                        }}
-                      >
-                        <Box>
-                          <Typography variant="h6" gutterBottom>
-                            {banner.title}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            gutterBottom
-                          >
-                            {banner.subtitle}
-                          </Typography>
-                        </Box>
-                        <Chip
-                          label={banner.isActive ? t('common.active') : t('common.inactive')}
-                          color={banner.isActive ? 'success' : 'default'}
-                          size="small"
-                        />
-                      </Box>
-                      {banner.startDate && banner.endDate && (
-                        <Typography variant="caption" color="text.secondary">
-                          {formatDate(banner.startDate)} - {formatDate(banner.endDate)}
-                        </Typography>
-                      )}
-                    </CardContent>
-                    <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={banner.isActive}
-                            size="small"
-                            // TODO: NEED TO FULLY IMPLEMENT - Toggle banner status
-                          />
-                        }
-                        label={t('common.active')}
-                      />
-                      <Box>
-                        <Tooltip title={t('common.edit')}>
-                          <IconButton size="small">
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title={t('common.delete')}>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() =>
-                              setDeleteDialog({
-                                open: true,
-                                type: 'banner',
-                                id: banner.id,
-                                title: banner.title,
-                              })
-                            }
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </CardActions>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-
-            {filteredBanners.length === 0 && (
-              <Box sx={{ textAlign: 'center', py: 6 }}>
-                <ImageIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
-                <Typography color="text.secondary">
-                  {t('content.noBanners')}
-                </Typography>
-              </Box>
-            )}
-          </CardContent>
-        </TabPanel>
-
-        {/* Featured Products Tab */}
-        <TabPanel value={tabValue} index={1}>
-          <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-              <TextField
-                placeholder={t('content.searchFeaturedProducts')}
-                value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
-                size="small"
-                sx={{ minWidth: 280 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <Button variant="contained" startIcon={<AddIcon />}>
-                {t('content.addFeaturedProduct')}
-              </Button>
-            </Box>
-
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              {t('content.featuredProductsEverywhere')}
-            </Typography>
-
-            <Grid container spacing={3}>
-              {filteredFeaturedProducts.map((product) => (
-                <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
-                  <Card
-                    elevation={0}
-                    sx={{
-                      border: 1,
-                      borderColor: 'divider',
-                      opacity: product.isActive ? 1 : 0.6,
-                    }}
-                  >
-                    <CardMedia
-                      component="img"
-                      height={160}
-                      image={product.productImage}
-                      alt={product.productName}
-                      sx={{ objectFit: 'cover' }}
-                    />
-                    <CardContent sx={{ pb: 1 }}>
-                      <Typography variant="subtitle1" fontWeight={600} noWrap>
-                        {product.productName}
-                      </Typography>
-                      <Typography variant="h6" color="primary.main" gutterBottom>
-                        {formatCurrency(product.productPrice)}
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                        <Chip
-                          label={product.isActive ? t('common.active') : t('common.inactive')}
-                          color={product.isActive ? 'success' : 'default'}
-                          size="small"
-                        />
-                        <Chip
-                          label={product.scope === 'global' ? t('content.global') : product.storeName}
-                          color={product.scope === 'global' ? 'primary' : 'secondary'}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </Box>
-                    </CardContent>
-                    <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        #{product.displayOrder}
-                      </Typography>
-                      <Box>
-                        <Tooltip title={product.isActive ? t('common.hide') : t('common.show')}>
-                          <IconButton size="small">
-                            {product.isActive ? (
-                              <HideIcon fontSize="small" />
-                            ) : (
-                              <ViewIcon fontSize="small" />
-                            )}
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title={t('common.edit')}>
-                          <IconButton size="small">
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title={t('common.delete')}>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() =>
-                              setDeleteDialog({
-                                open: true,
-                                type: 'featured',
-                                id: product.id,
-                                title: product.productName,
-                              })
-                            }
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </CardActions>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-
-            {filteredFeaturedProducts.length === 0 && (
-              <Box sx={{ textAlign: 'center', py: 6 }}>
-                <StarIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
-                <Typography color="text.secondary">
-                  {t('content.noFeaturedProducts')}
-                </Typography>
-              </Box>
-            )}
-          </CardContent>
-        </TabPanel>
       </Card>
+
+      {/* Banners Table */}
+      <DataTable
+        columns={columns}
+        data={filteredBanners}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        totalCount={filteredBanners.length}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        onRowsPerPageChange={(e) => {
+          setRowsPerPage(parseInt(e.target.value, 10));
+          setPage(0);
+        }}
+        rowKey="id"
+        emptyMessage={t('content.noBanners') || 'No banners found'}
+        onRowClick={(row) => navigate(`/content/banners/${row.id}`)}
+        selectable
+      />
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
-        open={deleteDialog.open}
-        title={t('content.deleteConfirmTitle')}
-        message={t('content.deleteConfirmMessage', { name: deleteDialog.title })}
+        open={deleteDialogOpen}
+        title={t('content.deleteConfirmTitle') || 'Delete Banner'}
+        message={t('content.deleteConfirmMessage', { name: selectedBanner?.title }) || `Are you sure you want to delete "${selectedBanner?.title}"?`}
         confirmText={t('common.delete')}
         confirmColor="error"
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteDialog({ open: false, type: 'banner', id: null, title: '' })}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => {
+          setDeleteDialogOpen(false);
+          setSelectedBanner(null);
+        }}
       />
+
     </Box>
   );
 };

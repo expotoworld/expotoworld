@@ -6,10 +6,6 @@ import {
   CardContent,
   Grid,
   Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   ToggleButton,
   ToggleButtonGroup,
 } from '@mui/material';
@@ -36,7 +32,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { StatCard } from '@components/common';
+import { StatCard, PageTitle, FilterDropdown } from '@components/common';
 
 // TODO: NEED TO FULLY IMPLEMENT - This is a placeholder page
 
@@ -102,6 +98,9 @@ const ReportsPage: React.FC = () => {
 
   return (
     <Box>
+      {/* Page Title */}
+      <PageTitle title={t('reports.title')} />
+
       {/* Filters */}
       <Card elevation={0} sx={{ mb: 3 }}>
         <CardContent>
@@ -118,20 +117,19 @@ const ReportsPage: React.FC = () => {
               <ToggleButton value="year">{t('reports.year')}</ToggleButton>
             </ToggleButtonGroup>
 
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel>{t('reports.store')}</InputLabel>
-              <Select
-                value={selectedStore}
-                label={t('reports.store')}
-                onChange={(e) => setSelectedStore(e.target.value)}
-              >
-                <MenuItem value="all">{t('reports.allStores')}</MenuItem>
-                <MenuItem value="mega">MEGA Stores</MenuItem>
-                <MenuItem value="market">MARKET Stores</MenuItem>
-                <MenuItem value="toGo">toGO Stores</MenuItem>
-                <MenuItem value="xpress">XPRESS Stores</MenuItem>
-              </Select>
-            </FormControl>
+            <FilterDropdown
+              label={t('reports.store')}
+              value={selectedStore}
+              options={[
+                { value: 'all', label: t('reports.allStores') },
+                { value: 'mega', label: 'MEGA Stores' },
+                { value: 'market', label: 'MARKET Stores' },
+                { value: 'toGo', label: 'toGO Stores' },
+                { value: 'xpress', label: 'XPRESS Stores' },
+              ]}
+              onChange={(value) => setSelectedStore(value)}
+              minWidth={180}
+            />
           </Box>
         </CardContent>
       </Card>
