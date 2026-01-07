@@ -1,0 +1,922 @@
+openapi: 3.0.3
+info:
+  title: EXPO to WORLD - Ebook Service API
+  description: |
+    E-book Management API for EXPO to WORLD platform.
+    Provides ebook publishing, chapters, reviews, and purchases.
+  version: 1.0.0
+  contact:
+    name: EXPO to WORLD Support
+    email: support@expotoworld.com
+  license:
+    name: Proprietary
+    url: https://expotoworld.com/terms
+
+servers:
+  - url: https://api.expotoworld.com/api/v1
+    description: Production server
+  - url: https://staging-api.expotoworld.com/api/v1
+    description: Staging server
+  - url: http://localhost:8084/api/v1
+    description: Local development
+
+tags:
+  - name: Ebooks
+    description: E-book management
+  - name: Chapters
+    description: Chapter management
+  - name: Reviews
+    description: E-book reviews
+  - name: My Ebooks
+    description: User's purchased/created ebooks
+
+paths:
+  /ebooks:
+    get:
+      tags: [Ebooks]
+      summary: List ebooks
+      description: Get paginated list of published ebooks
+      operationId: listEbooks
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: creator_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [epub, pdf]
+        - name: language
+          in: query
+          schema:
+            type: string
+        - name: min_price
+          in: query
+          schema:
+            type: integer
+        - name: max_price
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [created_at, price, downloads, rating]
+            default: created_at
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: List of ebooks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EbookListResponse'
+
+    post:
+      tags: [Ebooks]
+      summary: Create ebook
+      description: Create a new ebook (creators only)
+      operationId: createEbook
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEbookRequest'
+      responses:
+        '201':
+          description: Ebook created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EbookResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /ebooks/{id}:
+    get:
+      tags: [Ebooks]
+      summary: Get ebook by ID
+      operationId: getEbook
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Ebook details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EbookResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Ebooks]
+      summary: Update ebook
+      operationId: updateEbook
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEbookRequest'
+      responses:
+        '200':
+          description: Ebook updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EbookResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Ebooks]
+      summary: Delete ebook
+      operationId: deleteEbook
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Ebook deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /ebooks/slug/{slug}:
+    get:
+      tags: [Ebooks]
+      summary: Get ebook by slug
+      operationId: getEbookBySlug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ebook details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EbookResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /ebooks/{id}/publish:
+    post:
+      tags: [Ebooks]
+      summary: Publish ebook
+      operationId: publishEbook
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Ebook published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EbookResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /ebooks/{id}/download:
+    get:
+      tags: [Ebooks]
+      summary: Download ebook
+      description: Get download URL for purchased ebook
+      operationId: downloadEbook
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Download URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownloadResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Not purchased
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /ebooks/{id}/chapters:
+    get:
+      tags: [Chapters]
+      summary: Get chapters
+      description: Get list of chapters for an ebook
+      operationId: getChapters
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of chapters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapterListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags: [Chapters]
+      summary: Add chapter
+      operationId: addChapter
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChapterRequest'
+      responses:
+        '201':
+          description: Chapter added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapterResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /ebooks/chapters/{chapterId}:
+    delete:
+      tags: [Chapters]
+      summary: Delete chapter
+      operationId: deleteChapter
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Chapter deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /ebooks/{id}/reviews:
+    get:
+      tags: [Reviews]
+      summary: Get reviews
+      description: Get reviews for an ebook
+      operationId: getReviews
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: List of reviews
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags: [Reviews]
+      summary: Create review
+      description: Write a review for a purchased ebook
+      operationId: createReview
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReviewRequest'
+      responses:
+        '201':
+          description: Review created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Not purchased or already reviewed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /ebooks/reviews/{reviewId}:
+    delete:
+      tags: [Reviews]
+      summary: Delete review
+      operationId: deleteReview
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: reviewId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Review deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /me/ebooks:
+    get:
+      tags: [My Ebooks]
+      summary: List my ebooks
+      description: Get user's created ebooks
+      operationId: listMyEbooks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, pending_review, approved, published, rejected, archived]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of user's ebooks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EbookListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateEbookRequest:
+      type: object
+      required: [title, description, price, currency, file_format]
+      properties:
+        title:
+          type: string
+          minLength: 2
+          maxLength: 200
+        subtitle:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          minLength: 20
+          maxLength: 5000
+        categories:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        language:
+          type: string
+          default: en
+        price:
+          type: integer
+          minimum: 0
+          description: Price in cents
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          example: USD
+        file_format:
+          type: string
+          enum: [epub, pdf]
+
+    UpdateEbookRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 2
+          maxLength: 200
+        subtitle:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          minLength: 20
+          maxLength: 5000
+        cover_image_url:
+          type: string
+          format: uri
+        sample_url:
+          type: string
+          format: uri
+        content_url:
+          type: string
+          format: uri
+        categories:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        language:
+          type: string
+        isbn:
+          type: string
+        price:
+          type: integer
+          minimum: 0
+        currency:
+          type: string
+        version:
+          type: string
+
+    Ebook:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        creator_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        subtitle:
+          type: string
+        description:
+          type: string
+        slug:
+          type: string
+        cover_image_url:
+          type: string
+        sample_url:
+          type: string
+        file_format:
+          type: string
+          enum: [epub, pdf]
+        file_size:
+          type: integer
+          description: File size in bytes
+        page_count:
+          type: integer
+        language:
+          type: string
+        isbn:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        price:
+          type: integer
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [draft, pending_review, approved, published, rejected, archived]
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        version:
+          type: string
+        downloads:
+          type: integer
+        average_rating:
+          type: number
+        review_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        creator:
+          $ref: '#/components/schemas/CreatorSummary'
+
+    CreatorSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        slug:
+          type: string
+        avatar_url:
+          type: string
+
+    EbookResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Ebook'
+        timestamp:
+          type: string
+          format: date-time
+
+    EbookListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ebook'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+        timestamp:
+          type: string
+          format: date-time
+
+    DownloadResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            download_url:
+              type: string
+              format: uri
+            expires_at:
+              type: string
+              format: date-time
+        timestamp:
+          type: string
+          format: date-time
+
+    CreateChapterRequest:
+      type: object
+      required: [title, content_url]
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        sort_order:
+          type: integer
+          minimum: 0
+        content_url:
+          type: string
+          format: uri
+        is_free:
+          type: boolean
+          default: false
+        duration:
+          type: integer
+          description: Duration in minutes (for audio)
+
+    Chapter:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ebook_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        sort_order:
+          type: integer
+        content_url:
+          type: string
+          description: Only included if purchased or free
+        is_free:
+          type: boolean
+        duration:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ChapterResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Chapter'
+        timestamp:
+          type: string
+          format: date-time
+
+    ChapterListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Chapter'
+        timestamp:
+          type: string
+          format: date-time
+
+    CreateReviewRequest:
+      type: object
+      required: [rating]
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        title:
+          type: string
+          maxLength: 100
+        content:
+          type: string
+          maxLength: 2000
+
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ebook_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        helpful:
+          type: integer
+        verified:
+          type: boolean
+          description: User purchased this ebook
+        user:
+          type: object
+          properties:
+            first_name:
+              type: string
+            avatar_url:
+              type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ReviewResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Review'
+        timestamp:
+          type: string
+          format: date-time
+
+    ReviewListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Review'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+        timestamp:
+          type: string
+          format: date-time
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_count:
+          type: integer
+        total_pages:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+        timestamp:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

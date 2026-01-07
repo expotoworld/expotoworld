@@ -1,0 +1,86 @@
+# EXPO to WORLD - Auth Service - AWS App Runner Configuration
+# 
+# Deployment:
+#   aws apprunner create-service --cli-input-yaml file://deployments/apprunner/auth.yaml
+#
+# This configuration uses source code from ECR and configures the auth service
+# for production deployment on AWS App Runner.
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'EXPO to WORLD Auth Service - App Runner Configuration'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: production
+    AllowedValues:
+      - production
+      - staging
+
+Resources:
+  AuthService:
+    Type: AWS::AppRunner::Service
+    Properties:
+      ServiceName: expotoworld-auth-service
+      SourceConfiguration:
+        AuthenticationConfiguration:
+          AccessRoleArn: !Sub 'arn:aws:iam::834076182408:role/AppRunnerECRAccessRole'
+        AutoDeploymentsEnabled: true
+        ImageRepository:
+          ImageIdentifier: !Sub '834076182408.dkr.ecr.eu-central-1.amazonaws.com/expotoworld-auth-service:latest'
+          ImageRepositoryType: ECR
+          ImageConfiguration:
+            Port: '8081'
+            RuntimeEnvironmentVariables:
+              - Name: APP_ENV
+                Value: !Ref Environment
+              - Name: AUTH_SERVICE_PORT
+                Value: '8081'
+              - Name: LOG_LEVEL
+                Value: 'info'
+              - Name: LOG_FORMAT
+                Value: 'json'
+              - Name: JWT_ISSUER
+                Value: 'expotoworld'
+              - Name: JWT_AUDIENCE
+                Value: 'expotoworld-api'
+              - Name: AWS_REGION
+                Value: 'eu-central-1'
+              - Name: RATE_LIMIT_REQUESTS
+                Value: '100'
+              - Name: RATE_LIMIT_WINDOW
+                Value: '1m'
+            RuntimeEnvironmentSecrets:
+              - Name: DATABASE_URL
+                Value: !Sub 'arn:aws:secretsmanager:eu-central-1:834076182408:secret:expotoworld/neon/db'
+              - Name: JWT_PRIVATE_KEY_PEM
+                Value: !Sub 'arn:aws:secretsmanager:eu-central-1:834076182408:secret:expotoworld/jwt/rs256/private_pem-8ZZCce'
+      InstanceConfiguration:
+        Cpu: '0.25 vCPU'
+        Memory: '0.5 GB'
+      HealthCheckConfiguration:
+        Protocol: HTTP
+        Path: /health
+        Interval: 10
+        Timeout: 5
+        HealthyThreshold: 1
+        UnhealthyThreshold: 3
+      AutoScalingConfigurationArn: !Sub 'arn:aws:apprunner:eu-central-1:834076182408:autoscalingconfiguration/DefaultConfiguration/1/latest'
+      NetworkConfiguration:
+        EgressConfiguration:
+          EgressType: DEFAULT
+      Tags:
+        - Key: Project
+          Value: expotoworld
+        - Key: Service
+          Value: auth
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  ServiceUrl:
+    Description: Auth Service URL
+    Value: !GetAtt AuthService.ServiceUrl
+  ServiceArn:
+    Description: Auth Service ARN
+    Value: !GetAtt AuthService.ServiceArn

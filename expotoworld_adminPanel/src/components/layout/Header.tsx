@@ -368,9 +368,9 @@ const Header: React.FC<HeaderProps> = () => {
     setNotifAnchor(null);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     handleProfileClose();
-    logout();
+    await logout();
   };
 
   const handleMobileToggle = () => {
@@ -771,7 +771,7 @@ const Header: React.FC<HeaderProps> = () => {
             >
               <IconButton onClick={handleProfileOpen} sx={{ p: 0.5, ml: 1 }}>
                 <Avatar
-                  alt={user?.username || 'Admin'}
+                  alt={user?.email || 'Admin'}
                   sx={{
                     width: 36,
                     height: 36,
@@ -779,7 +779,7 @@ const Header: React.FC<HeaderProps> = () => {
                     fontSize: '0.875rem',
                   }}
                 >
-                  {user?.username?.charAt(0).toUpperCase() || 'A'}
+                  {user?.email?.charAt(0).toUpperCase() || 'A'}
                 </Avatar>
               </IconButton>
             </Tooltip>
@@ -817,7 +817,7 @@ const Header: React.FC<HeaderProps> = () => {
             >
               <Box sx={{ px: 2, py: 1.5 }}>
                 <Typography variant="subtitle2" fontWeight={600}>
-                  {user?.username || 'Admin'}
+                  {user?.role || 'Admin'}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   {user?.email || 'admin@expotoworld.com'}

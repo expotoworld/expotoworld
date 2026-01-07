@@ -1,0 +1,156 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+  tests: true
+  build-tags:
+    - integration
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters:
+  enable:
+    # Bug detection
+    - errcheck
+    - govet
+    - staticcheck
+    - typecheck
+    
+    # Complexity & simplification
+    - gosimple
+    - ineffassign
+    - unused
+    - unconvert
+    - gocyclo
+    - gocognit
+    
+    # Security
+    - gosec
+    - bodyclose
+    - noctx
+    
+    # Style
+    - gofmt
+    - goimports
+    - misspell
+    - revive
+    
+    # Performance
+    - prealloc
+    - gocritic
+
+linters-settings:
+  errcheck:
+    check-blank: true
+    check-type-assertions: true
+  
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment # Too strict for rapid development
+  
+  gosimple:
+    checks: ["all"]
+  
+  staticcheck:
+    checks: ["all"]
+  
+  gocyclo:
+    min-complexity: 15
+  
+  gocognit:
+    min-complexity: 20
+  
+  gosec:
+    severity: medium
+    confidence: medium
+    excludes:
+      - G104 # Errors unhandled (we handle these via errcheck)
+      - G304 # File path provided as taint input
+  
+  goimports:
+    local-prefixes: github.com/expotoworld/expotoworld_backend
+  
+  misspell:
+    locale: US
+  
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+  
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+    disabled-checks:
+      - commentFormatting
+      - hugeParam # Sometimes we need to pass large structs
+      - rangeValCopy # Sometimes intentional
+  
+  prealloc:
+    simple: true
+    for-loops: true
+
+issues:
+  exclude-rules:
+    # Test files
+    - path: _test\.go
+      linters:
+        - gosec
+        - gocyclo
+        - gocognit
+        - errcheck
+        - dupl
+    
+    # Generated files
+    - path: ".*_gen\\.go"
+      linters:
+        - all
+    
+    # Mocks
+    - path: "mock_.*\\.go"
+      linters:
+        - all
+    
+    # Main entry points
+    - path: main\.go
+      linters:
+        - gocyclo
+        - gocognit
+  
+  exclude-dirs:
+    - vendor
+    - third_party
+    - testdata
+    - bin
+  
+  max-issues-per-linter: 50
+  max-same-issues: 5
+  new: false

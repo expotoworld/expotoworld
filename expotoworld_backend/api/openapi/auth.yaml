@@ -1,0 +1,568 @@
+openapi: 3.0.3
+info:
+  title: EXPO to WORLD - Auth Service API
+  description: |
+    Authentication and Authorization API for EXPO to WORLD platform.
+    Provides user registration, login, token management, and session handling.
+  version: 1.0.0
+  contact:
+    name: EXPO to WORLD Support
+    email: support@expotoworld.com
+  license:
+    name: Proprietary
+    url: https://expotoworld.com/terms
+
+servers:
+  - url: https://api.expotoworld.com/api/v1
+    description: Production server
+  - url: https://staging-api.expotoworld.com/api/v1
+    description: Staging server
+  - url: http://localhost:8081/api/v1
+    description: Local development
+
+tags:
+  - name: Authentication
+    description: User authentication endpoints
+  - name: Password Management
+    description: Password reset and change endpoints
+  - name: Session Management
+    description: Session listing and revocation
+  - name: User
+    description: Current user information
+
+paths:
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register new user
+      description: Create a new user account and send verification email
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: User login
+      description: Authenticate user and return access/refresh tokens
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Refresh access token
+      description: Exchange refresh token for new access/refresh tokens
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Tokens refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/verify-email:
+    post:
+      tags: [Authentication]
+      summary: Verify email address
+      description: Verify user email using token sent via email
+      operationId: verifyEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/resend-verification:
+    post:
+      tags: [Authentication]
+      summary: Resend verification email
+      description: Request a new verification email
+      operationId: resendVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendVerificationRequest'
+      responses:
+        '200':
+          description: Verification email sent if account exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /auth/forgot-password:
+    post:
+      tags: [Password Management]
+      summary: Request password reset
+      description: Send password reset email to user
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Reset email sent if account exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /auth/reset-password:
+    post:
+      tags: [Password Management]
+      summary: Reset password
+      description: Reset password using token from email
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Logout current session
+      description: Invalidate current session
+      operationId: logout
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout-all:
+    post:
+      tags: [Session Management]
+      summary: Logout all sessions
+      description: Invalidate all user sessions
+      operationId: logoutAll
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: All sessions logged out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/change-password:
+    post:
+      tags: [Password Management]
+      summary: Change password
+      description: Change password for authenticated user
+      operationId: changePassword
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/me:
+    get:
+      tags: [User]
+      summary: Get current user
+      description: Get profile of authenticated user
+      operationId: getMe
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/sessions:
+    get:
+      tags: [Session Management]
+      summary: List active sessions
+      description: Get all active sessions for current user
+      operationId: getSessions
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/sessions/{sessionId}:
+    delete:
+      tags: [Session Management]
+      summary: Revoke session
+      description: Revoke a specific session by ID
+      operationId: revokeSession
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [email, password, first_name, last_name]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          minLength: 8
+          example: SecurePassword123!
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          example: John
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          example: Doe
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    RefreshTokenRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+
+    VerifyEmailRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    ResendVerificationRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    ResetPasswordRequest:
+      type: object
+      required: [token, password]
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+          minLength: 8
+
+    ChangePasswordRequest:
+      type: object
+      required: [current_password, new_password]
+      properties:
+        current_password:
+          type: string
+        new_password:
+          type: string
+          minLength: 8
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            access_token:
+              type: string
+            refresh_token:
+              type: string
+            token_type:
+              type: string
+              example: Bearer
+            expires_in:
+              type: integer
+              description: Access token expiry in seconds
+            user:
+              $ref: '#/components/schemas/User'
+        timestamp:
+          type: string
+          format: date-time
+
+    UserResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/User'
+        timestamp:
+          type: string
+          format: date-time
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        role:
+          type: string
+          enum: [user, admin, creator, moderator]
+        status:
+          type: string
+          enum: [pending, active, banned, deleted]
+        email_verified:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SessionListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Session'
+        timestamp:
+          type: string
+          format: date-time
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_agent:
+          type: string
+        ip_address:
+          type: string
+        is_current:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+
+    MessageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+              additionalProperties:
+                type: string
+        timestamp:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Conflict:
+      description: Conflict (resource already exists)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

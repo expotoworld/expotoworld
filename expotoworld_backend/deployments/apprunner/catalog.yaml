@@ -1,0 +1,78 @@
+# EXPO to WORLD - Catalog Service - AWS App Runner Configuration
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'EXPO to WORLD Catalog Service - App Runner Configuration'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: production
+    AllowedValues:
+      - production
+      - staging
+
+Resources:
+  CatalogService:
+    Type: AWS::AppRunner::Service
+    Properties:
+      ServiceName: expotoworld-catalog-service
+      SourceConfiguration:
+        AuthenticationConfiguration:
+          AccessRoleArn: !Sub 'arn:aws:iam::834076182408:role/AppRunnerECRAccessRole'
+        AutoDeploymentsEnabled: true
+        ImageRepository:
+          ImageIdentifier: !Sub '834076182408.dkr.ecr.eu-central-1.amazonaws.com/expotoworld-catalog-service:latest'
+          ImageRepositoryType: ECR
+          ImageConfiguration:
+            Port: '8080'
+            RuntimeEnvironmentVariables:
+              - Name: APP_ENV
+                Value: !Ref Environment
+              - Name: CATALOG_SERVICE_PORT
+                Value: '8080'
+              - Name: LOG_LEVEL
+                Value: 'info'
+              - Name: LOG_FORMAT
+                Value: 'json'
+              - Name: JWT_ISSUER
+                Value: 'expotoworld'
+              - Name: JWT_AUDIENCE
+                Value: 'expotoworld-api'
+              - Name: AWS_REGION
+                Value: 'eu-central-1'
+              - Name: RATE_LIMIT_REQUESTS
+                Value: '100'
+              - Name: RATE_LIMIT_WINDOW
+                Value: '1m'
+            RuntimeEnvironmentSecrets:
+              - Name: DATABASE_URL
+                Value: !Sub 'arn:aws:secretsmanager:eu-central-1:834076182408:secret:expotoworld/neon/db'
+      InstanceConfiguration:
+        Cpu: '0.25 vCPU'
+        Memory: '0.5 GB'
+      HealthCheckConfiguration:
+        Protocol: HTTP
+        Path: /health
+        Interval: 10
+        Timeout: 5
+        HealthyThreshold: 1
+        UnhealthyThreshold: 3
+      AutoScalingConfigurationArn: !Sub 'arn:aws:apprunner:eu-central-1:834076182408:autoscalingconfiguration/DefaultConfiguration/1/latest'
+      NetworkConfiguration:
+        EgressConfiguration:
+          EgressType: DEFAULT
+      Tags:
+        - Key: Project
+          Value: expotoworld
+        - Key: Service
+          Value: catalog
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  ServiceUrl:
+    Description: Catalog Service URL
+    Value: !GetAtt CatalogService.ServiceUrl
+  ServiceArn:
+    Description: Catalog Service ARN
+    Value: !GetAtt CatalogService.ServiceArn

@@ -1,0 +1,995 @@
+openapi: 3.0.3
+info:
+  title: EXPO to WORLD - User Service API
+  description: |
+    User Profile and Account API for EXPO to WORLD platform.
+    Provides user profiles, addresses, creator profiles, wishlists, and notifications.
+  version: 1.0.0
+  contact:
+    name: EXPO to WORLD Support
+    email: support@expotoworld.com
+  license:
+    name: Proprietary
+    url: https://expotoworld.com/terms
+
+servers:
+  - url: https://api.expotoworld.com/api/v1
+    description: Production server
+  - url: https://staging-api.expotoworld.com/api/v1
+    description: Staging server
+  - url: http://localhost:8083/api/v1
+    description: Local development
+
+tags:
+  - name: Profile
+    description: User profile management
+  - name: Addresses
+    description: User address management
+  - name: Creator
+    description: Creator profile management
+  - name: Wishlists
+    description: Wishlist management
+  - name: Notifications
+    description: User notifications
+
+paths:
+  /profile:
+    get:
+      tags: [Profile]
+      summary: Get user profile
+      operationId: getProfile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    patch:
+      tags: [Profile]
+      summary: Update user profile
+      operationId: updateProfile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags: [Profile]
+      summary: Delete account
+      description: Permanently delete user account
+      operationId: deleteAccount
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Account deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /profile/avatar:
+    patch:
+      tags: [Profile]
+      summary: Update avatar
+      operationId: updateAvatar
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [avatar_url]
+              properties:
+                avatar_url:
+                  type: string
+                  format: uri
+      responses:
+        '204':
+          description: Avatar updated
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /addresses:
+    get:
+      tags: [Addresses]
+      summary: List addresses
+      operationId: getAddresses
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of addresses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Addresses]
+      summary: Create address
+      operationId: createAddress
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAddressRequest'
+      responses:
+        '201':
+          description: Address created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /addresses/{id}:
+    patch:
+      tags: [Addresses]
+      summary: Update address
+      operationId: updateAddress
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAddressRequest'
+      responses:
+        '200':
+          description: Address updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Addresses]
+      summary: Delete address
+      operationId: deleteAddress
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Address deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /creator:
+    get:
+      tags: [Creator]
+      summary: Get own creator profile
+      operationId: getCreatorProfile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Creator profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatorProfileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags: [Creator]
+      summary: Create creator profile
+      description: Become a creator on the platform
+      operationId: createCreatorProfile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCreatorRequest'
+      responses:
+        '201':
+          description: Creator profile created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatorProfileResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+    patch:
+      tags: [Creator]
+      summary: Update creator profile
+      operationId: updateCreatorProfile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCreatorRequest'
+      responses:
+        '200':
+          description: Creator profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatorProfileResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /creators/{slug}:
+    get:
+      tags: [Creator]
+      summary: Get creator by slug
+      description: Get public creator profile by slug
+      operationId: getCreatorBySlug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Creator profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatorProfileResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /wishlists:
+    get:
+      tags: [Wishlists]
+      summary: List wishlists
+      operationId: getWishlists
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of wishlists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WishlistListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Wishlists]
+      summary: Create wishlist
+      operationId: createWishlist
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWishlistRequest'
+      responses:
+        '201':
+          description: Wishlist created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WishlistResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /wishlists/{id}:
+    delete:
+      tags: [Wishlists]
+      summary: Delete wishlist
+      operationId: deleteWishlist
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Wishlist deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /wishlists/{id}/items:
+    post:
+      tags: [Wishlists]
+      summary: Add item to wishlist
+      operationId: addToWishlist
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [product_id]
+              properties:
+                product_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Item added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WishlistResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /wishlists/{id}/items/{productId}:
+    delete:
+      tags: [Wishlists]
+      summary: Remove item from wishlist
+      operationId: removeFromWishlist
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Item removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WishlistResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications
+      operationId: getNotifications
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: unread_only
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/{id}:
+    delete:
+      tags: [Notifications]
+      summary: Delete notification
+      operationId: deleteNotification
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Notification deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notifications/{id}/read:
+    patch:
+      tags: [Notifications]
+      summary: Mark notification as read
+      operationId: markAsRead
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Notification marked as read
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notifications/read-all:
+    patch:
+      tags: [Notifications]
+      summary: Mark all notifications as read
+      operationId: markAllAsRead
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: All notifications marked as read
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UpdateProfileRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          maxLength: 50
+        last_name:
+          type: string
+          maxLength: 50
+        phone:
+          type: string
+          maxLength: 20
+        date_of_birth:
+          type: string
+          format: date
+        bio:
+          type: string
+          maxLength: 500
+        language:
+          type: string
+          maxLength: 10
+        timezone:
+          type: string
+          maxLength: 50
+
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        avatar_url:
+          type: string
+        phone:
+          type: string
+        date_of_birth:
+          type: string
+          format: date
+        bio:
+          type: string
+        language:
+          type: string
+        timezone:
+          type: string
+        email_verified:
+          type: boolean
+        is_creator:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Profile'
+        timestamp:
+          type: string
+          format: date-time
+
+    CreateAddressRequest:
+      type: object
+      required: [label, address_line1, city, country]
+      properties:
+        label:
+          type: string
+          maxLength: 50
+        full_name:
+          type: string
+          maxLength: 100
+        address_line1:
+          type: string
+          maxLength: 200
+        address_line2:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          maxLength: 100
+        state:
+          type: string
+          maxLength: 100
+        postal_code:
+          type: string
+          maxLength: 20
+        country:
+          type: string
+          maxLength: 2
+        phone:
+          type: string
+          maxLength: 20
+        is_default:
+          type: boolean
+          default: false
+
+    UpdateAddressRequest:
+      type: object
+      properties:
+        label:
+          type: string
+          maxLength: 50
+        full_name:
+          type: string
+          maxLength: 100
+        address_line1:
+          type: string
+          maxLength: 200
+        address_line2:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          maxLength: 100
+        state:
+          type: string
+          maxLength: 100
+        postal_code:
+          type: string
+          maxLength: 20
+        country:
+          type: string
+          maxLength: 2
+        phone:
+          type: string
+          maxLength: 20
+        is_default:
+          type: boolean
+
+    Address:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        label:
+          type: string
+        full_name:
+          type: string
+        address_line1:
+          type: string
+        address_line2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postal_code:
+          type: string
+        country:
+          type: string
+        phone:
+          type: string
+        is_default:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    AddressResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Address'
+        timestamp:
+          type: string
+          format: date-time
+
+    AddressListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+        timestamp:
+          type: string
+          format: date-time
+
+    CreateCreatorRequest:
+      type: object
+      required: [display_name]
+      properties:
+        display_name:
+          type: string
+          maxLength: 100
+        bio:
+          type: string
+          maxLength: 1000
+        website:
+          type: string
+          format: uri
+        social_links:
+          type: object
+          additionalProperties:
+            type: string
+
+    UpdateCreatorRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          maxLength: 100
+        bio:
+          type: string
+          maxLength: 1000
+        banner_url:
+          type: string
+          format: uri
+        website:
+          type: string
+          format: uri
+        social_links:
+          type: object
+          additionalProperties:
+            type: string
+
+    CreatorProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        slug:
+          type: string
+        bio:
+          type: string
+        avatar_url:
+          type: string
+        banner_url:
+          type: string
+        website:
+          type: string
+        social_links:
+          type: object
+          additionalProperties:
+            type: string
+        is_verified:
+          type: boolean
+        total_sales:
+          type: integer
+        total_products:
+          type: integer
+        rating:
+          type: number
+        followers_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreatorProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/CreatorProfile'
+        timestamp:
+          type: string
+          format: date-time
+
+    CreateWishlistRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        is_public:
+          type: boolean
+          default: false
+
+    Wishlist:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        is_public:
+          type: boolean
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/WishlistItem'
+        item_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    WishlistItem:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        product_name:
+          type: string
+        product_image:
+          type: string
+        price:
+          type: integer
+        currency:
+          type: string
+        added_at:
+          type: string
+          format: date-time
+
+    WishlistResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Wishlist'
+        timestamp:
+          type: string
+          format: date-time
+
+    WishlistListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Wishlist'
+        timestamp:
+          type: string
+          format: date-time
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [order, system, promotion, social]
+        title:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+        is_read:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    NotificationListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+        timestamp:
+          type: string
+          format: date-time
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_count:
+          type: integer
+        total_pages:
+          type: integer
+        unread_count:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+        timestamp:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Conflict:
+      description: Conflict (resource already exists)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

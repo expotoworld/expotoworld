@@ -1,0 +1,189 @@
+# EXPO to WORLD - Docker Compose for Local Development
+# 
+# Usage:
+#   Start all services:    docker-compose up -d
+#   Start specific:        docker-compose up -d auth catalog
+#   View logs:             docker-compose logs -f
+#   Stop all:              docker-compose down
+#   Rebuild:               docker-compose build --no-cache
+
+version: '3.8'
+
+services:
+  # ============================================
+  # Auth Service
+  # ============================================
+  auth:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.auth
+    container_name: expotoworld-auth
+    ports:
+      - "8081:8081"
+    environment:
+      - APP_ENV=development
+      - AUTH_SERVICE_PORT=8081
+      - LOG_LEVEL=debug
+      - LOG_FORMAT=text
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_ISSUER=${JWT_ISSUER:-expotoworld}
+      - JWT_AUDIENCE=${JWT_AUDIENCE:-expotoworld-api}
+      - JWKS_URL=${JWKS_URL}
+      - JWT_PRIVATE_KEY_PEM=${JWT_PRIVATE_KEY_PEM}
+      - JWT_ACCESS_TOKEN_EXPIRY=${JWT_ACCESS_TOKEN_EXPIRY:-15m}
+      - JWT_REFRESH_TOKEN_EXPIRY=${JWT_REFRESH_TOKEN_EXPIRY:-168h}
+      - AWS_REGION=${AWS_REGION:-eu-central-1}
+      - RATE_LIMIT_REQUESTS=${RATE_LIMIT_REQUESTS:-100}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-1m}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - expotoworld
+
+  # ============================================
+  # Catalog Service
+  # ============================================
+  catalog:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.catalog
+    container_name: expotoworld-catalog
+    ports:
+      - "8080:8080"
+    environment:
+      - APP_ENV=development
+      - CATALOG_SERVICE_PORT=8080
+      - LOG_LEVEL=debug
+      - LOG_FORMAT=text
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_ISSUER=${JWT_ISSUER:-expotoworld}
+      - JWT_AUDIENCE=${JWT_AUDIENCE:-expotoworld-api}
+      - JWKS_URL=${JWKS_URL}
+      - AWS_REGION=${AWS_REGION:-eu-central-1}
+      - AWS_S3_BUCKET_PRODUCTS=${AWS_S3_BUCKET_PRODUCTS}
+      - CLOUDFRONT_DOMAIN=${CLOUDFRONT_DOMAIN}
+      - RATE_LIMIT_REQUESTS=${RATE_LIMIT_REQUESTS:-100}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-1m}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - expotoworld
+
+  # ============================================
+  # Ebook Service
+  # ============================================
+  ebook:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.ebook
+    container_name: expotoworld-ebook
+    ports:
+      - "8084:8084"
+    environment:
+      - APP_ENV=development
+      - EBOOK_SERVICE_PORT=8084
+      - LOG_LEVEL=debug
+      - LOG_FORMAT=text
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_ISSUER=${JWT_ISSUER:-expotoworld}
+      - JWT_AUDIENCE=${JWT_AUDIENCE:-expotoworld-api}
+      - JWKS_URL=${JWKS_URL}
+      - AWS_REGION=${AWS_REGION:-eu-central-1}
+      - AWS_S3_BUCKET_EBOOKS=${AWS_S3_BUCKET_EBOOKS}
+      - CLOUDFRONT_DOMAIN=${CLOUDFRONT_DOMAIN}
+      - RATE_LIMIT_REQUESTS=${RATE_LIMIT_REQUESTS:-100}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-1m}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8084/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - expotoworld
+
+  # ============================================
+  # Order Service
+  # ============================================
+  order:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.order
+    container_name: expotoworld-order
+    ports:
+      - "8082:8082"
+    environment:
+      - APP_ENV=development
+      - ORDER_SERVICE_PORT=8082
+      - LOG_LEVEL=debug
+      - LOG_FORMAT=text
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_ISSUER=${JWT_ISSUER:-expotoworld}
+      - JWT_AUDIENCE=${JWT_AUDIENCE:-expotoworld-api}
+      - JWKS_URL=${JWKS_URL}
+      - AWS_REGION=${AWS_REGION:-eu-central-1}
+      - RATE_LIMIT_REQUESTS=${RATE_LIMIT_REQUESTS:-100}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-1m}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - expotoworld
+
+  # ============================================
+  # User Service
+  # ============================================
+  user:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.user
+    container_name: expotoworld-user
+    ports:
+      - "8083:8083"
+    environment:
+      - APP_ENV=development
+      - USER_SERVICE_PORT=8083
+      - LOG_LEVEL=debug
+      - LOG_FORMAT=text
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_ISSUER=${JWT_ISSUER:-expotoworld}
+      - JWT_AUDIENCE=${JWT_AUDIENCE:-expotoworld-api}
+      - JWKS_URL=${JWKS_URL}
+      - AWS_REGION=${AWS_REGION:-eu-central-1}
+      - AWS_S3_BUCKET_PROFILES=${AWS_S3_BUCKET_PROFILES}
+      - CLOUDFRONT_DOMAIN=${CLOUDFRONT_DOMAIN}
+      - RATE_LIMIT_REQUESTS=${RATE_LIMIT_REQUESTS:-100}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-1m}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8083/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - expotoworld
+
+networks:
+  expotoworld:
+    driver: bridge

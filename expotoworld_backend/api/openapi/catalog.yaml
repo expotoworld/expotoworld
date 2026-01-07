@@ -1,0 +1,942 @@
+openapi: 3.0.3
+info:
+  title: EXPO to WORLD - Catalog Service API
+  description: |
+    Product Catalog API for EXPO to WORLD platform.
+    Provides product and category management for the marketplace.
+  version: 1.0.0
+  contact:
+    name: EXPO to WORLD Support
+    email: support@expotoworld.com
+  license:
+    name: Proprietary
+    url: https://expotoworld.com/terms
+
+servers:
+  - url: https://api.expotoworld.com/api/v1
+    description: Production server
+  - url: https://staging-api.expotoworld.com/api/v1
+    description: Staging server
+  - url: http://localhost:8080/api/v1
+    description: Local development
+
+tags:
+  - name: Categories
+    description: Product category management
+  - name: Products
+    description: Product listing and management
+
+paths:
+  /categories:
+    get:
+      tags: [Categories]
+      summary: List categories
+      description: Get paginated list of categories
+      operationId: listCategories
+      parameters:
+        - name: active_only
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+
+    post:
+      tags: [Categories]
+      summary: Create category
+      description: Create a new category (admin only)
+      operationId: createCategory
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /categories/tree:
+    get:
+      tags: [Categories]
+      summary: Get category tree
+      description: Get categories in hierarchical tree structure
+      operationId: getCategoryTree
+      parameters:
+        - name: active_only
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Category tree
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryTreeResponse'
+
+  /categories/{id}:
+    get:
+      tags: [Categories]
+      summary: Get category by ID
+      operationId: getCategoryById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Category details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Categories]
+      summary: Update category
+      description: Update category (admin only)
+      operationId: updateCategory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCategoryRequest'
+      responses:
+        '200':
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Categories]
+      summary: Delete category
+      description: Delete category (admin only)
+      operationId: deleteCategory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Category deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /categories/slug/{slug}:
+    get:
+      tags: [Categories]
+      summary: Get category by slug
+      operationId: getCategoryBySlug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Category details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /products:
+    get:
+      tags: [Products]
+      summary: List products
+      description: Get paginated list of products with filtering
+      operationId: listProducts
+      parameters:
+        - name: category_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: creator_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, pending, approved, rejected, published, archived]
+        - name: product_type
+          in: query
+          schema:
+            type: string
+            enum: [physical, digital, service]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: is_featured
+          in: query
+          schema:
+            type: boolean
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+        - name: min_price
+          in: query
+          schema:
+            type: integer
+            description: Minimum price in cents
+        - name: max_price
+          in: query
+          schema:
+            type: integer
+            description: Maximum price in cents
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            default: created_at
+            enum: [created_at, price_amount, name, sales_count, rating]
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            default: desc
+            enum: [asc, desc]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: List of products
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListResponse'
+
+    post:
+      tags: [Products]
+      summary: Create product
+      description: Create a new product (requires authentication)
+      operationId: createProduct
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /products/{id}:
+    get:
+      tags: [Products]
+      summary: Get product by ID
+      operationId: getProductById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Products]
+      summary: Update product
+      operationId: updateProduct
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductRequest'
+      responses:
+        '200':
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Products]
+      summary: Delete product
+      operationId: deleteProduct
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Product deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /products/slug/{slug}:
+    get:
+      tags: [Products]
+      summary: Get product by slug
+      operationId: getProductBySlug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /products/{id}/publish:
+    post:
+      tags: [Products]
+      summary: Publish product
+      operationId: publishProduct
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Product published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /products/{id}/unpublish:
+    post:
+      tags: [Products]
+      summary: Unpublish product
+      operationId: unpublishProduct
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Product unpublished
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateCategoryRequest:
+      type: object
+      required: [name]
+      properties:
+        parent_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+        slug:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+        image_url:
+          type: string
+          format: uri
+        sort_order:
+          type: integer
+          minimum: 0
+        is_active:
+          type: boolean
+          default: true
+
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        parent_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+        slug:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+        image_url:
+          type: string
+          format: uri
+        sort_order:
+          type: integer
+          minimum: 0
+        is_active:
+          type: boolean
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        image_url:
+          type: string
+        sort_order:
+          type: integer
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+
+    CategoryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Category'
+        timestamp:
+          type: string
+          format: date-time
+
+    CategoryListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+        timestamp:
+          type: string
+          format: date-time
+
+    CategoryTreeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        timestamp:
+          type: string
+          format: date-time
+
+    CreateProductRequest:
+      type: object
+      required: [category_id, name, description, price_amount, price_currency, product_type]
+      properties:
+        category_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          minLength: 10
+          maxLength: 5000
+        sku:
+          type: string
+          maxLength: 50
+        price_amount:
+          type: integer
+          description: Price in cents
+          minimum: 0
+        price_currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          example: USD
+        compare_price:
+          type: integer
+          minimum: 0
+        stock:
+          type: integer
+          minimum: 0
+        product_type:
+          type: string
+          enum: [physical, digital, service]
+        media_urls:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            format: uri
+        thumbnail_url:
+          type: string
+          format: uri
+        tags:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        origin:
+          type: string
+          maxLength: 100
+        materials:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+        dimensions:
+          $ref: '#/components/schemas/Dimensions'
+        weight:
+          $ref: '#/components/schemas/Weight'
+        is_featured:
+          type: boolean
+          default: false
+
+    UpdateProductRequest:
+      type: object
+      properties:
+        category_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          minLength: 10
+          maxLength: 5000
+        sku:
+          type: string
+          maxLength: 50
+        price_amount:
+          type: integer
+          minimum: 0
+        price_currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        compare_price:
+          type: integer
+          minimum: 0
+        stock:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          enum: [draft, pending, approved, rejected, published, archived]
+        product_type:
+          type: string
+          enum: [physical, digital, service]
+        media_urls:
+          type: array
+          items:
+            type: string
+            format: uri
+        thumbnail_url:
+          type: string
+          format: uri
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+        origin:
+          type: string
+        materials:
+          type: array
+          items:
+            type: string
+        dimensions:
+          $ref: '#/components/schemas/Dimensions'
+        weight:
+          $ref: '#/components/schemas/Weight'
+        is_featured:
+          type: boolean
+
+    Dimensions:
+      type: object
+      properties:
+        length:
+          type: number
+        width:
+          type: number
+        height:
+          type: number
+        unit:
+          type: string
+          enum: [cm, in]
+
+    Weight:
+      type: object
+      properties:
+        value:
+          type: number
+        unit:
+          type: string
+          enum: [kg, lb]
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        category_id:
+          type: string
+          format: uuid
+        creator_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        sku:
+          type: string
+        price_amount:
+          type: integer
+          description: Price in cents
+        price_currency:
+          type: string
+        compare_price:
+          type: integer
+        stock:
+          type: integer
+        status:
+          type: string
+          enum: [draft, pending, approved, rejected, published, archived]
+        product_type:
+          type: string
+          enum: [physical, digital, service]
+        media_urls:
+          type: array
+          items:
+            type: string
+        thumbnail_url:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+        origin:
+          type: string
+        materials:
+          type: array
+          items:
+            type: string
+        dimensions:
+          $ref: '#/components/schemas/Dimensions'
+        weight:
+          $ref: '#/components/schemas/Weight'
+        is_featured:
+          type: boolean
+        is_active:
+          type: boolean
+        view_count:
+          type: integer
+        sales_count:
+          type: integer
+        rating:
+          type: number
+        rating_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        category:
+          $ref: '#/components/schemas/Category'
+
+    ProductResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Product'
+        timestamp:
+          type: string
+          format: date-time
+
+    ProductListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+        timestamp:
+          type: string
+          format: date-time
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_count:
+          type: integer
+        total_pages:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+              additionalProperties:
+                type: string
+        timestamp:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Conflict:
+      description: Conflict (resource already exists)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
