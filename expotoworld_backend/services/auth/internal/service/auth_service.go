@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/expotoworld/expotoworld_backend/services/auth/internal/domain"
@@ -37,6 +38,11 @@ type EmailSender interface {
 	SendOTPEmail(ctx context.Context, email, code string) error
 }
 
+// SMSSender is the interface for sending SMS messages.
+type SMSSender interface {
+	SendOTPSMS(ctx context.Context, phone, code string) error
+}
+
 // Config holds the configuration for the auth service.
 type Config struct {
 	JWTPrivateKey   string
@@ -61,6 +67,7 @@ type AuthService struct {
 	tokenRepo     repository.RefreshTokenRepository
 	rateLimitRepo repository.RateLimitRepository
 	emailSender   EmailSender
+	smsSender     SMSSender
 	config        Config
 	privateKey    *rsa.PrivateKey
 	publicKey     *rsa.PublicKey
@@ -74,6 +81,7 @@ func NewAuthService(
 	tokenRepo repository.RefreshTokenRepository,
 	rateLimitRepo repository.RateLimitRepository,
 	emailSender EmailSender,
+	smsSender SMSSender,
 	config Config,
 	logger *slog.Logger,
 ) (*AuthService, error) {
@@ -103,6 +111,7 @@ func NewAuthService(
 		tokenRepo:     tokenRepo,
 		rateLimitRepo: rateLimitRepo,
 		emailSender:   emailSender,
+		smsSender:     smsSender,
 		config:        config,
 		privateKey:    rsaPrivateKey,
 		publicKey:     &rsaPrivateKey.PublicKey,
@@ -110,16 +119,33 @@ func NewAuthService(
 	}, nil
 }
 
-// SendVerificationCode sends an OTP verification code to the user's email.
-func (s *AuthService) SendVerificationCode(ctx context.Context, email string, actorType domain.ActorType, ipAddress string) error {
-	// Rate limit check - use actor type and email channel
+// isEmail checks if the contact is an email address.
+func isEmail(contact string) bool {
+	return strings.Contains(contact, "@")
+}
+
+// SendVerificationCode sends an OTP verification code to the user's email or phone.
+func (s *AuthService) SendVerificationCode(ctx context.Context, contact string, actorType domain.ActorType, ipAddress string) error {
+	// Determine channel type based on contact
+	useEmail := isEmail(contact)
+	var channelType domain.ChannelType
+	var channelStr string
+	if useEmail {
+		channelType = domain.ChannelTypeEmail
+		channelStr = "email"
+	} else {
+		channelType = domain.ChannelTypePhone
+		channelStr = "phone"
+	}
+
+	// Rate limit check
 	rateLimitConfig := domain.DefaultRateLimitConfig()
 	actorTypeStr := "user"
 	if actorType == domain.ActorTypeAdmin {
 		actorTypeStr = "admin"
 	}
 	
-	rateLimit, err := s.rateLimitRepo.GetOrCreate(ctx, actorTypeStr, "email", ipAddress)
+	rateLimit, err := s.rateLimitRepo.GetOrCreate(ctx, actorTypeStr, channelStr, ipAddress)
 	if err != nil {
 		s.logger.Error("failed to get rate limit", "error", err)
 		return err
@@ -130,13 +156,16 @@ func (s *AuthService) SendVerificationCode(ctx context.Context, email string, ac
 	}
 
 	// Increment rate limit
-	if err := s.rateLimitRepo.Increment(ctx, actorTypeStr, "email", ipAddress); err != nil {
+	if err := s.rateLimitRepo.Increment(ctx, actorTypeStr, channelStr, ipAddress); err != nil {
 		s.logger.Error("failed to increment rate limit", "error", err)
 	}
 
-	// For admin, verify user exists and is admin
+	// For admin, verify user exists and is admin (only supported via email)
 	if actorType == domain.ActorTypeAdmin {
-		user, err := s.userRepo.FindByEmail(ctx, email)
+		if !useEmail {
+			return errors.New("admin login only supported via email")
+		}
+		user, err := s.userRepo.FindByEmail(ctx, contact)
 		if err != nil {
 			return err
 		}
@@ -145,14 +174,14 @@ func (s *AuthService) SendVerificationCode(ctx context.Context, email string, ac
 		}
 	}
 
-	// Invalidate previous codes for this email
-	if err := s.codeRepo.InvalidatePreviousCodes(ctx, string(domain.ChannelTypeEmail), email); err != nil {
+	// Invalidate previous codes for this contact
+	if err := s.codeRepo.InvalidatePreviousCodes(ctx, string(channelType), contact); err != nil {
 		s.logger.Error("failed to invalidate previous codes", "error", err)
 	}
 
 	// Generate new code
 	ipPtr := &ipAddress
-	verificationCode, plainCode, err := domain.NewVerificationCode(email, actorType, domain.ChannelTypeEmail, ipPtr)
+	verificationCode, plainCode, err := domain.NewVerificationCode(contact, actorType, channelType, ipPtr)
 	if err != nil {
 		return fmt.Errorf("failed to generate verification code: %w", err)
 	}
@@ -162,13 +191,24 @@ func (s *AuthService) SendVerificationCode(ctx context.Context, email string, ac
 		return fmt.Errorf("failed to store verification code: %w", err)
 	}
 
-	// Send the code via email
-	if err := s.emailSender.SendOTPEmail(ctx, email, plainCode); err != nil {
-		s.logger.Error("failed to send OTP email", "error", err, "email", email)
-		return fmt.Errorf("failed to send verification code: %w", err)
+	// Send the code via appropriate channel
+	if useEmail {
+		if err := s.emailSender.SendOTPEmail(ctx, contact, plainCode); err != nil {
+			s.logger.Error("failed to send OTP email", "error", err, "email", contact)
+			return fmt.Errorf("failed to send verification code: %w", err)
+		}
+		s.logger.Info("verification code sent via email", "actor_type", actorType, "email", contact)
+	} else {
+		if s.smsSender == nil {
+			return errors.New("SMS sending is not configured")
+		}
+		if err := s.smsSender.SendOTPSMS(ctx, contact, plainCode); err != nil {
+			s.logger.Error("failed to send OTP SMS", "error", err, "phone", contact)
+			return fmt.Errorf("failed to send verification code: %w", err)
+		}
+		s.logger.Info("verification code sent via SMS", "actor_type", actorType, "phone", contact)
 	}
 
-	s.logger.Info("verification code sent", "actor_type", actorType, "email", email)
 	return nil
 }
 
@@ -181,9 +221,18 @@ type AuthResult struct {
 }
 
 // VerifyCode verifies the OTP code and returns authentication tokens.
-func (s *AuthService) VerifyCode(ctx context.Context, email, code string, actorType domain.ActorType, ipAddress, userAgent *string) (*AuthResult, error) {
-	// Find the latest valid code for this email
-	storedCode, err := s.codeRepo.FindLatestValid(ctx, string(domain.ChannelTypeEmail), email)
+func (s *AuthService) VerifyCode(ctx context.Context, contact, code string, actorType domain.ActorType, ipAddress, userAgent *string) (*AuthResult, error) {
+	// Determine channel type based on contact
+	useEmail := isEmail(contact)
+	var channelType domain.ChannelType
+	if useEmail {
+		channelType = domain.ChannelTypeEmail
+	} else {
+		channelType = domain.ChannelTypePhone
+	}
+
+	// Find the latest valid code for this contact
+	storedCode, err := s.codeRepo.FindLatestValid(ctx, string(channelType), contact)
 	if err != nil {
 		return nil, err
 	}
@@ -214,8 +263,13 @@ func (s *AuthService) VerifyCode(ctx context.Context, email, code string, actorT
 		s.logger.Error("failed to mark code as used", "error", err)
 	}
 
-	// Find user 
-	user, err := s.userRepo.FindByEmail(ctx, email)
+	// Find user by email or phone
+	var user *domain.User
+	if useEmail {
+		user, err = s.userRepo.FindByEmail(ctx, contact)
+	} else {
+		user, err = s.userRepo.FindByPhone(ctx, contact)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -225,12 +279,18 @@ func (s *AuthService) VerifyCode(ctx context.Context, email, code string, actorT
 	if user == nil {
 		// Create new user
 		isNewUser = true
-		emailPtr := email
 		user = &domain.User{
-			Username: email,
-			Email:    &emailPtr,
+			Username: contact,
 			Role:     domain.RoleCustomer,
 			Status:   domain.StatusActive,
+		}
+		
+		if useEmail {
+			emailPtr := contact
+			user.Email = &emailPtr
+		} else {
+			phonePtr := contact
+			user.Phone = &phonePtr
 		}
 
 		user, err = s.userRepo.Create(ctx, user)
@@ -238,7 +298,7 @@ func (s *AuthService) VerifyCode(ctx context.Context, email, code string, actorT
 			return nil, fmt.Errorf("failed to create user: %w", err)
 		}
 
-		s.logger.Info("new user created", "user_id", user.ID, "email", email)
+		s.logger.Info("new user created", "user_id", user.ID, "contact", contact)
 	}
 
 	// Check user status
@@ -385,6 +445,10 @@ func (s *AuthService) generateAccessToken(ctx context.Context, user *domain.User
 
 	if user.Email != nil {
 		accessClaims["email"] = *user.Email
+	}
+
+	if user.Phone != nil {
+		accessClaims["phone"] = *user.Phone
 	}
 
 	// Note: Organization memberships are handled separately by the admin panel

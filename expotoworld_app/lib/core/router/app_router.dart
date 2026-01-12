@@ -12,9 +12,7 @@ import '../../portals/consumer/profile/presentation/screens/profile_screen.dart'
 import '../../portals/consumer/profile/presentation/screens/account_settings_screen.dart';
 import '../../portals/consumer/profile/presentation/screens/get_help_screen.dart';
 import '../../portals/consumer/search/presentation/screens/search_screen.dart';
-// Auth (cross-portal)
-import '../../features/auth/presentation/screens/login_screen.dart';
-import '../../features/auth/presentation/screens/signup_screen.dart';
+// Auth is now handled via modal dialog - no separate screens needed
 // Shared widgets
 import '../../shared/widgets/main_shell.dart';
 // Mini-app imports - Core (shared)
@@ -115,8 +113,7 @@ class RoutePaths {
   static const String profile = '/profile';
   static const String accountSettings = '/account-settings';
   static const String getHelp = '/get-help';
-  static const String login = '/login';
-  static const String signup = '/signup';
+  // Auth routes removed - now handled via modal dialog
   static const String qrScan = '/qr-scan';
   static const String search = '/search';
   
@@ -169,17 +166,9 @@ final GoRouter appRouter = GoRouter(
         ),
       ],
     ),
-    // Auth routes (outside shell)
-    GoRoute(
-      path: RoutePaths.login,
-      name: 'login',
-      builder: (context, state) => const LoginScreen(),
-    ),
-    GoRoute(
-      path: RoutePaths.signup,
-      name: 'signup',
-      builder: (context, state) => const SignupScreen(),
-    ),
+    // Auth is now handled via modal dialog (showAuthDialog)
+    // No separate login/signup routes needed
+    
     // Search screen (outside shell, premium fade transition)
     GoRoute(
       path: RoutePaths.search,

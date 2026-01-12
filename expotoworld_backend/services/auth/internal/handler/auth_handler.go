@@ -47,8 +47,10 @@ func (h *AuthHandler) RegisterRoutes(r *gin.Engine) {
 }
 
 // SendCodeRequest is the request body for sending a verification code.
+// Either email or phone must be provided, but not both.
 type SendCodeRequest struct {
-	Email string `json:"email" binding:"required,email"`
+	Email string `json:"email" binding:"omitempty,email"`
+	Phone string `json:"phone" binding:"omitempty,e164"`
 }
 
 // SendCodeResponse is the response for sending a verification code.
@@ -60,14 +62,34 @@ type SendCodeResponse struct {
 func (h *AuthHandler) SendCode(c *gin.Context) {
 	var req SendCodeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid email address"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
 		return
 	}
 
+	// Validate that exactly one of email or phone is provided
+	hasEmail := req.Email != ""
+	hasPhone := req.Phone != ""
+	
+	if !hasEmail && !hasPhone {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email or phone number is required"})
+		return
+	}
+	if hasEmail && hasPhone {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Provide either email or phone, not both"})
+		return
+	}
+
+	var contact string
+	if hasEmail {
+		contact = req.Email
+	} else {
+		contact = req.Phone
+	}
+
 	ipAddress := c.ClientIP()
-	err := h.authService.SendVerificationCode(c.Request.Context(), req.Email, domain.ActorTypeUser, ipAddress)
+	err := h.authService.SendVerificationCode(c.Request.Context(), contact, domain.ActorTypeUser, ipAddress)
 	if err != nil {
-		h.logger.Error("failed to send verification code", "error", err, "email", req.Email)
+		h.logger.Error("failed to send verification code", "error", err, "contact", contact)
 		if strings.Contains(err.Error(), "rate limit") {
 			c.JSON(http.StatusTooManyRequests, gin.H{"error": err.Error()})
 			return
@@ -80,8 +102,10 @@ func (h *AuthHandler) SendCode(c *gin.Context) {
 }
 
 // VerifyCodeRequest is the request body for verifying a code.
+// Either email or phone must be provided, but not both.
 type VerifyCodeRequest struct {
-	Email string `json:"email" binding:"required,email"`
+	Email string `json:"email" binding:"omitempty,email"`
+	Phone string `json:"phone" binding:"omitempty,e164"`
 	Code  string `json:"code" binding:"required,len=6"`
 }
 
@@ -101,12 +125,32 @@ func (h *AuthHandler) VerifyCode(c *gin.Context) {
 		return
 	}
 
+	// Validate that exactly one of email or phone is provided
+	hasEmail := req.Email != ""
+	hasPhone := req.Phone != ""
+	
+	if !hasEmail && !hasPhone {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email or phone number is required"})
+		return
+	}
+	if hasEmail && hasPhone {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Provide either email or phone, not both"})
+		return
+	}
+
+	var contact string
+	if hasEmail {
+		contact = req.Email
+	} else {
+		contact = req.Phone
+	}
+
 	ipAddress := c.ClientIP()
 	userAgent := c.Request.UserAgent()
 
-	result, err := h.authService.VerifyCode(c.Request.Context(), req.Email, req.Code, domain.ActorTypeUser, &ipAddress, &userAgent)
+	result, err := h.authService.VerifyCode(c.Request.Context(), contact, req.Code, domain.ActorTypeUser, &ipAddress, &userAgent)
 	if err != nil {
-		h.logger.Error("verification failed", "error", err, "email", req.Email)
+		h.logger.Error("verification failed", "error", err, "contact", contact)
 		if strings.Contains(err.Error(), "invalid") || strings.Contains(err.Error(), "expired") {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
