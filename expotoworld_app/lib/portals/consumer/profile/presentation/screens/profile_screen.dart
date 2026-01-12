@@ -8,6 +8,9 @@ import '../../../../../core/theme/app_spacing.dart';
 import '../../../../../core/theme/app_typography.dart';
 import '../../../../../core/l10n/generated/app_localizations.dart';
 import '../../../../../core/router/app_router.dart';
+import '../../../../../core/providers/auth_provider.dart';
+import '../../../../../features/auth/auth.dart';
+import '../../../../../shared/widgets/styled_dialog.dart';
 
 /// Formats a number to a compact representation with max 3 significant digits
 /// Examples: 1358 → "1.35K", 28743 → "28.7K", 1000000 → "1M", 134 → "134"
@@ -72,9 +75,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   static const int _totalOrders = 1489;
   static const int _totalTransactions = 421;
   static const double _walletBalance = 3562.58;
-
-  // Auth state (will be connected to actual auth provider later)
-  static const bool _isLoggedIn = true; // Change to false to test inactive logout
 
   @override
   void initState() {
@@ -186,8 +186,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   isDark: isDark,
                   icon: Icons.manage_accounts_outlined,
                   title: AppLocalizations.of(context)!.settingsAccountSettings,
-                  onTap: () {
-                    context.push(RoutePaths.accountSettings);
+                  onTap: () async {
+                    // Require auth for account settings
+                    await requireAuth(context, ref, () async {
+                      context.push(RoutePaths.accountSettings);
+                    });
                   },
                 ),
                 _buildSimpleSettingsItem(
@@ -211,7 +214,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   onTap: () {},
                 ),
                 SizedBox(height: AppSpacing.lg),
-                // Logout button (conditional styling based on login state)
+                // Logout/Login button (conditional styling based on login state)
                 _buildLogoutButton(context, isDark),
                 SizedBox(height: AppSpacing.xxl),
               ]),
@@ -1121,15 +1124,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
   /// Simple logout button with border and conditional styling
   Widget _buildLogoutButton(BuildContext context, bool isDark) {
-    final isActive = _isLoggedIn;
-    final buttonColor = isActive
+    final isAuthenticated = ref.watch(isAuthenticatedProvider);
+    final buttonColor = isAuthenticated
         ? AppColors.red500
-        : (isDark ? AppColors.neutralGray600 : AppColors.neutralGray400);
+        : AppColors.themeRed; // Show as login button when not authenticated
+
+    final buttonLabel = isAuthenticated
+        ? AppLocalizations.of(context)!.profileLogout
+        : 'Sign In';
+    final buttonIcon = isAuthenticated ? Icons.logout : Icons.login;
 
     return InkWell(
-      onTap: isActive ? () {
-        // Handle logout
-      } : null,
+      onTap: () async {
+        if (isAuthenticated) {
+          // Show styled confirmation dialog
+          final confirmed = await showStyledConfirmDialog(
+            context: context,
+            title: 'Sign Out',
+            message: 'Are you sure you want to sign out? You can always sign back in.',
+            confirmLabel: 'Sign Out',
+            cancelLabel: 'Cancel',
+            icon: Icons.logout_rounded,
+            isDangerous: true,
+          );
+          
+          if (confirmed) {
+            await ref.read(authProvider.notifier).logout();
+          }
+        } else {
+          // Show auth dialog
+          await showAuthDialog(context);
+        }
+      },
       borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
       child: Container(
         width: double.infinity,
@@ -1147,13 +1173,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.logout,
+              buttonIcon,
               color: buttonColor,
               size: 20,
             ),
             SizedBox(width: AppSpacing.sm),
             Text(
-              AppLocalizations.of(context)!.profileLogout,
+              buttonLabel,
               style: AppTypography.bodyMedium().copyWith(
                 color: buttonColor,
                 fontWeight: FontWeight.w600,

@@ -14,6 +14,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ses"
+	"github.com/aws/aws-sdk-go-v2/service/sns"
 	pkgconfig "github.com/expotoworld/expotoworld_backend/pkg/config"
 	"github.com/expotoworld/expotoworld_backend/pkg/database"
 	"github.com/expotoworld/expotoworld_backend/pkg/httputil"
@@ -22,6 +23,7 @@ import (
 	"github.com/expotoworld/expotoworld_backend/services/auth/internal/handler"
 	"github.com/expotoworld/expotoworld_backend/services/auth/internal/repository/postgres"
 	"github.com/expotoworld/expotoworld_backend/services/auth/internal/service"
+	"github.com/expotoworld/expotoworld_backend/services/auth/internal/sms"
 	"github.com/gin-gonic/gin"
 )
 
@@ -101,6 +103,13 @@ func run() error {
 		Region:    cfg.AWS.Region,
 	}, log.Logger)
 
+	// Initialize SMS service
+	snsClient := sns.NewFromConfig(awsCfg)
+	smsService := sms.NewService(snsClient, sms.Config{
+		SenderID: cfg.AWS.SNSSenderID,
+		Region:   cfg.AWS.Region,
+	}, log.Logger)
+
 	// Initialize auth service
 	authServiceCfg := service.DefaultConfig()
 	authServiceCfg.JWTPrivateKey = jwtPrivateKey
@@ -112,6 +121,7 @@ func run() error {
 		tokenRepo,
 		rateLimitRepo,
 		emailService,
+		smsService,
 		authServiceCfg,
 		log.Logger,
 	)
