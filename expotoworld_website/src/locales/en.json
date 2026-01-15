@@ -1,0 +1,162 @@
+{
+  "common": {
+    "learnMore": "Learn More",
+    "getStarted": "Get Started",
+    "contactUs": "Contact Us",
+    "language": "Language",
+    "english": "English",
+    "chinese": "中文"
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About Us",
+    "ecosystem": "Our Ecosystem",
+    "services": "Services",
+    "privacy": "Privacy Policy",
+    "terms": "Terms & Conditions"
+  },
+  "hero": {
+    "tagline": "The Future of Commerce",
+    "title": "EXPO to WORLD",
+    "subtitle": "Revolutionary automated retail, B2B exposition, and group-buying platform",
+    "description": "Experience a new era of commerce with our unstaffed stores, direct-from-manufacturer pricing, and collective buying power. We're redefining how businesses and consumers connect.",
+    "cta": "Discover Our Platform"
+  },
+  "features": {
+    "title": "Our Ecosystem",
+    "subtitle": "Four integrated platforms, one seamless experience",
+    "toB": {
+      "title": "EXPO to WORLD to B",
+      "subtitle": "B2B Exposition",
+      "description": "Physical exhibition centers where business customers can view product samples and connect directly with manufacturers. Order in bulk through our app with exclusive B2B pricing."
+    },
+    "toC": {
+      "title": "EXPO to WORLD to C",
+      "subtitle": "B2C Exposition",
+      "description": "Consumer-focused exhibition spaces offering manufacturer-direct pricing. Browse samples, order via app, and save by cutting out the middleman."
+    },
+    "toU": {
+      "title": "EXPO to WORLD to U",
+      "subtitle": "Automated Stores",
+      "description": "Fully unstaffed convenience stores with two formats: EXPO to GO for bulk essentials and EXPO XPRESS for premium items with robotic retrieval."
+    },
+    "toX": {
+      "title": "EXPO to WORLD to X",
+      "subtitle": "Group Buying",
+      "description": "Collective purchasing platform for services like insurance, utilities, and travel. The more people join, the better the deal for everyone."
+    }
+  },
+  "values": {
+    "title": "Why Choose Us",
+    "manufacturer": {
+      "title": "Direct from Manufacturers",
+      "description": "Skip the middleman and access factory-direct pricing"
+    },
+    "technology": {
+      "title": "Technology-Driven",
+      "description": "Automated systems ensure 24/7 availability and efficiency"
+    },
+    "global": {
+      "title": "Global Reach",
+      "description": "Connecting international products with local markets"
+    },
+    "savings": {
+      "title": "Maximum Savings",
+      "description": "Lower operational costs passed directly to you"
+    }
+  },
+  "cta": {
+    "title": "Ready to Experience the Future?",
+    "description": "Join thousands of businesses and consumers already benefiting from our revolutionary commerce platform.",
+    "button": "Get Started Today"
+  },
+  "footer": {
+    "copyright": "© {{year}} EXPO Made in World Sagl. All rights reserved.",
+    "description": "Revolutionizing commerce through technology and direct manufacturer connections.",
+    "companyName": "EXPO Made in World Sagl",
+    "links": {
+      "title": "Quick Links"
+    },
+    "legal": {
+      "title": "Legal"
+    },
+    "contact": {
+      "title": "Contact"
+    }
+  },
+  "siteName": "EXPO to WORLD",
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated",
+    "sections": {
+      "intro": {
+        "title": "Introduction",
+        "content": "EXPO Made in World Sagl (Switzerland) and EXPO TO B S.R.L. (Italy) (collectively, 'EXPO to WORLD,' 'we,' 'us,' or 'our') are committed to protecting your privacy. This policy explains how we handle information when you visit our website."
+      },
+      "collection": {
+        "title": "Information We Collect",
+        "content": "This website is purely informational and does not collect personal information. We do not:",
+        "items": {
+          "personal": "Collect names, email addresses, or other personal identifiers",
+          "usage": "Use cookies for tracking or analytics",
+          "device": "Store any user data on our servers",
+          "cookies": "Require account creation or login"
+        }
+      },
+      "localStorage": {
+        "title": "Local Storage",
+        "content": "Your browser may store your language preference (English or Chinese) locally on your device for convenience. This data never leaves your device and is not transmitted to our servers."
+      },
+      "thirdParty": {
+        "title": "Third-Party Services",
+        "content": "This website may contain links to third-party websites or services. We are not responsible for the privacy practices of these external sites. We encourage you to review their privacy policies before providing any personal information."
+      },
+      "changes": {
+        "title": "Changes to This Policy",
+        "content": "We may update this privacy policy from time to time. Any changes will be reflected on this page with an updated revision date."
+      },
+      "contact": {
+        "title": "Contact Us",
+        "content": "If you have any questions about this Privacy Policy, please contact us at:"
+      }
+    }
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "lastUpdated": "Last updated",
+    "sections": {
+      "acceptance": {
+        "title": "Acceptance of Terms",
+        "content": "By accessing this website, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use this website."
+      },
+      "purpose": {
+        "title": "Website Purpose",
+        "content": "This website provides general information about EXPO Made in World Sagl, EXPO TO B S.R.L., and our affiliates (collectively, 'EXPO to WORLD') and our services. The content is for informational purposes only and does not constitute an offer, solicitation, or contract."
+      },
+      "ip": {
+        "title": "Intellectual Property",
+        "content": "All content on this website, including text, graphics, logos, and images, is the property of EXPO Made in World Sagl, EXPO TO B S.R.L., or their licensors and is protected by intellectual property laws. You may not reproduce, distribute, or create derivative works without our prior written consent."
+      },
+      "disclaimer": {
+        "title": "Disclaimer",
+        "content": "The information on this website is provided \"as is\" without warranties of any kind. While we strive to keep the information accurate and up-to-date, we make no representations about the completeness, reliability, or availability of the content."
+      },
+      "liability": {
+        "title": "Limitation of Liability",
+        "content": "To the maximum extent permitted by law, EXPO Made in World Sagl, EXPO TO B S.R.L., and their affiliates shall not be liable for any damages arising from your use of or inability to use this website."
+      },
+      "otherServices": {
+        "title": "Other Services",
+        "content": "For terms relating to our mobile applications, e-commerce platform, or other services, please refer to the specific terms of service provided within those platforms."
+      },
+      "law": {
+        "title": "Governing Law",
+        "content": "These Terms shall be governed by the laws of the applicable jurisdiction based on your location."
+      },
+      "contact": {
+        "title": "Contact Us",
+        "content": "If you have any questions about these Terms of Service, please contact us at:"
+      }
+    }
+  }
+}

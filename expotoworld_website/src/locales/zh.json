@@ -1,0 +1,162 @@
+{
+  "common": {
+    "learnMore": "了解更多",
+    "getStarted": "立即开始",
+    "contactUs": "联系我们",
+    "language": "语言",
+    "english": "English",
+    "chinese": "中文"
+  },
+  "nav": {
+    "home": "首页",
+    "about": "关于我们",
+    "ecosystem": "我们的生态",
+    "services": "服务",
+    "privacy": "隐私政策",
+    "terms": "服务条款"
+  },
+  "hero": {
+    "tagline": "商业的未来",
+    "title": "EXPO to WORLD",
+    "subtitle": "颠覆性的自动化零售、B2B博览与团购平台",
+    "description": "体验全新的商业时代——无人值守商店、厂家直供价格、集体购买力。我们正在重新定义企业与消费者的连接方式。",
+    "cta": "探索我们的平台"
+  },
+  "features": {
+    "title": "我们的生态系统",
+    "subtitle": "四大集成平台，一站式无缝体验",
+    "toB": {
+      "title": "EXPO to WORLD to B",
+      "subtitle": "B2B 博览",
+      "description": "实体展示中心，企业客户可查看产品样品并直接与制造商对接。通过我们的应用进行批量订购，享受专属B2B价格。"
+    },
+    "toC": {
+      "title": "EXPO to WORLD to C",
+      "subtitle": "B2C 博览",
+      "description": "面向消费者的展示空间，提供厂家直供价格。浏览样品，通过应用下单，省去中间环节，直接省钱。"
+    },
+    "toU": {
+      "title": "EXPO to WORLD to U",
+      "subtitle": "自动化商店",
+      "description": "完全无人值守便利店，两种形态：EXPO to GO 满足日常批量需求，EXPO XPRESS 通过机器人取货提供精选商品。"
+    },
+    "toX": {
+      "title": "EXPO to WORLD to X",
+      "subtitle": "团购平台",
+      "description": "服务类集体采购平台，涵盖保险、公用事业、旅行等。参与人数越多，价格越优惠。"
+    }
+  },
+  "values": {
+    "title": "为什么选择我们",
+    "manufacturer": {
+      "title": "厂家直供",
+      "description": "跳过中间商，享受工厂直接定价"
+    },
+    "technology": {
+      "title": "技术驱动",
+      "description": "自动化系统确保全天候可用性和效率"
+    },
+    "global": {
+      "title": "全球覆盖",
+      "description": "连接国际产品与本地市场"
+    },
+    "savings": {
+      "title": "最大节省",
+      "description": "降低运营成本，实惠直达消费者"
+    }
+  },
+  "cta": {
+    "title": "准备好体验未来了吗？",
+    "description": "加入成千上万已在我们创新商业平台中获益的企业和消费者。",
+    "button": "立即开始"
+  },
+  "footer": {
+    "copyright": "© {{year}} 爱科思堡沃尔德电子商务（温州市）有限公司。保留所有权利。",
+    "description": "通过技术和制造商直连，重塑商业模式。",
+    "companyName": "爱科思堡沃尔德电子商务（温州市）有限公司",
+    "links": {
+      "title": "快速链接"
+    },
+    "legal": {
+      "title": "法律信息"
+    },
+    "contact": {
+      "title": "联系方式"
+    }
+  },
+  "siteName": "爱科思堡沃尔德电子商务（温州市）有限公司",
+  "privacy": {
+    "title": "隐私政策",
+    "lastUpdated": "最后更新",
+    "sections": {
+      "intro": {
+        "title": "简介",
+        "content": "爱科思堡沃尔德电子商务（温州市）有限公司（以下简称「EXPO to WORLD」、「我们」）致力于保护您的隐私。本政策说明了我们在您访问本网站时如何处理信息。"
+      },
+      "collection": {
+        "title": "我们收集的信息",
+        "content": "本网站仅提供信息展示，不收集个人信息。我们不会：",
+        "items": {
+          "personal": "收集姓名、电子邮件地址或其他个人身份信息",
+          "usage": "使用Cookie进行追踪或分析",
+          "device": "在我们的服务器上存储任何用户数据",
+          "cookies": "要求创建账户或登录"
+        }
+      },
+      "localStorage": {
+        "title": "本地存储",
+        "content": "您的浏览器可能会在本地设备上存储您的语言偏好（中文或英文），以便于使用。此数据永远不会离开您的设备，也不会传输到我们的服务器。"
+      },
+      "thirdParty": {
+        "title": "第三方服务",
+        "content": "本网站可能包含指向第三方网站或服务的链接。我们对这些外部网站的隐私做法不承担责任。我们建议您在提供任何个人信息之前查看他们的隐私政策。"
+      },
+      "changes": {
+        "title": "政策变更",
+        "content": "我们可能会不时更新本隐私政策。任何变更都将在此页面上反映，并更新修订日期。"
+      },
+      "contact": {
+        "title": "联系我们",
+        "content": "如果您对本隐私政策有任何疑问，请通过以下方式联系我们："
+      }
+    }
+  },
+  "terms": {
+    "title": "服务条款",
+    "lastUpdated": "最后更新",
+    "sections": {
+      "acceptance": {
+        "title": "条款接受",
+        "content": "通过访问本网站，您同意受这些服务条款的约束。如果您不同意这些条款，请不要使用本网站。"
+      },
+      "purpose": {
+        "title": "网站目的",
+        "content": "本网站提供关于爱科思堡沃尔德电子商务（温州市）有限公司及其关联公司（统称「EXPO to WORLD」）及我们服务的一般信息。内容仅供参考，不构成要约、邀约或合同。"
+      },
+      "ip": {
+        "title": "知识产权",
+        "content": "本网站上的所有内容，包括文本、图形、徽标和图像，均为爱科思堡沃尔德电子商务（温州市）有限公司或其许可方的财产，受知识产权法律保护。未经我们事先书面同意，您不得复制、分发或创作衍生作品。"
+      },
+      "disclaimer": {
+        "title": "免责声明",
+        "content": "本网站上的信息按「原样」提供，不作任何形式的保证。虽然我们努力保持信息准确和及时更新，但我们不对内容的完整性、可靠性或可用性作任何陈述。"
+      },
+      "liability": {
+        "title": "责任限制",
+        "content": "在法律允许的最大范围内，爱科思堡沃尔德电子商务（温州市）有限公司及其关联公司不对因您使用或无法使用本网站而产生的任何损害承担责任。"
+      },
+      "otherServices": {
+        "title": "其他服务",
+        "content": "有关我们移动应用程序、电子商务平台或其他服务的条款，请参阅这些平台内提供的具体服务条款。"
+      },
+      "law": {
+        "title": "适用法律",
+        "content": "这些条款应受您所在地区适用法律管辖。"
+      },
+      "contact": {
+        "title": "联系我们",
+        "content": "如果您对这些服务条款有任何疑问，请通过以下方式联系我们："
+      }
+    }
+  }
+}
