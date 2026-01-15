@@ -58,7 +58,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy to S3
-        working-directory: expotoworld_website/dist
+        working-directory: expotoworld_website/dist/global
         run: |
           # Upload all assets with long cache (immutable)
           aws s3 sync . s3://${{ env.S3_BUCKET }}/ \
