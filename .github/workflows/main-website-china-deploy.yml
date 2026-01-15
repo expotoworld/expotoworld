@@ -69,12 +69,41 @@ jobs:
             --access-key-secret "${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}" \
             --force
 
-      - name: Refresh CDN cache (optional)
+      - name: Install Aliyun CLI
         run: |
-          # Note: CDN cache refresh requires aliyun-cli
-          # For now, we'll skip this step as CDN usually has auto-refresh enabled
-          echo "📌 Note: If CDN cache needs manual refresh, please do so in Alibaba Cloud Console"
-          echo "    CDN Console: https://cdn.console.aliyun.com/"
+          curl -o aliyun-cli.tgz https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz
+          tar -xzf aliyun-cli.tgz
+          sudo mv aliyun /usr/local/bin/aliyun
+          aliyun version
+
+      - name: Refresh CDN cache
+        run: |
+          # Configure aliyun CLI
+          aliyun configure set \
+            --profile default \
+            --mode AK \
+            --access-key-id "${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}" \
+            --access-key-secret "${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}" \
+            --region cn-shanghai
+          
+          # Refresh the entire site directory
+          echo "🔄 Refreshing CDN cache for https://expotoworld.cn/..."
+          REFRESH_RESULT=$(aliyun cdn RefreshObjectCaches --ObjectPath "https://expotoworld.cn/" --ObjectType Directory --Force true)
+          echo "$REFRESH_RESULT"
+          
+          TASK_ID=$(echo "$REFRESH_RESULT" | grep -o '"RefreshTaskId": "[^"]*"' | cut -d'"' -f4)
+          echo "📋 Refresh Task ID: $TASK_ID"
+          
+          # Wait for refresh to complete (max 60 seconds)
+          for i in {1..12}; do
+            sleep 5
+            STATUS=$(aliyun cdn DescribeRefreshTaskById --TaskId "$TASK_ID" | grep -o '"Status": "[^"]*"' | cut -d'"' -f4)
+            echo "   Status: $STATUS"
+            if [ "$STATUS" = "Complete" ]; then
+              echo "✅ CDN cache refresh completed!"
+              break
+            fi
+          done
 
       - name: Deployment summary
         run: |
