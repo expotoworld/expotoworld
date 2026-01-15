@@ -45,23 +45,31 @@ jobs:
           chmod +x ossutil-2.2.0-linux-amd64/ossutil
           sudo mv ossutil-2.2.0-linux-amd64/ossutil /usr/local/bin/ossutil
 
+      - name: Check if secrets are configured
+        run: |
+          if [ -z "${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}" ]; then
+            echo "❌ Error: ALIBABA_CLOUD_ACCESS_KEY_ID secret is not configured!"
+            echo "Please add this secret in GitHub repository settings:"
+            echo "  Settings > Secrets and variables > Actions > New repository secret"
+            exit 1
+          fi
+          if [ -z "${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}" ]; then
+            echo "❌ Error: ALIBABA_CLOUD_ACCESS_KEY_SECRET secret is not configured!"
+            exit 1
+          fi
+          echo "✅ Secrets are configured"
+
       - name: Deploy to Alibaba Cloud OSS
         working-directory: expotoworld_website/dist/china
-        env:
-          ALIBABA_CLOUD_ACCESS_KEY_ID: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}
-          ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}
         run: |
           # Upload all files to OSS
           ossutil cp -r . oss://${{ env.OSS_BUCKET }}/ \
             --region ${{ env.OSS_REGION }} \
-            --access-key-id $ALIBABA_CLOUD_ACCESS_KEY_ID \
-            --access-key-secret $ALIBABA_CLOUD_ACCESS_KEY_SECRET \
+            --access-key-id "${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}" \
+            --access-key-secret "${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}" \
             --force
 
       - name: Refresh CDN cache (optional)
-        env:
-          ALIBABA_CLOUD_ACCESS_KEY_ID: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}
-          ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}
         run: |
           # Note: CDN cache refresh requires aliyun-cli
           # For now, we'll skip this step as CDN usually has auto-refresh enabled
