@@ -41,9 +41,16 @@ const Footer = () => {
             </h4>
             <ul className="space-y-3">
               <li>
-                <Link to="/" className="text-zinc-400 hover:text-zinc-200 text-sm transition-colors">
+                <a 
+                  href="#top"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="text-zinc-400 hover:text-zinc-200 text-sm transition-colors cursor-pointer"
+                >
                   {t('nav.home')}
-                </Link>
+                </a>
               </li>
               <li>
                 <a 
