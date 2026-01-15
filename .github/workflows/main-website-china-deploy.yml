@@ -1,0 +1,76 @@
+name: Main Website (China) - Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'expotoworld_website/**'
+      - '.github/workflows/main-website-china-deploy.yml'
+  workflow_dispatch:
+
+env:
+  OSS_BUCKET: expotoworld-cn-website
+  OSS_REGION: cn-shanghai
+  OSS_ENDPOINT: oss-cn-shanghai.aliyuncs.com
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: expotoworld_website/package-lock.json
+
+      - name: Install dependencies
+        working-directory: expotoworld_website
+        run: npm ci
+
+      - name: Build React app (China version)
+        working-directory: expotoworld_website
+        env:
+          CI: false
+        run: npm run build:china
+
+      - name: Install ossutil
+        run: |
+          curl -o ossutil.zip https://gosspublic.alicdn.com/ossutil/v2/2.2.0/ossutil-2.2.0-linux-amd64.zip
+          unzip ossutil.zip
+          chmod +x ossutil-2.2.0-linux-amd64/ossutil
+          sudo mv ossutil-2.2.0-linux-amd64/ossutil /usr/local/bin/ossutil
+
+      - name: Deploy to Alibaba Cloud OSS
+        working-directory: expotoworld_website/dist/china
+        env:
+          ALIBABA_CLOUD_ACCESS_KEY_ID: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}
+          ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}
+        run: |
+          # Upload all files to OSS
+          ossutil cp -r . oss://${{ env.OSS_BUCKET }}/ \
+            --region ${{ env.OSS_REGION }} \
+            --access-key-id $ALIBABA_CLOUD_ACCESS_KEY_ID \
+            --access-key-secret $ALIBABA_CLOUD_ACCESS_KEY_SECRET \
+            --force
+
+      - name: Refresh CDN cache (optional)
+        env:
+          ALIBABA_CLOUD_ACCESS_KEY_ID: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}
+          ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}
+        run: |
+          # Note: CDN cache refresh requires aliyun-cli
+          # For now, we'll skip this step as CDN usually has auto-refresh enabled
+          echo "📌 Note: If CDN cache needs manual refresh, please do so in Alibaba Cloud Console"
+          echo "    CDN Console: https://cdn.console.aliyun.com/"
+
+      - name: Deployment summary
+        run: |
+          echo "✅ Main Website (China) deployed successfully!"
+          echo "🌐 Production URL: https://expotoworld.cn"
+          echo "📦 OSS Bucket: ${{ env.OSS_BUCKET }}"
+          echo "🌏 Region: ${{ env.OSS_REGION }}"
