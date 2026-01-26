@@ -80,6 +80,7 @@ type JWTConfig struct {
 type AWSConfig struct {
 	Region           string `mapstructure:"AWS_REGION" validate:"required"`
 	AccountID        string `mapstructure:"AWS_ACCOUNT_ID"`
+	S3BucketMedia    string `mapstructure:"AWS_S3_BUCKET_MEDIA"`
 	S3BucketProducts string `mapstructure:"AWS_S3_BUCKET_PRODUCTS"`
 	S3BucketEbooks   string `mapstructure:"AWS_S3_BUCKET_EBOOKS"`
 	S3BucketProfiles string `mapstructure:"AWS_S3_BUCKET_PROFILES"`

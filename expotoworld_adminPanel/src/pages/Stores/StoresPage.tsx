@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -12,6 +11,9 @@ import {
   Typography,
   Chip,
   alpha,
+  CircularProgress,
+  Alert,
+  Avatar,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -22,88 +24,42 @@ import {
   Store as StoreIcon,
   Add as AddIcon,
   Upload as UploadIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { DataTable, ConfirmDialog, ActionMenu, PageTitle, FilterDropdown, type Column } from '@components/common';
 import { storeTypeColors } from '@theme/colors';
-import type { Store, StoreType } from '@/types';
+import { storeApi, type Store, type PaginationInfo } from '@/services/catalogApi';
+import StoreFormModal from './StoreFormModal';
+import StoreDetailModal from './StoreDetailModal';
 
-// TODO: DUMMY DATA - Replace with actual API calls
-const mockStores: Store[] = [
-  {
-    id: '1',
-    name: 'MEGA Store Downtown',
-    storeType: 'mega',
-    address: '123 Main Street, Downtown, New York, NY 10001',
-    latitude: 40.7128,
-    longitude: -74.0060,
-    imageUrl: 'https://placehold.co/400x200/1976d2/white?text=MEGA',
-    operatingHours: '24/7',
-    capacity: 5000,
-    isActive: true,
-    createdAt: '2023-06-15T10:00:00Z',
-    updatedAt: '2024-01-15T14:30:00Z',
-  },
-  {
-    id: '2',
-    name: 'MARKET Central',
-    storeType: 'market',
-    address: '456 Oak Avenue, Midtown, New York, NY 10022',
-    latitude: 40.7580,
-    longitude: -73.9855,
-    imageUrl: 'https://placehold.co/400x200/2e7d32/white?text=MARKET',
-    operatingHours: '6:00 AM - 11:00 PM',
-    capacity: 2000,
-    isActive: true,
-    createdAt: '2023-08-20T09:00:00Z',
-    updatedAt: '2024-01-14T11:20:00Z',
-  },
-  {
-    id: '3',
-    name: 'toGO Station Penn',
-    storeType: 'toGo',
-    address: 'Penn Station, 7th Avenue, New York, NY 10001',
-    latitude: 40.7506,
-    longitude: -73.9935,
-    imageUrl: 'https://placehold.co/400x200/7b1fa2/white?text=toGO',
-    operatingHours: '5:00 AM - 12:00 AM',
-    capacity: 500,
-    isActive: true,
-    createdAt: '2023-10-05T15:00:00Z',
-    updatedAt: '2024-01-15T09:45:00Z',
-  },
-  {
-    id: '4',
-    name: 'XPRESS Times Square',
-    storeType: 'xpress',
-    address: 'Times Square, Broadway, New York, NY 10036',
-    latitude: 40.7580,
-    longitude: -73.9855,
-    imageUrl: 'https://placehold.co/400x200/f9a825/black?text=XPRESS',
-    operatingHours: '24/7',
-    capacity: 100,
-    isActive: true,
-    createdAt: '2023-12-12T08:30:00Z',
-    updatedAt: '2024-01-15T16:00:00Z',
-  },
-  {
-    id: '5',
-    name: 'MEGA Store Brooklyn',
-    storeType: 'mega',
-    address: '789 Atlantic Ave, Brooklyn, NY 11217',
-    latitude: 40.6892,
-    longitude: -73.9855,
-    imageUrl: 'https://placehold.co/400x200/1976d2/white?text=MEGA',
-    operatingHours: '24/7',
-    capacity: 4500,
-    isActive: false,
-    createdAt: '2024-01-03T11:00:00Z',
-    updatedAt: '2024-01-10T13:15:00Z',
-  },
-];
+// Store type mapping from ETW backend values to display labels
+type StoreType = 'ETWMega' | 'ETWMarket' | 'ETWtoGO' | 'ETWXpress' | 'unknown';
+
+const storeTypeLabels: Record<StoreType, string> = {
+  ETWMega: 'MEGA',
+  ETWMarket: 'MARKET',
+  ETWtoGO: 'toGO',
+  ETWXpress: 'XPRESS',
+  unknown: 'Unknown',
+};
+
+// Map ETW store types to color keys
+const storeTypeToColorKey: Record<StoreType, keyof typeof storeTypeColors> = {
+  ETWMega: 'mega',
+  ETWMarket: 'market',
+  ETWtoGO: 'toGo',
+  ETWXpress: 'xpress',
+  unknown: 'mega',
+};
+
+const miniAppTypeLabels: Record<string, string> = {
+  ETWtoB: 'toB',
+  ETWtoC: 'toC',
+  ETWtoU: 'toU',
+};
 
 const StoresPage: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
 
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -112,19 +68,56 @@ const StoresPage: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
+  
+  // API state
+  const [stores, setStores] = useState<Store[]>([]);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const getStoreTypeColor = (type: StoreType) => {
-    return storeTypeColors[type] || storeTypeColors.mega;
+  // Modal state
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [editStoreId, setEditStoreId] = useState<string | undefined>(undefined);
+  const [viewStoreId, setViewStoreId] = useState<string | null>(null);
+
+  // Fetch stores from API
+  const fetchStores = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await storeApi.getStores({
+        page: page + 1, // API uses 1-based pagination
+        page_size: rowsPerPage,
+      });
+      setStores(result.items);
+      setPagination(result.pagination);
+    } catch (err) {
+      console.error('Failed to fetch stores:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load stores');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, rowsPerPage]);
+
+  // Load stores on mount and when pagination changes
+  useEffect(() => {
+    fetchStores();
+  }, [fetchStores]);
+
+  const getStoreTypeColor = (type: string) => {
+    const colorKey = storeTypeToColorKey[type as StoreType] || 'mega';
+    return storeTypeColors[colorKey];
   };
 
-  const getStoreTypeLabel = (type: StoreType) => {
-    const labels: Record<StoreType, string> = {
-      mega: 'MEGA',
-      market: 'MARKET',
-      toGo: 'toGO',
-      xpress: 'XPRESS',
-    };
-    return labels[type];
+  const getStoreTypeLabel = (type: string) => {
+    return storeTypeLabels[type as StoreType] || type || 'Unknown';
+  };
+
+  const getMiniAppTypeLabel = (type: string | undefined) => {
+    if (!type) return '-';
+    return miniAppTypeLabels[type] || type;
   };
 
   const columns: Column<Store>[] = [
@@ -134,19 +127,17 @@ const StoresPage: React.FC = () => {
       minWidth: 200,
       format: (_, row) => (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box
+          <Avatar
+            variant="rounded"
+            src={row.imageUrl}
             sx={{
               width: 48,
               height: 48,
-              borderRadius: 2,
               bgcolor: alpha(getStoreTypeColor(row.storeType), 0.1),
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
             }}
           >
             <StoreIcon sx={{ color: getStoreTypeColor(row.storeType) }} />
-          </Box>
+          </Avatar>
           <Box>
             <Typography variant="body2" fontWeight={500}>
               {row.name}
@@ -167,29 +158,54 @@ const StoresPage: React.FC = () => {
       ),
     },
     {
+      id: 'city',
+      label: t('stores.city'),
+      minWidth: 100,
+    },
+    {
       id: 'address',
       label: t('stores.address'),
-      minWidth: 250,
+      minWidth: 200,
       format: (value) => (
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-          <LocationIcon fontSize="small" color="action" sx={{ mt: 0.25 }} />
-          <Typography variant="body2" color="text.secondary">
+          <LocationIcon fontSize="small" color="action" sx={{ mt: 0.25, flexShrink: 0 }} />
+          <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-word' }}>
             {value}
           </Typography>
         </Box>
       ),
     },
     {
-      id: 'operatingHours',
-      label: t('stores.hours'),
-      minWidth: 150,
+      id: 'etwMiniAppType',
+      label: t('stores.miniAppType') || 'Mini App',
+      minWidth: 80,
+      format: (value) => (
+        <Chip
+          label={getMiniAppTypeLabel(value)}
+          size="small"
+          variant="outlined"
+        />
+      ),
     },
     {
-      id: 'capacity',
-      label: t('stores.capacity'),
+      id: 'latitude',
+      label: t('stores.latitude') || 'Lat',
       minWidth: 100,
-      align: 'center',
-      format: (value) => value?.toLocaleString() || '-',
+      format: (value) => (
+        <Typography variant="body2" fontFamily="monospace" fontSize="0.75rem">
+          {value ? Number(value).toFixed(6) : '-'}
+        </Typography>
+      ),
+    },
+    {
+      id: 'longitude',
+      label: t('stores.longitude') || 'Long',
+      minWidth: 100,
+      format: (value) => (
+        <Typography variant="body2" fontFamily="monospace" fontSize="0.75rem">
+          {value ? Number(value).toFixed(6) : '-'}
+        </Typography>
+      ),
     },
     {
       id: 'isActive',
@@ -214,7 +230,8 @@ const StoresPage: React.FC = () => {
               size="small"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/stores/${row.id}`);
+                setViewStoreId(row.id);
+                setDetailModalOpen(true);
               }}
             >
               <ViewIcon fontSize="small" />
@@ -225,7 +242,8 @@ const StoresPage: React.FC = () => {
               size="small"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/stores/${row.id}/edit`);
+                setEditStoreId(row.id);
+                setFormModalOpen(true);
               }}
             >
               <EditIcon fontSize="small" />
@@ -249,11 +267,12 @@ const StoresPage: React.FC = () => {
     },
   ];
 
-  // Filter stores
-  const filteredStores = mockStores.filter((store) => {
+  // Filter stores client-side (for search and type/status filters)
+  const filteredStores = stores.filter((store) => {
     const matchesSearch =
       store.name.toLowerCase().includes(search.toLowerCase()) ||
-      store.address.toLowerCase().includes(search.toLowerCase());
+      store.address.toLowerCase().includes(search.toLowerCase()) ||
+      store.city.toLowerCase().includes(search.toLowerCase());
     const matchesType = typeFilter === 'all' || store.storeType === typeFilter;
     const matchesStatus =
       statusFilter === 'all' ||
@@ -262,18 +281,60 @@ const StoresPage: React.FC = () => {
     return matchesSearch && matchesType && matchesStatus;
   });
 
-  const handleDeleteConfirm = () => {
-    // TODO: NEED TO FULLY IMPLEMENT - Call delete API
-    // TODO: Implement delete store API call for store: ${selectedStore?.id}
-    setDeleteDialogOpen(false);
-    setSelectedStore(null);
+  const handleDeleteConfirm = async () => {
+    if (!selectedStore) return;
+    
+    setDeleting(true);
+    try {
+      await storeApi.deleteStore(selectedStore.id);
+      // Refresh the stores list
+      await fetchStores();
+    } catch (err) {
+      console.error('Failed to delete store:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete store');
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
+      setSelectedStore(null);
+    }
+  };
+
+  // Modal handlers
+  const handleOpenCreateModal = () => {
+    setEditStoreId(undefined);
+    setFormModalOpen(true);
+  };
+
+  const handleOpenEditModal = (storeId: string) => {
+    setEditStoreId(storeId);
+    setFormModalOpen(true);
+    setDetailModalOpen(false);
+  };
+
+  const handleCloseFormModal = () => {
+    setFormModalOpen(false);
+    setEditStoreId(undefined);
+  };
+
+  const handleCloseDetailModal = () => {
+    setDetailModalOpen(false);
+    setViewStoreId(null);
+  };
+
+  const handleFormSuccess = () => {
+    fetchStores();
   };
 
   const actionMenuItems = [
     {
       label: t('stores.create'),
       icon: <AddIcon />,
-      onClick: () => navigate('/stores/new'),
+      onClick: handleOpenCreateModal,
+    },
+    {
+      label: t('common.refresh'),
+      icon: <RefreshIcon />,
+      onClick: () => fetchStores(),
     },
     {
       label: t('stores.upload'),
@@ -284,10 +345,29 @@ const StoresPage: React.FC = () => {
     },
   ];
 
+  // Show loading state
+  if (loading && stores.length === 0) {
+    return (
+      <Box>
+        <PageTitle title={t('stores.title')} actions={<ActionMenu actions={actionMenuItems} />} />
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box>
       {/* Page Title */}
       <PageTitle title={t('stores.title')} actions={<ActionMenu actions={actionMenuItems} />} />
+
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
       {/* Filters */}
       <Card elevation={0} sx={{ mb: 3 }}>
@@ -319,10 +399,10 @@ const StoresPage: React.FC = () => {
               value={typeFilter}
               options={[
                 { value: 'all', label: t('common.all') },
-                { value: 'mega', label: 'MEGA' },
-                { value: 'market', label: 'MARKET' },
-                { value: 'toGo', label: 'toGO' },
-                { value: 'xpress', label: 'XPRESS' },
+                { value: 'ETWMega', label: 'MEGA' },
+                { value: 'ETWMarket', label: 'MARKET' },
+                { value: 'ETWtoGO', label: 'toGO' },
+                { value: 'ETWXpress', label: 'XPRESS' },
               ]}
               onChange={(value) => setTypeFilter(value)}
               minWidth={180}
@@ -348,7 +428,7 @@ const StoresPage: React.FC = () => {
         data={filteredStores}
         page={page}
         rowsPerPage={rowsPerPage}
-        totalCount={filteredStores.length}
+        totalCount={pagination?.total || filteredStores.length}
         onPageChange={(_, newPage) => setPage(newPage)}
         onRowsPerPageChange={(e) => {
           setRowsPerPage(parseInt(e.target.value, 10));
@@ -356,15 +436,22 @@ const StoresPage: React.FC = () => {
         }}
         rowKey="id"
         emptyMessage={t('stores.noStores') || 'No stores found'}
-        onRowClick={(row) => navigate(`/stores/${row.id}`)}
+        onRowClick={(row) => {
+          setViewStoreId(row.id);
+          setDetailModalOpen(true);
+        }}
         selectable
+        loading={loading}
       />
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         open={deleteDialogOpen}
         title={t('stores.deleteTitle') || 'Delete Store'}
-        message={t('stores.deleteMessage', { name: selectedStore?.name }) || `Are you sure you want to delete "${selectedStore?.name}"?`}
+        message={
+          t('stores.deleteMessage', { name: selectedStore?.name }) ||
+          `Are you sure you want to permanently delete "${selectedStore?.name}"? This action cannot be undone.`
+        }
         confirmText={t('common.delete')}
         confirmColor="error"
         onConfirm={handleDeleteConfirm}
@@ -372,8 +459,24 @@ const StoresPage: React.FC = () => {
           setDeleteDialogOpen(false);
           setSelectedStore(null);
         }}
+        loading={deleting}
       />
 
+      {/* Store Form Modal (Create/Edit) */}
+      <StoreFormModal
+        open={formModalOpen}
+        storeId={editStoreId}
+        onClose={handleCloseFormModal}
+        onSuccess={handleFormSuccess}
+      />
+
+      {/* Store Detail Modal (View) */}
+      <StoreDetailModal
+        open={detailModalOpen}
+        storeId={viewStoreId}
+        onClose={handleCloseDetailModal}
+        onEdit={handleOpenEditModal}
+      />
     </Box>
   );
 };

@@ -210,12 +210,22 @@ const commonOptions: ThemeOptions = {
         // Make Select menus have invisible backdrop
         MenuProps: {
           disableScrollLock: true,
+          // Use all methods to ensure backdrop is invisible
+          hideBackdrop: true,
           BackdropProps: {
             invisible: true,
+            style: { backgroundColor: 'transparent' },
           },
           slotProps: {
             backdrop: {
               invisible: true,
+              style: { backgroundColor: 'transparent' },
+            },
+            paper: {
+              sx: {
+                // Ensure the menu paper doesn't get dialog styling
+                position: 'relative',
+              },
             },
           },
         },
