@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -12,6 +12,8 @@ import {
   Typography,
   Chip,
   Avatar,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -23,82 +25,62 @@ import {
   Upload as UploadIcon,
 } from '@mui/icons-material';
 import { DataTable, ConfirmDialog, ActionMenu, PageTitle, FilterDropdown, type Column } from '@components/common';
-import type { Category } from '@/types';
-
-// TODO: DUMMY DATA - Replace with actual API calls
-const mockCategories: Category[] = [
-  {
-    id: '1',
-    name: 'Electronics',
-    description: 'Electronic devices and accessories',
-    productCount: 150,
-    imageUrl: 'https://placehold.co/100x100/1976d2/white?text=E',
-    isActive: true,
-    createdAt: '2023-06-15T10:00:00Z',
-    updatedAt: '2024-01-15T14:30:00Z',
-  },
-  {
-    id: '2',
-    name: 'Food & Beverage',
-    description: 'Food items and drinks',
-    productCount: 280,
-    imageUrl: 'https://placehold.co/100x100/2e7d32/white?text=F',
-    isActive: true,
-    createdAt: '2023-07-20T09:00:00Z',
-    updatedAt: '2024-01-14T11:20:00Z',
-  },
-  {
-    id: '3',
-    name: 'Home & Living',
-    description: 'Home decor and furniture',
-    productCount: 95,
-    imageUrl: 'https://placehold.co/100x100/7b1fa2/white?text=H',
-    isActive: true,
-    createdAt: '2023-08-10T15:00:00Z',
-    updatedAt: '2024-01-15T09:45:00Z',
-  },
-  {
-    id: '4',
-    name: 'Fashion',
-    description: 'Clothing and apparel',
-    productCount: 320,
-    imageUrl: 'https://placehold.co/100x100/f9a825/black?text=Fa',
-    isActive: true,
-    createdAt: '2023-09-05T08:30:00Z',
-    updatedAt: '2024-01-15T16:00:00Z',
-  },
-  {
-    id: '5',
-    name: 'Health & Beauty',
-    description: 'Personal care and cosmetics',
-    productCount: 180,
-    imageUrl: 'https://placehold.co/100x100/e91e63/white?text=HB',
-    isActive: true,
-    createdAt: '2023-10-12T11:00:00Z',
-    updatedAt: '2024-01-10T13:15:00Z',
-  },
-  {
-    id: '6',
-    name: 'Sports & Outdoors',
-    description: 'Sports equipment and outdoor gear',
-    productCount: 120,
-    imageUrl: 'https://placehold.co/100x100/ff5722/white?text=S',
-    isActive: false,
-    createdAt: '2023-11-01T14:00:00Z',
-    updatedAt: '2024-01-08T10:30:00Z',
-  },
-];
+import { categoryApi, type Category } from '@/services/catalogApi';
 
 const CategoriesPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
+  // State for data
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // State for filters and pagination
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+
+  // State for dialogs
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+
+  // Fetch categories from API
+  const fetchCategories = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: Record<string, string | number | boolean | undefined> = {
+        page: page + 1, // API uses 1-indexed pages
+        page_size: rowsPerPage,
+      };
+
+      // Add filters
+      if (statusFilter !== 'all') {
+        params.is_active = statusFilter === 'active';
+      }
+      if (search.trim()) {
+        params.search = search.trim();
+      }
+
+      const response = await categoryApi.getCategories(params);
+      setCategories(response.items);
+      setTotalCount(response.pagination.totalCount);
+    } catch (err) {
+      console.error('Failed to fetch categories:', err);
+      setError(t('categories.fetchError') || 'Failed to load categories');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, rowsPerPage, statusFilter, search, t]);
+
+  // Fetch categories on mount and when filters change
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -217,23 +199,22 @@ const CategoriesPage: React.FC = () => {
     },
   ];
 
-  // Filter categories
-  const filteredCategories = mockCategories.filter((category) => {
-    const matchesSearch =
-      category.name.toLowerCase().includes(search.toLowerCase()) ||
-      (category.description?.toLowerCase().includes(search.toLowerCase()) ?? false);
-    const matchesStatus =
-      statusFilter === 'all' ||
-      (statusFilter === 'active' && category.isActive) ||
-      (statusFilter === 'inactive' && !category.isActive);
-    return matchesSearch && matchesStatus;
-  });
-
-  const handleDeleteConfirm = () => {
-    // TODO: NEED TO FULLY IMPLEMENT - Call delete API
-    // TODO: Implement delete category API call for category: ${selectedCategory?.id}
-    setDeleteDialogOpen(false);
-    setSelectedCategory(null);
+  const handleDeleteConfirm = async () => {
+    if (!selectedCategory) return;
+    
+    setDeleting(true);
+    try {
+      await categoryApi.deleteCategory(selectedCategory.id);
+      setDeleteDialogOpen(false);
+      setSelectedCategory(null);
+      // Refresh the list
+      fetchCategories();
+    } catch (err) {
+      console.error('Failed to delete category:', err);
+      setError(t('categories.deleteError') || 'Failed to delete category');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const actionMenuItems = [
@@ -256,6 +237,13 @@ const CategoriesPage: React.FC = () => {
       {/* Page Title */}
       <PageTitle title={t('categories.title')} actions={<ActionMenu actions={actionMenuItems} />} />
 
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
       {/* Filters */}
       <Card elevation={0} sx={{ mb: 3 }}>
         <CardContent>
@@ -270,7 +258,10 @@ const CategoriesPage: React.FC = () => {
             <TextField
               placeholder={t('categories.searchPlaceholder') || 'Search categories...'}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(0); // Reset to first page on search
+              }}
               size="small"
               sx={{ minWidth: 280 }}
               InputProps={{
@@ -289,30 +280,40 @@ const CategoriesPage: React.FC = () => {
                 { value: 'active', label: t('common.active') },
                 { value: 'inactive', label: t('common.inactive') },
               ]}
-              onChange={(value) => setStatusFilter(value)}
+              onChange={(value) => {
+                setStatusFilter(value);
+                setPage(0); // Reset to first page on filter change
+              }}
               minWidth={180}
             />
           </Box>
         </CardContent>
       </Card>
 
-      {/* Categories Table */}
-      <DataTable
-        columns={columns}
-        data={filteredCategories}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        totalCount={filteredCategories.length}
-        onPageChange={(_, newPage) => setPage(newPage)}
-        onRowsPerPageChange={(e) => {
-          setRowsPerPage(parseInt(e.target.value, 10));
-          setPage(0);
-        }}
-        rowKey="id"
-        emptyMessage={t('categories.noCategories') || 'No categories found'}
-        onRowClick={(row) => navigate(`/categories/${row.id}`)}
-        selectable
-      />
+      {/* Loading State */}
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        /* Categories Table */
+        <DataTable
+          columns={columns}
+          data={categories}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          totalCount={totalCount}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          rowKey="id"
+          emptyMessage={t('categories.noCategories') || 'No categories found'}
+          onRowClick={(row) => navigate(`/categories/${row.id}`)}
+          selectable
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
@@ -326,6 +327,7 @@ const CategoriesPage: React.FC = () => {
           setDeleteDialogOpen(false);
           setSelectedCategory(null);
         }}
+        loading={deleting}
       />
 
     </Box>

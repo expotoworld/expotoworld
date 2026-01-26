@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -11,6 +10,8 @@ import {
   IconButton,
   Tooltip,
   Avatar,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -20,133 +21,115 @@ import {
   Star as FeaturedIcon,
   Add as AddIcon,
   Upload as UploadIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { DataTable, ConfirmDialog, ActionMenu, PageTitle, FilterDropdown, type Column } from '@components/common';
-import type { Product, Category, Store } from '@/types';
-
-// TODO: DUMMY DATA - Replace with actual API calls
-const mockProducts: Product[] = [
-  {
-    id: '1',
-    name: 'Premium Wireless Headphones',
-    description: 'High-quality noise-canceling headphones',
-    originalPrice: 129.99,
-    currentPrice: 99.99,
-    stockLeft: 45,
-    minimumOrderQuantity: 1,
-    unit: 'piece',
-    shelfCode: 'A1-001',
-    imageUrls: ['https://placehold.co/100x100'],
-    categoryId: '1',
-    subcategoryId: '1-1',
-    storeId: '1',
-    isFeatured: true,
-    isActive: true,
-    createdAt: '2024-01-10T10:00:00Z',
-    updatedAt: '2024-01-15T14:30:00Z',
-  },
-  {
-    id: '2',
-    name: 'Organic Coffee Beans 1kg',
-    description: 'Premium arabica coffee beans',
-    originalPrice: 35.0,
-    currentPrice: 30.0,
-    stockLeft: 120,
-    minimumOrderQuantity: 1,
-    unit: 'kg',
-    shelfCode: 'B2-015',
-    imageUrls: ['https://placehold.co/100x100'],
-    categoryId: '2',
-    subcategoryId: '2-1',
-    storeId: '1',
-    isFeatured: false,
-    isActive: true,
-    createdAt: '2024-01-08T09:00:00Z',
-    updatedAt: '2024-01-14T11:20:00Z',
-  },
-  {
-    id: '3',
-    name: 'Smart Watch Pro',
-    description: 'Advanced fitness tracking smartwatch',
-    originalPrice: 299.99,
-    currentPrice: 249.99,
-    stockLeft: 5,
-    minimumOrderQuantity: 1,
-    unit: 'piece',
-    shelfCode: 'C3-008',
-    imageUrls: ['https://placehold.co/100x100'],
-    categoryId: '1',
-    subcategoryId: '1-2',
-    storeId: '2',
-    isFeatured: true,
-    isActive: true,
-    createdAt: '2024-01-05T15:00:00Z',
-    updatedAt: '2024-01-15T09:45:00Z',
-  },
-  {
-    id: '4',
-    name: 'Eco-Friendly Water Bottle',
-    description: 'Sustainable stainless steel water bottle',
-    originalPrice: 24.99,
-    currentPrice: 19.99,
-    stockLeft: 200,
-    minimumOrderQuantity: 1,
-    unit: 'piece',
-    shelfCode: 'D1-022',
-    imageUrls: ['https://placehold.co/100x100'],
-    categoryId: '3',
-    subcategoryId: '3-1',
-    storeId: '1',
-    isFeatured: false,
-    isActive: true,
-    createdAt: '2024-01-12T08:30:00Z',
-    updatedAt: '2024-01-15T16:00:00Z',
-  },
-  {
-    id: '5',
-    name: 'Bluetooth Speaker Mini',
-    description: 'Portable wireless speaker',
-    originalPrice: 59.99,
-    currentPrice: 49.99,
-    stockLeft: 0,
-    minimumOrderQuantity: 1,
-    unit: 'piece',
-    shelfCode: 'A2-003',
-    imageUrls: ['https://placehold.co/100x100'],
-    categoryId: '1',
-    subcategoryId: '1-3',
-    storeId: '3',
-    isFeatured: false,
-    isActive: false,
-    createdAt: '2024-01-03T11:00:00Z',
-    updatedAt: '2024-01-10T13:15:00Z',
-  },
-];
-
-const mockCategories: Category[] = [
-  { id: '1', name: 'Electronics', productCount: 150, isActive: true, createdAt: '', updatedAt: '' },
-  { id: '2', name: 'Food & Beverage', productCount: 280, isActive: true, createdAt: '', updatedAt: '' },
-  { id: '3', name: 'Home & Living', productCount: 95, isActive: true, createdAt: '', updatedAt: '' },
-];
-
-const mockStores: Store[] = [
-  { id: '1', name: 'MEGA Store Downtown', storeType: 'mega', address: '', latitude: 0, longitude: 0, isActive: true, createdAt: '', updatedAt: '' },
-  { id: '2', name: 'MARKET Central', storeType: 'market', address: '', latitude: 0, longitude: 0, isActive: true, createdAt: '', updatedAt: '' },
-  { id: '3', name: 'toGO Station', storeType: 'toGo', address: '', latitude: 0, longitude: 0, isActive: true, createdAt: '', updatedAt: '' },
-];
+import { productApi, categoryApi, storeApi, type Product, type Category, type Store, type PaginationInfo } from '@/services/catalogApi';
+import ProductFormModal from './ProductFormModal';
+import ProductDetailModal from './ProductDetailModal';
 
 const ProductsPage: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   
+  // Data state
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  
+  // Loading and error state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Filter state
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [storeFilter, setStoreFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  
+  // Dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Modal state
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [editProductId, setEditProductId] = useState<string | undefined>(undefined);
+  const [viewProductId, setViewProductId] = useState<string | null>(null);
+  const [parentIdForVariant, setParentIdForVariant] = useState<string | undefined>(undefined);
+
+  // Fetch products from API
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: Record<string, unknown> = {
+        page: page + 1, // API uses 1-based pagination
+        page_size: rowsPerPage,
+      };
+      
+      // Add filters
+      if (storeFilter !== 'all') {
+        params.store_id = Number(storeFilter);
+      }
+      if (categoryFilter !== 'all') {
+        params.category_id = Number(categoryFilter);
+      }
+      if (statusFilter === 'active') {
+        params.is_active = true;
+      } else if (statusFilter === 'inactive') {
+        params.is_active = false;
+      }
+      if (search) {
+        params.search = search;
+      }
+      
+      const response = await productApi.getProducts(params);
+      setProducts(response.items);
+      setPagination(response.pagination);
+    } catch (err) {
+      console.error('Failed to fetch products:', err);
+      setError(t('products.fetchError'));
+    } finally {
+      setLoading(false);
+    }
+  }, [page, rowsPerPage, storeFilter, categoryFilter, statusFilter, search, t]);
+
+  // Fetch categories and stores for filters
+  const fetchFiltersData = useCallback(async () => {
+    try {
+      const [categoriesRes, storesRes] = await Promise.all([
+        categoryApi.getCategories({ page_size: 100 }),
+        storeApi.getStores({ page_size: 100 }),
+      ]);
+      setCategories(categoriesRes.items);
+      setStores(storesRes.items);
+    } catch (err) {
+      console.error('Failed to fetch filter data:', err);
+      // Non-critical error, don't show to user
+    }
+  }, []);
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchFiltersData();
+  }, [fetchFiltersData]);
+
+  // Fetch products when filters change
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  // Handle search with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(0); // Reset to first page on search
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -164,7 +147,7 @@ const ProductsPage: React.FC = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Avatar
             variant="rounded"
-            src={row.imageUrls[0]}
+            src={row.primaryImageUrl || row.imageUrls[0]}
             sx={{ width: 48, height: 48 }}
           >
             {row.name.charAt(0)}
@@ -215,13 +198,13 @@ const ProductsPage: React.FC = () => {
       id: 'categoryId',
       label: t('products.category'),
       minWidth: 120,
-      format: (value) => mockCategories.find(c => c.id === value)?.name || value,
+      format: (value) => categories.find(c => c.id === value)?.name || value || '-',
     },
     {
       id: 'storeId',
       label: t('products.store'),
       minWidth: 150,
-      format: (value) => mockStores.find(s => s.id === value)?.name || value,
+      format: (value) => stores.find(s => s.id === value)?.name || value || '-',
     },
     {
       id: 'isActive',
@@ -246,7 +229,8 @@ const ProductsPage: React.FC = () => {
               size="small"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/products/${row.id}`);
+                setViewProductId(row.id);
+                setDetailModalOpen(true);
               }}
             >
               <ViewIcon fontSize="small" />
@@ -257,7 +241,9 @@ const ProductsPage: React.FC = () => {
               size="small"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/products/${row.id}/edit`);
+                setEditProductId(row.id);
+                setParentIdForVariant(undefined);
+                setFormModalOpen(true);
               }}
             >
               <EditIcon fontSize="small" />
@@ -281,32 +267,77 @@ const ProductsPage: React.FC = () => {
     },
   ];
 
-  // Filter products
-  const filteredProducts = mockProducts.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(search.toLowerCase()) ||
-      product.shelfCode.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || product.categoryId === categoryFilter;
-    const matchesStore = storeFilter === 'all' || product.storeId === storeFilter;
-    const matchesStatus = statusFilter === 'all' ||
-      (statusFilter === 'active' && product.isActive) ||
-      (statusFilter === 'inactive' && !product.isActive) ||
-      (statusFilter === 'low_stock' && product.stockLeft < 10) ||
-      (statusFilter === 'out_of_stock' && product.stockLeft === 0);
-    return matchesSearch && matchesCategory && matchesStore && matchesStatus;
+  // Local filtering for stock status (API doesn't support this filter)
+  const filteredProducts = products.filter((product) => {
+    if (statusFilter === 'low_stock') return product.stockLeft < 10 && product.stockLeft > 0;
+    if (statusFilter === 'out_of_stock') return product.stockLeft === 0;
+    return true;
   });
 
-  const handleDeleteConfirm = () => {
-    // TODO: NEED TO FULLY IMPLEMENT - Call delete API
-    // TODO: Implement delete product API call for product: ${selectedProduct?.id}
-    setDeleteDialogOpen(false);
-    setSelectedProduct(null);
+  const handleDeleteConfirm = async () => {
+    if (!selectedProduct) return;
+    
+    setDeleting(true);
+    try {
+      await productApi.archiveProduct(selectedProduct.id);
+      // Refresh the products list after deletion
+      await fetchProducts();
+    } catch (err) {
+      console.error('Failed to delete product:', err);
+      setError(t('products.deleteError'));
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
+      setSelectedProduct(null);
+    }
+  };
+
+  // Modal handlers
+  const handleOpenCreateModal = () => {
+    setEditProductId(undefined);
+    setParentIdForVariant(undefined);
+    setFormModalOpen(true);
+  };
+
+  const handleOpenEditModal = (productId: string) => {
+    setEditProductId(productId);
+    setParentIdForVariant(undefined);
+    setFormModalOpen(true);
+    setDetailModalOpen(false);
+  };
+
+  const handleOpenAddVariantModal = (parentId: string) => {
+    setEditProductId(undefined);
+    setParentIdForVariant(parentId);
+    setFormModalOpen(true);
+    setDetailModalOpen(false);
+  };
+
+  const handleCloseFormModal = () => {
+    setFormModalOpen(false);
+    setEditProductId(undefined);
+    setParentIdForVariant(undefined);
+  };
+
+  const handleCloseDetailModal = () => {
+    setDetailModalOpen(false);
+    setViewProductId(null);
+  };
+
+  const handleFormSuccess = () => {
+    fetchProducts();
   };
 
   const actionMenuItems = [
     {
       label: t('products.create'),
       icon: <AddIcon />,
-      onClick: () => navigate('/products/new'),
+      onClick: handleOpenCreateModal,
+    },
+    {
+      label: t('common.refresh'),
+      icon: <RefreshIcon />,
+      onClick: () => fetchProducts(),
     },
     {
       label: t('products.upload'),
@@ -317,10 +348,26 @@ const ProductsPage: React.FC = () => {
     },
   ];
 
+  // Show loading state
+  if (loading && products.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box>
       {/* Page Title */}
       <PageTitle title={t('products.title')} actions={<ActionMenu actions={actionMenuItems} />} />
+
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
       {/* Filters */}
       <Card elevation={0} sx={{ mb: 3 }}>
@@ -352,12 +399,15 @@ const ProductsPage: React.FC = () => {
               value={categoryFilter}
               options={[
                 { value: 'all', label: t('common.all') },
-                ...mockCategories.map((category) => ({
+                ...categories.map((category) => ({
                   value: category.id,
                   label: category.name,
                 })),
               ]}
-              onChange={(value) => setCategoryFilter(value)}
+              onChange={(value) => {
+                setCategoryFilter(value);
+                setPage(0);
+              }}
               minWidth={180}
             />
             <FilterDropdown
@@ -365,12 +415,15 @@ const ProductsPage: React.FC = () => {
               value={storeFilter}
               options={[
                 { value: 'all', label: t('common.all') },
-                ...mockStores.map((store) => ({
+                ...stores.map((store) => ({
                   value: store.id,
                   label: store.name,
                 })),
               ]}
-              onChange={(value) => setStoreFilter(value)}
+              onChange={(value) => {
+                setStoreFilter(value);
+                setPage(0);
+              }}
               minWidth={180}
             />
             <FilterDropdown
@@ -383,7 +436,10 @@ const ProductsPage: React.FC = () => {
                 { value: 'low_stock', label: t('products.lowStock') },
                 { value: 'out_of_stock', label: t('products.outOfStock') },
               ]}
-              onChange={(value) => setStatusFilter(value)}
+              onChange={(value) => {
+                setStatusFilter(value);
+                setPage(0);
+              }}
               minWidth={180}
             />
           </Box>
@@ -396,7 +452,7 @@ const ProductsPage: React.FC = () => {
         data={filteredProducts}
         page={page}
         rowsPerPage={rowsPerPage}
-        totalCount={filteredProducts.length}
+        totalCount={pagination?.total || filteredProducts.length}
         onPageChange={(_, newPage) => setPage(newPage)}
         onRowsPerPageChange={(e) => {
           setRowsPerPage(parseInt(e.target.value, 10));
@@ -404,8 +460,12 @@ const ProductsPage: React.FC = () => {
         }}
         rowKey="id"
         emptyMessage={t('products.noProducts')}
-        onRowClick={(row) => navigate(`/products/${row.id}`)}
+        onRowClick={(row) => {
+          setViewProductId(row.id);
+          setDetailModalOpen(true);
+        }}
         selectable
+        loading={loading}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -420,6 +480,26 @@ const ProductsPage: React.FC = () => {
           setDeleteDialogOpen(false);
           setSelectedProduct(null);
         }}
+        loading={deleting}
+      />
+
+      {/* Product Form Modal (Create/Edit) */}
+      <ProductFormModal
+        open={formModalOpen}
+        productId={editProductId}
+        parentId={parentIdForVariant}
+        onClose={handleCloseFormModal}
+        onSuccess={handleFormSuccess}
+      />
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        open={detailModalOpen}
+        productId={viewProductId}
+        onClose={handleCloseDetailModal}
+        onEdit={handleOpenEditModal}
+        onAddVariant={handleOpenAddVariantModal}
+        onRefresh={fetchProducts}
       />
 
     </Box>

@@ -12,3 +12,5 @@ export { default as ActionMenu } from './ActionMenu';
 export type { ActionItem } from './ActionMenu';
 export { default as FilterDropdown } from './FilterDropdown';
 export type { FilterOption } from './FilterDropdown';
+export { default as CustomDropdown } from './CustomDropdown';
+export type { DropdownOption, CustomDropdownProps } from './CustomDropdown';
