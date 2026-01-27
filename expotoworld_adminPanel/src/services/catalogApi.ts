@@ -169,6 +169,7 @@ export interface ApiCategory {
   store_id: number | null;
   etw_store_type: string | null;
   etw_mini_app_type: string | null;
+  subcategory_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -363,6 +364,7 @@ export interface Category {
   description?: string;
   isActive: boolean;
   productCount: number;
+  subcategoryCount?: number;
   storeId?: string;
   displayOrder: number;
   etwStoreType?: string;
@@ -383,6 +385,11 @@ export interface Subcategory {
   displayOrder: number;
   createdAt: string;
   updatedAt: string;
+}
+
+// Category with nested subcategories for tree view
+export interface CategoryWithSubcategories extends Category {
+  subcategories: Subcategory[];
 }
 
 export interface Store {
@@ -566,6 +573,7 @@ function mapApiCategory(api: ApiCategory): Category {
     imageUrl: api.image_url || undefined,
     isActive: api.is_active,
     productCount: 0, // Not provided by API yet
+    subcategoryCount: api.subcategory_count ?? 0,
     storeId: api.store_id ? String(api.store_id) : undefined,
     displayOrder: api.display_order,
     etwStoreType: api.etw_store_type || undefined,
@@ -642,12 +650,15 @@ export interface CategoryQueryParams {
   page_size?: number;
   store_id?: number;
   is_active?: boolean;
+  etw_store_type?: string;
+  search?: string;
 }
 
 export interface StoreQueryParams {
   page?: number;
   page_size?: number;
   region_id?: number;
+  etw_store_type?: string;
   is_active?: boolean;
 }
 
@@ -1100,11 +1111,8 @@ export const categoryApi = {
    * Get all categories with optional filtering
    */
   getCategories: async (params: CategoryQueryParams = {}): Promise<{ items: Category[]; pagination: PaginationInfo }> => {
-    const response = await catalogApi.get<PaginatedResponse<ApiCategory>>('/categories', { params });
-    return {
-      items: response.data.items.map(mapApiCategory),
-      pagination: response.data.pagination,
-    };
+    const response = await catalogApi.get<BackendPaginatedResponse<ApiCategory>>('/categories', { params });
+    return mapBackendPagination(response.data, mapApiCategory);
   },
 
   /**
@@ -1208,6 +1216,190 @@ export const categoryApi = {
    */
   deleteSubcategory: async (id: string): Promise<void> => {
     await catalogApi.delete(`/subcategories/${id}`);
+  },
+
+  /**
+   * Reorder categories
+   */
+  reorderCategories: async (orderedIds: number[]): Promise<void> => {
+    await catalogApi.put('/categories/reorder', { ordered_ids: orderedIds });
+  },
+
+  /**
+   * Reorder subcategories within a category
+   */
+  reorderSubcategories: async (categoryId: string, orderedIds: number[]): Promise<void> => {
+    await catalogApi.put(`/categories/${categoryId}/subcategories/reorder`, { ordered_ids: orderedIds });
+  },
+
+  /**
+   * Move a subcategory to a different category
+   */
+  moveSubcategory: async (subcategoryId: string, targetCategoryId: string): Promise<void> => {
+    await catalogApi.put(`/subcategories/${subcategoryId}/move`, { target_category_id: Number(targetCategoryId) });
+  },
+
+  /**
+   * Get a single category with its subcategories
+   */
+  getCategoryWithSubcategories: async (id: string): Promise<CategoryWithSubcategories> => {
+    const response = await catalogApi.get<ApiCategory & { subcategories: ApiSubcategory[] }>(`/categories/${id}?with_subcategories=true`);
+    return {
+      ...mapApiCategory(response.data),
+      subcategories: response.data.subcategories?.map(mapApiSubcategory) || [],
+    };
+  },
+
+  /**
+   * Get a presigned URL for uploading a category image to S3
+   */
+  getCategoryImageUploadUrl: async (
+    categoryId: string,
+    fileName: string,
+    contentType: string
+  ): Promise<{
+    uploadUrl: string;
+    objectKey: string;
+    publicUrl: string;
+    expiresIn: number;
+  }> => {
+    const response = await catalogApi.get<{
+      upload_url: string;
+      object_key: string;
+      public_url: string;
+      expires_in: number;
+    }>(`/categories/${categoryId}/image/upload-url`, {
+      params: { file_name: fileName, content_type: contentType },
+    });
+    return {
+      uploadUrl: response.data.upload_url,
+      objectKey: response.data.object_key,
+      publicUrl: response.data.public_url,
+      expiresIn: response.data.expires_in,
+    };
+  },
+
+  /**
+   * Upload a category image and update the category
+   */
+  uploadCategoryImage: async (
+    categoryId: string,
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<string> => {
+    // Step 1: Get presigned upload URL
+    onProgress?.(10);
+    const { uploadUrl, publicUrl } = await categoryApi.getCategoryImageUploadUrl(
+      categoryId,
+      file.name,
+      file.type
+    );
+
+    // Step 2: Upload file to S3 with progress tracking
+    onProgress?.(30);
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const uploadProgress = (event.loaded / event.total) * 60;
+          onProgress?.(30 + uploadProgress);
+        }
+      };
+      
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      };
+      
+      xhr.onerror = () => reject(new Error('Upload failed'));
+      
+      xhr.open('PUT', uploadUrl);
+      xhr.setRequestHeader('Content-Type', file.type);
+      xhr.send(file);
+    });
+
+    onProgress?.(100);
+    return publicUrl;
+  },
+
+  /**
+   * Get a presigned URL for uploading a subcategory image to S3
+   */
+  getSubcategoryImageUploadUrl: async (
+    subcategoryId: string,
+    fileName: string,
+    contentType: string
+  ): Promise<{
+    uploadUrl: string;
+    objectKey: string;
+    publicUrl: string;
+    expiresIn: number;
+  }> => {
+    const response = await catalogApi.get<{
+      upload_url: string;
+      object_key: string;
+      public_url: string;
+      expires_in: number;
+    }>(`/subcategories/${subcategoryId}/image/upload-url`, {
+      params: { file_name: fileName, content_type: contentType },
+    });
+    return {
+      uploadUrl: response.data.upload_url,
+      objectKey: response.data.object_key,
+      publicUrl: response.data.public_url,
+      expiresIn: response.data.expires_in,
+    };
+  },
+
+  /**
+   * Upload a subcategory image and update the subcategory
+   */
+  uploadSubcategoryImage: async (
+    subcategoryId: string,
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<string> => {
+    // Step 1: Get presigned upload URL
+    onProgress?.(10);
+    const { uploadUrl, publicUrl } = await categoryApi.getSubcategoryImageUploadUrl(
+      subcategoryId,
+      file.name,
+      file.type
+    );
+
+    // Step 2: Upload file to S3 with progress tracking
+    onProgress?.(30);
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const uploadProgress = (event.loaded / event.total) * 60;
+          onProgress?.(30 + uploadProgress);
+        }
+      };
+      
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      };
+      
+      xhr.onerror = () => reject(new Error('Upload failed'));
+      
+      xhr.open('PUT', uploadUrl);
+      xhr.setRequestHeader('Content-Type', file.type);
+      xhr.send(file);
+    });
+
+    onProgress?.(100);
+    return publicUrl;
   },
 };
 

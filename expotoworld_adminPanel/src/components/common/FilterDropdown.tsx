@@ -20,6 +20,7 @@ interface FilterDropdownProps {
   options: FilterOption[];
   onChange: (value: string) => void;
   minWidth?: number;
+  disabled?: boolean;
 }
 
 const FilterDropdown: React.FC<FilterDropdownProps> = ({
@@ -28,15 +29,18 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   options,
   onChange,
   minWidth = 150,
+  disabled = false,
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
+  const open = Boolean(anchorEl) && !disabled;
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   const buttonRef = useRef<HTMLDivElement>(null);
 
   const handleClick = () => {
-    setAnchorEl(anchorEl ? null : buttonRef.current);
+    if (!disabled) {
+      setAnchorEl(anchorEl ? null : buttonRef.current);
+    }
   };
 
   const handleClose = () => {
@@ -61,13 +65,14 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
           position: 'relative',
           minWidth,
           height: 40,
-          cursor: 'pointer',
+          cursor: disabled ? 'not-allowed' : 'pointer',
           borderRadius: '8px',
           border: `1px solid ${open ? theme.palette.primary.main : theme.palette.divider}`,
           px: 1.75,
           transition: 'border-color 0.2s ease-in-out',
+          opacity: disabled ? 0.5 : 1,
           '&:hover': {
-            borderColor: theme.palette.primary.main,
+            borderColor: disabled ? theme.palette.divider : theme.palette.primary.main,
           },
           display: 'flex',
           alignItems: 'center',

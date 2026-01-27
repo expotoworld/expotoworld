@@ -551,16 +551,17 @@ func (r *UpdateCategoryRequest) toParams() *domain.UpdateCategoryParams {
 
 // CategoryResponse represents a category in API responses.
 type CategoryResponse struct {
-	CategoryID     int32   `json:"category_id"`
-	Name           string  `json:"name"`
-	ImageURL       *string `json:"image_url"`
-	DisplayOrder   int32   `json:"display_order"`
-	IsActive       bool    `json:"is_active"`
-	StoreID        *int32  `json:"store_id"`
-	ETWStoreType   *string `json:"etw_store_type"`
-	ETWMiniAppType *string `json:"etw_mini_app_type"`
-	CreatedAt      string  `json:"created_at"`
-	UpdatedAt      string  `json:"updated_at"`
+	CategoryID       int32   `json:"category_id"`
+	Name             string  `json:"name"`
+	ImageURL         *string `json:"image_url"`
+	DisplayOrder     int32   `json:"display_order"`
+	IsActive         bool    `json:"is_active"`
+	StoreID          *int32  `json:"store_id"`
+	ETWStoreType     *string `json:"etw_store_type"`
+	ETWMiniAppType   *string `json:"etw_mini_app_type"`
+	SubcategoryCount int     `json:"subcategory_count"`
+	CreatedAt        string  `json:"created_at"`
+	UpdatedAt        string  `json:"updated_at"`
 }
 
 // CategoryWithCountsResponse includes counts.
@@ -587,14 +588,15 @@ type PaginatedCategoriesResponse struct {
 
 func toCategoryResponse(c *domain.Category) *CategoryResponse {
 	resp := &CategoryResponse{
-		CategoryID:   c.CategoryID,
-		Name:         c.Name,
-		ImageURL:     c.ImageURL,
-		DisplayOrder: c.DisplayOrder,
-		IsActive:     c.IsActive,
-		StoreID:      c.StoreID,
-		CreatedAt:    c.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:    c.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		CategoryID:       c.CategoryID,
+		Name:             c.Name,
+		ImageURL:         c.ImageURL,
+		DisplayOrder:     c.DisplayOrder,
+		IsActive:         c.IsActive,
+		StoreID:          c.StoreID,
+		SubcategoryCount: c.SubcategoryCount,
+		CreatedAt:        c.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:        c.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 	if c.ETWStoreType != nil {
 		s := string(*c.ETWStoreType)

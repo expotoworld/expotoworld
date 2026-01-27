@@ -1,11 +1,16 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
+	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
+	"github.com/expotoworld/expotoworld_backend/pkg/awsutil"
 	"github.com/expotoworld/expotoworld_backend/services/catalog/internal/domain"
 	"github.com/expotoworld/expotoworld_backend/services/catalog/internal/service"
 )
@@ -13,11 +18,17 @@ import (
 // CategoryHandler handles HTTP requests for categories and subcategories.
 type CategoryHandler struct {
 	categoryService *service.CategoryService
+	s3Client        *awsutil.S3Client
+	s3BasePath      string // e.g., "admin-panel/categories"
 }
 
 // NewCategoryHandler creates a new category handler.
-func NewCategoryHandler(categoryService *service.CategoryService) *CategoryHandler {
-	return &CategoryHandler{categoryService: categoryService}
+func NewCategoryHandler(categoryService *service.CategoryService, s3Client *awsutil.S3Client, s3BasePath string) *CategoryHandler {
+	return &CategoryHandler{
+		categoryService: categoryService,
+		s3Client:        s3Client,
+		s3BasePath:      s3BasePath,
+	}
 }
 
 // RegisterRoutes registers category routes.
@@ -31,6 +42,7 @@ func (h *CategoryHandler) RegisterRoutes(r *gin.RouterGroup) {
 		categories.PUT("/:id", h.UpdateCategory)
 		categories.DELETE("/:id", h.DeleteCategory)
 		categories.PUT("/reorder", h.ReorderCategories)
+		categories.GET("/:id/image/upload-url", h.GetCategoryImageUploadURL)
 
 		// Subcategory routes under category
 		categories.GET("/:id/subcategories", h.GetSubcategories)
@@ -45,6 +57,7 @@ func (h *CategoryHandler) RegisterRoutes(r *gin.RouterGroup) {
 		subcategories.PUT("/:id", h.UpdateSubcategory)
 		subcategories.DELETE("/:id", h.DeleteSubcategory)
 		subcategories.PUT("/:id/move", h.MoveSubcategory)
+		subcategories.GET("/:id/image/upload-url", h.GetSubcategoryImageUploadURL)
 	}
 }
 
@@ -386,4 +399,128 @@ func parseCategoryFilter(c *gin.Context) *domain.CategoryFilter {
 	}
 
 	return filter
+}
+
+// ImageUploadURLRequest represents a request to get a presigned upload URL for an image.
+type ImageUploadURLRequest struct {
+	FileName    string `form:"file_name" binding:"required"`
+	ContentType string `form:"content_type" binding:"required"`
+}
+
+// ImageUploadURLResponse represents a response containing the presigned upload URL.
+type ImageUploadURLResponse struct {
+	UploadURL string `json:"upload_url"`
+	ObjectKey string `json:"object_key"`
+	PublicURL string `json:"public_url"`
+	ExpiresIn int    `json:"expires_in"` // seconds
+}
+
+// GetCategoryImageUploadURL godoc
+// @Summary Get presigned URL for uploading a category image
+// @Tags categories
+// @Accept json
+// @Produce json
+// @Param id path int true "Category ID"
+// @Param file_name query string true "File name"
+// @Param content_type query string true "Content type (e.g., image/jpeg)"
+// @Success 200 {object} ImageUploadURLResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /categories/{id}/image/upload-url [get]
+func (h *CategoryHandler) GetCategoryImageUploadURL(c *gin.Context) {
+	categoryID, err := strconv.ParseInt(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid category id"})
+		return
+	}
+
+	var req ImageUploadURLRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	// Validate content type
+	if !isValidImageContentType(req.ContentType) {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid content type, must be image/jpeg, image/png, image/gif, or image/webp"})
+		return
+	}
+
+	// Generate unique S3 key for category image
+	ext := filepath.Ext(req.FileName)
+	if ext == "" {
+		ext = getExtensionFromContentType(req.ContentType)
+	}
+	uniqueID := uuid.New().String()
+	objectKey := fmt.Sprintf("%s/%d/image/%s%s", h.s3BasePath, categoryID, uniqueID, ext)
+
+	// Generate presigned URL (valid for 15 minutes)
+	expiresIn := 15 * time.Minute
+	uploadURL, err := h.s3Client.GeneratePresignedUploadURL(c.Request.Context(), objectKey, req.ContentType, expiresIn)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to generate upload URL"})
+		return
+	}
+
+	c.JSON(http.StatusOK, ImageUploadURLResponse{
+		UploadURL: uploadURL,
+		ObjectKey: objectKey,
+		PublicURL: h.s3Client.GetPublicURL(objectKey),
+		ExpiresIn: int(expiresIn.Seconds()),
+	})
+}
+
+// GetSubcategoryImageUploadURL godoc
+// @Summary Get presigned URL for uploading a subcategory image
+// @Tags subcategories
+// @Accept json
+// @Produce json
+// @Param id path int true "Subcategory ID"
+// @Param file_name query string true "File name"
+// @Param content_type query string true "Content type (e.g., image/jpeg)"
+// @Success 200 {object} ImageUploadURLResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /subcategories/{id}/image/upload-url [get]
+func (h *CategoryHandler) GetSubcategoryImageUploadURL(c *gin.Context) {
+	subcategoryID, err := strconv.ParseInt(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid subcategory id"})
+		return
+	}
+
+	var req ImageUploadURLRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	// Validate content type
+	if !isValidImageContentType(req.ContentType) {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid content type, must be image/jpeg, image/png, image/gif, or image/webp"})
+		return
+	}
+
+	// Generate unique S3 key for subcategory image
+	ext := filepath.Ext(req.FileName)
+	if ext == "" {
+		ext = getExtensionFromContentType(req.ContentType)
+	}
+	uniqueID := uuid.New().String()
+	objectKey := fmt.Sprintf("%s/subcategories/%d/image/%s%s", h.s3BasePath, subcategoryID, uniqueID, ext)
+
+	// Generate presigned URL (valid for 15 minutes)
+	expiresIn := 15 * time.Minute
+	uploadURL, err := h.s3Client.GeneratePresignedUploadURL(c.Request.Context(), objectKey, req.ContentType, expiresIn)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to generate upload URL"})
+		return
+	}
+
+	c.JSON(http.StatusOK, ImageUploadURLResponse{
+		UploadURL: uploadURL,
+		ObjectKey: objectKey,
+		PublicURL: h.s3Client.GetPublicURL(objectKey),
+		ExpiresIn: int(expiresIn.Seconds()),
+	})
 }

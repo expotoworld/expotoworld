@@ -7,16 +7,17 @@ import (
 
 // Category represents a product category.
 type Category struct {
-	CategoryID     int32
-	Name           string
-	ImageURL       *string
-	DisplayOrder   int32
-	IsActive       bool
-	StoreID        *int32          // FK to admin_stores (optional)
-	ETWStoreType   *ETWStoreType   // Store type classification
-	ETWMiniAppType *ETWMiniAppType // Mini-app type classification
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	CategoryID       int32
+	Name             string
+	ImageURL         *string
+	DisplayOrder     int32
+	IsActive         bool
+	StoreID          *int32          // FK to admin_stores (optional)
+	ETWStoreType     *ETWStoreType   // Store type classification
+	ETWMiniAppType   *ETWMiniAppType // Mini-app type classification
+	SubcategoryCount int             // Number of subcategories (computed)
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 // CategoryWithCounts extends Category with computed counts.

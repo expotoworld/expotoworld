@@ -96,18 +96,23 @@ func (r *CategoryRepository) List(ctx context.Context, filter *domain.CategoryFi
 
 	if filter != nil {
 		if filter.StoreID != nil {
-			conditions = append(conditions, fmt.Sprintf("store_id = $%d", argIdx))
+			conditions = append(conditions, fmt.Sprintf("c.store_id = $%d", argIdx))
 			args = append(args, *filter.StoreID)
 			argIdx++
 		}
 		if filter.IsActive != nil {
-			conditions = append(conditions, fmt.Sprintf("is_active = $%d", argIdx))
+			conditions = append(conditions, fmt.Sprintf("c.is_active = $%d", argIdx))
 			args = append(args, *filter.IsActive)
 			argIdx++
 		}
 		if filter.Search != nil && *filter.Search != "" {
-			conditions = append(conditions, fmt.Sprintf("name ILIKE $%d", argIdx))
+			conditions = append(conditions, fmt.Sprintf("c.name ILIKE $%d", argIdx))
 			args = append(args, "%"+*filter.Search+"%")
+			argIdx++
+		}
+		if filter.ETWStoreType != nil && *filter.ETWStoreType != "" {
+			conditions = append(conditions, fmt.Sprintf("c.etw_store_type = $%d", argIdx))
+			args = append(args, *filter.ETWStoreType)
 			argIdx++
 		}
 	}
@@ -117,8 +122,8 @@ func (r *CategoryRepository) List(ctx context.Context, filter *domain.CategoryFi
 		whereClause = "WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	// Count
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM admin_product_categories %s", whereClause)
+	// Count - use alias for consistency
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM admin_product_categories c %s", whereClause)
 	var totalCount int64
 	if err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&totalCount); err != nil {
 		return nil, err
@@ -127,9 +132,10 @@ func (r *CategoryRepository) List(ctx context.Context, filter *domain.CategoryFi
 	// Paginate
 	offset := (pagination.Page - 1) * pagination.PageSize
 	query := fmt.Sprintf(`
-		SELECT category_id, name, image_url, display_order, is_active, store_id, etw_store_type, etw_mini_app_type, created_at, updated_at
-		FROM admin_product_categories %s
-		ORDER BY display_order
+		SELECT c.category_id, c.name, c.image_url, c.display_order, c.is_active, c.store_id, c.etw_store_type, c.etw_mini_app_type, c.created_at, c.updated_at,
+			COALESCE((SELECT COUNT(*) FROM admin_subcategories s WHERE s.parent_category_id = c.category_id), 0) as subcategory_count
+		FROM admin_product_categories c %s
+		ORDER BY c.display_order
 		LIMIT $%d OFFSET $%d`, whereClause, argIdx, argIdx+1)
 	args = append(args, pagination.PageSize, offset)
 
@@ -142,7 +148,7 @@ func (r *CategoryRepository) List(ctx context.Context, filter *domain.CategoryFi
 	var categories []domain.Category
 	for rows.Next() {
 		var c domain.Category
-		if err := rows.Scan(&c.CategoryID, &c.Name, &c.ImageURL, &c.DisplayOrder, &c.IsActive, &c.StoreID, &c.ETWStoreType, &c.ETWMiniAppType, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		if err := rows.Scan(&c.CategoryID, &c.Name, &c.ImageURL, &c.DisplayOrder, &c.IsActive, &c.StoreID, &c.ETWStoreType, &c.ETWMiniAppType, &c.CreatedAt, &c.UpdatedAt, &c.SubcategoryCount); err != nil {
 			return nil, err
 		}
 		categories = append(categories, c)
