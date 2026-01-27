@@ -121,7 +121,7 @@ func run() error {
 
 	// Initialize handlers
 	productHandler := handler.NewProductHandler(productService)
-	categoryHandler := handler.NewCategoryHandler(categoryService)
+	categoryHandler := handler.NewCategoryHandler(categoryService, s3Client, "admin-panel/categories")
 	storeHandler := handler.NewStoreHandler(storeService, s3Client, "admin-panel/stores")
 	specificationHandler := handler.NewSpecificationHandler(specificationRepo)
 	imageHandler := handler.NewImageHandler(imageRepo, s3Client, "admin-panel/products")
