@@ -39,6 +39,8 @@ func DefaultCORSConfig() *CORSConfig {
 			"Content-Type",
 			"X-Correlation-ID",
 			"X-Request-ID",
+			"X-Require-Existing",
+			"X-Require-Role",
 		},
 		ExposedHeaders: []string{
 			"X-Correlation-ID",

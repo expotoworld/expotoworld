@@ -144,7 +144,7 @@ func (s *AuthService) SendVerificationCode(ctx context.Context, contact string, 
 	if actorType == domain.ActorTypeAdmin {
 		actorTypeStr = "admin"
 	}
-	
+
 	rateLimit, err := s.rateLimitRepo.GetOrCreate(ctx, actorTypeStr, channelStr, ipAddress)
 	if err != nil {
 		s.logger.Error("failed to get rate limit", "error", err)
@@ -284,7 +284,7 @@ func (s *AuthService) VerifyCode(ctx context.Context, contact, code string, acto
 			Role:     domain.RoleCustomer,
 			Status:   domain.StatusActive,
 		}
-		
+
 		if useEmail {
 			emailPtr := contact
 			user.Email = &emailPtr
@@ -344,6 +344,8 @@ func (s *AuthService) VerifyCode(ctx context.Context, contact, code string, acto
 }
 
 // RefreshAccessToken refreshes the access token using a refresh token.
+// Uses sliding expiry: same refresh token is reused, only expiry is extended.
+// This prevents token accumulation while maintaining security.
 func (s *AuthService) RefreshAccessToken(ctx context.Context, refreshToken string, ipAddress, userAgent *string) (*AuthResult, error) {
 	// Hash the provided token
 	tokenHash := domain.HashRefreshToken(refreshToken)
@@ -382,30 +384,25 @@ func (s *AuthService) RefreshAccessToken(ctx context.Context, refreshToken strin
 		return nil, ErrUserInactive
 	}
 
-	// Revoke the old refresh token (token rotation)
-	if err := s.tokenRepo.Revoke(ctx, storedToken.ID); err != nil {
-		s.logger.Error("failed to revoke old refresh token", "error", err)
-	}
-
-	// Generate new tokens
+	// Generate new access token
 	accessToken, err := s.generateAccessToken(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
-	newRefreshToken, plainRefreshToken, err := domain.NewRefreshToken(user.ID, ipAddress, userAgent)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
+	// Sliding expiry: extend the SAME refresh token's expiry instead of rotating
+	// This keeps one token per device and prevents token accumulation
+	newExpiry := time.Now().Add(domain.RefreshTokenTTL)
+	if err := s.tokenRepo.UpdateExpiry(ctx, storedToken.ID, newExpiry, ipAddress, userAgent); err != nil {
+		s.logger.Error("failed to update refresh token expiry", "error", err)
+		// Non-fatal: continue even if expiry update fails
 	}
 
-	// Store new refresh token
-	if _, err := s.tokenRepo.Create(ctx, newRefreshToken); err != nil {
-		return nil, fmt.Errorf("failed to store refresh token: %w", err)
-	}
-
+	// Return the SAME refresh token (no rotation)
+	// Client keeps using the same token, which has its expiry extended server-side
 	return &AuthResult{
 		AccessToken:  accessToken,
-		RefreshToken: plainRefreshToken,
+		RefreshToken: refreshToken, // Return same token back
 		User:         user,
 		IsNewUser:    false,
 	}, nil

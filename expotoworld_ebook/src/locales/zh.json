@@ -1,0 +1,146 @@
+{
+  "toolbar.undo": "撤销",
+  "toolbar.redo": "重做",
+  "toolbar.headings": "标题",
+  "toolbar.heading1": "标题 1",
+  "toolbar.heading2": "标题 2",
+  "toolbar.heading3": "标题 3",
+  "toolbar.heading4": "标题 4",
+  "toolbar.lists": "列表",
+  "toolbar.bullet_list": "项目符号",
+  "toolbar.ordered_list": "编号列表",
+  "toolbar.task_list": "代办列表",
+  "toolbar.blockquote": "引用块",
+  "toolbar.zoom_in": "放大",
+  "toolbar.zoom_out": "缩小",
+  "toolbar.bold": "粗体",
+  "toolbar.italic": "斜体",
+  "toolbar.strike": "删除线",
+  "toolbar.underline": "下划线",
+  "toolbar.highlight": "高亮",
+  "toolbar.remove_highlight": "移除高亮",
+  "toolbar.clear": "清除格式",
+  "toolbar.superscript": "上标",
+  "toolbar.subscript": "下标",
+  "toolbar.align_left": "左对齐",
+  "toolbar.align_center": "居中对齐",
+  "toolbar.align_right": "右对齐",
+  "toolbar.align_justify": "两端对齐",
+  "toolbar.link": "插入链接",
+  "toolbar.view_headings": "查看标题列表",
+  "outline.header": "大纲",
+  "toolbar.link_select": "选择要链接的文本",
+  "toolbar.apply_link": "链接",
+  "toolbar.open_link_new": "打开链接",
+  "toolbar.remove_link": "移除链接",
+  "toolbar.image_add": "添加图片",
+  "toolbar.image_add_label": "添加",
+
+  "toolbar.media_add": "添加媒体",
+  "toolbar.media_add_label": "添加媒体",
+
+  "status.saving": "正在保存",
+  "status.saved_at": "保存于 {{time}}",
+  "status.save_failed": "保存失败",
+  "actions.save_version": "保存版本",
+  "actions.publish": "发布",
+  "actions.version_success": "版本已保存",
+  "actions.version_fail": "保存版本失败",
+  "actions.publish_success": "已发布！",
+  "actions.publish_fail": "发布失败",
+
+  "link.placeholder": "请输入链接",
+
+  "word.title": "字数统计",
+  "word.stats_title": "字数统计信息",
+  "word.words": "字",
+  "word.characters": "字符",
+  "word.characters_no_spaces": "字符（不含空格）",
+  "word.box": "{{count}} 个字",
+  "word.box_selected": "{{count}} 个字",
+
+  "placeholder.editor": "华商道",
+
+  "user.menu_tooltip": "华商道",
+  "user.logout": "退出登录"
+,
+
+  "toolbar.version_history": "版本历史",
+  "actions.manual_save": "保存版本",
+  "labels.version_name": "版本名称",
+  "placeholders.version_name": "版本名称",
+  "common.cancel": "取消",
+  "common.confirm": "确认",
+
+
+  "errors.version_name_required": "请输入版本名称",
+
+  "history.header": "版本历史",
+  "history.tabs.manual": "手动",
+  "history.tabs.published": "已发布",
+  "history.empty": "暂无版本",
+  "history.actions.inspect": "查看",
+  "history.actions.restore": "恢复",
+  "history.actions.publish": "发布",
+  "history.actions.delete": "删除",
+  "history.confirm.restore": "确定要恢复此版本吗？这将替换当前草稿。",
+  "history.confirm.delete": "确定要删除 \"{{id}}\" 吗？",
+  "history.publish.title": "发布版本",
+  "history.publish.label_placeholder": "版本名称",
+
+  "history.actions.rename": "重命名",
+  "history.rename.title": "重命名版本",
+  "history.rename.success": "版本已重命名",
+  "history.rename.fail": "重命名版本失败",
+  "history.confirm.delete_label": "确定要删除 \"{{label}}\" 吗？",
+
+  "toolbar.search_headings": "查找标题",
+  "common.save": "保存",
+
+  "outline.tooltip": "标题列表",
+
+  "link.insertTooltip": "确认链接",
+  "link.openTooltip": "打开链接",
+  "link.removeTooltip": "去除链接",
+
+  "version.readOnly": "只可读取",
+  "version.pending": "等待删除",
+
+  "version.statusTitle": "状态",
+
+  "version.pending.title": "待删除文件",
+  "version.pending.loading": "加载中...",
+  "version.pending.empty": "暂无待删除文件",
+  "version.pending.table.fileName": "文件名",
+  "version.pending.table.requestedAt": "请求时间",
+  "version.pending.table.timeUntilDeletion": "剩余删除时间",
+  "version.pending.table.attempts": "尝试次数",
+  "version.pending.ready": "可删除",
+  "version.pending.prev": "上一页",
+  "version.pending.next": "下一页",
+  "version.pending.page": "第 {{num}} 页"
+
+
+
+,
+  "toolbar.dictionary": "华商道概念库",
+  "toolbar.dictionary_select_ready": "概念库（已选中文本）",
+
+  "dictionary.sidebar_aria": "概念库侧边栏",
+  "dictionary.sidebar_title": "华商道概念库",
+  "dictionary.add": "添加",
+  "dictionary.add_selected": "添加所选文本",
+  "dictionary.select_to_add": "选择文本以添加",
+  "dictionary.empty": "暂无词条。选择文本后点击添加。",
+  "dictionary.actions.edit": "编辑",
+  "dictionary.actions.delete": "删除",
+  "dictionary.modal.add_title": "添加词条",
+  "dictionary.modal.edit_title": "编辑词条",
+  "dictionary.field.term": "词条",
+  "dictionary.field.definition": "定义",
+  "dictionary.confirm.delete_title": "删除词条",
+  "dictionary.confirm.delete_message": "移除“{{term}}”并取消全部链接？",
+
+  "common.close": "关闭"
+
+}
