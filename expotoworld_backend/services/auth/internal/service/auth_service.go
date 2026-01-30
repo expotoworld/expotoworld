@@ -119,9 +119,35 @@ func NewAuthService(
 	}, nil
 }
 
+// ErrUserRoleNotPermitted is returned when user doesn't have the required role.
+var ErrUserRoleNotPermitted = errors.New("user role not permitted")
+
 // isEmail checks if the contact is an email address.
 func isEmail(contact string) bool {
 	return strings.Contains(contact, "@")
+}
+
+// ValidateUserAccess checks if a user exists and optionally has the required role.
+// This is used by ebook-editor and similar clients that require existing users.
+func (s *AuthService) ValidateUserAccess(ctx context.Context, email string, requiredRole string) error {
+	user, err := s.userRepo.FindByEmail(ctx, email)
+	if err != nil {
+		s.logger.Error("failed to find user by email", "error", err, "email", email)
+		return ErrUserNotFound
+	}
+	if user == nil {
+		return ErrUserNotFound
+	}
+
+	if requiredRole != "" {
+		// Case-insensitive role comparison
+		if !strings.EqualFold(string(user.Role), requiredRole) {
+			s.logger.Warn("user role not permitted", "email", email, "user_role", user.Role, "required_role", requiredRole)
+			return ErrUserRoleNotPermitted
+		}
+	}
+
+	return nil
 }
 
 // SendVerificationCode sends an OTP verification code to the user's email or phone.

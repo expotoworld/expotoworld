@@ -86,6 +86,34 @@ func (h *AuthHandler) SendCode(c *gin.Context) {
 		contact = req.Phone
 	}
 
+	// Optional stricter mode for clients like ebook-editor
+	// X-Require-Existing: true - requires user to already exist in database
+	// X-Require-Role: Author - requires user to have specific role
+	requireExisting := strings.EqualFold(c.GetHeader("X-Require-Existing"), "true") || c.Query("require_existing") == "true"
+	requiredRole := strings.TrimSpace(c.GetHeader("X-Require-Role"))
+
+	if requireExisting || requiredRole != "" {
+		// Only email validation is supported for role checks
+		if !hasEmail {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Email is required when X-Require-Existing or X-Require-Role is set"})
+			return
+		}
+
+		if err := h.authService.ValidateUserAccess(c.Request.Context(), req.Email, requiredRole); err != nil {
+			h.logger.Warn("user access validation failed", "email", req.Email, "require_existing", requireExisting, "required_role", requiredRole, "error", err)
+			if strings.Contains(err.Error(), "not found") {
+				c.JSON(http.StatusForbidden, gin.H{"error": "User not allowed", "message": "User does not exist"})
+				return
+			}
+			if strings.Contains(err.Error(), "not permitted") {
+				c.JSON(http.StatusForbidden, gin.H{"error": "User not allowed", "message": "User role not permitted"})
+				return
+			}
+			c.JSON(http.StatusForbidden, gin.H{"error": "User not allowed", "message": err.Error()})
+			return
+		}
+	}
+
 	ipAddress := c.ClientIP()
 	err := h.authService.SendVerificationCode(c.Request.Context(), contact, domain.ActorTypeUser, ipAddress)
 	if err != nil {
