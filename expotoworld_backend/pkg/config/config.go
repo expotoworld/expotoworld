@@ -254,7 +254,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("AWS_REGION", "eu-central-1")
 	v.SetDefault("AWS_SECRET_DATABASE", "expotoworld/neon/db")
 	v.SetDefault("AWS_SECRET_JWT_PRIVATE", "expotoworld/jwt/rs256/private_pem")
-	v.SetDefault("AWS_SECRET_JWT_PUBLIC", "expotoworld/jwt/rs256/public_pem")
+	// Note: AWS_SECRET_JWT_PUBLIC is intentionally not set by default.
+	// The auth service derives the public key from the private key (standard RS256 behavior).
+	// Only set this if you explicitly store a separate public key in Secrets Manager.
 
 	// CORS
 	v.SetDefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
