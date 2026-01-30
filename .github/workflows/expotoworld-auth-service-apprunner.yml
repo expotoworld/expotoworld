@@ -1,0 +1,164 @@
+# =============================================================================
+# EXPO to WORLD - Auth Service App Runner Deploy
+# =============================================================================
+# Deploys the auth service to AWS App Runner after ECR image is pushed
+#
+# Triggers:
+#   - After Backend ECR Build workflow completes successfully
+#   - Manual dispatch
+#
+# Service Configuration:
+#   - Port: 8081
+#   - Health Check: /live
+#   - Auto-scaling: 1-10 instances
+#   - Requires: DATABASE_URL_SECRET_ARN, JWT_PRIVATE_KEY_PEM_ARN
+# =============================================================================
+
+name: Auth Service - App Runner Deploy
+
+on:
+  workflow_run:
+    workflows: ["Backend Services - ECR Build and Push"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      SERVICE_NAME: expotoworld-auth-service
+      APP_PORT: "8081"
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActionsECRPush-expotoworld
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set computed variables
+        run: |
+          echo "ECR_REPOSITORY_URI=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.SERVICE_NAME }}" >> $GITHUB_ENV
+          echo "INSTANCE_ROLE_ARN=arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/apprunner-expotoworld-auth-instance-role" >> $GITHUB_ENV
+          echo "ECR_ACCESS_ROLE_ARN=arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/AppRunnerECRAccessRole-expotoworld" >> $GITHUB_ENV
+
+      - name: Lookup App Runner service
+        id: lookup
+        run: |
+          ARN=$(aws apprunner list-services \
+            --query "ServiceSummaryList[?ServiceName=='${{ env.SERVICE_NAME }}'].ServiceArn | [0]" \
+            --output text)
+          if [ "$ARN" = "None" ] || [ -z "$ARN" ]; then
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "📦 Service not found - will create new"
+          else
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "service_arn=$ARN" >> $GITHUB_OUTPUT
+            echo "✅ Found existing service: $ARN"
+          fi
+
+      - name: Create App Runner service (first-time)
+        if: steps.lookup.outputs.found == 'false'
+        env:
+          DATABASE_URL_SECRET_ARN: ${{ secrets.DATABASE_URL_SECRET_ARN }}
+          JWT_PRIVATE_KEY_PEM_ARN: ${{ secrets.JWT_PRIVATE_KEY_PEM_ARN }}
+        run: |
+          if [ -z "$DATABASE_URL_SECRET_ARN" ]; then
+            echo "❌ DATABASE_URL_SECRET_ARN must be set in repo secrets" >&2
+            exit 1
+          fi
+          if [ -z "$JWT_PRIVATE_KEY_PEM_ARN" ]; then
+            echo "❌ JWT_PRIVATE_KEY_PEM_ARN must be set in repo secrets" >&2
+            exit 1
+          fi
+          
+          aws apprunner create-service \
+            --service-name "$SERVICE_NAME" \
+            --source-configuration "{
+              \"ImageRepository\":{
+                \"ImageRepositoryType\":\"ECR\",
+                \"ImageIdentifier\":\"$ECR_REPOSITORY_URI:latest\",
+                \"ImageConfiguration\":{
+                  \"Port\":\"$APP_PORT\",
+                  \"RuntimeEnvironmentVariables\":{
+                    \"APP_ENV\":\"production\",
+                    \"LOG_LEVEL\":\"info\",
+                    \"LOG_FORMAT\":\"json\",
+                    \"JWT_ISSUER\":\"expotoworld\",
+                    \"JWT_AUDIENCE\":\"expotoworld-api\"
+                  },
+                  \"RuntimeEnvironmentSecrets\":{
+                    \"DATABASE_URL\":\"$DATABASE_URL_SECRET_ARN\",
+                    \"JWT_PRIVATE_KEY_PEM\":\"$JWT_PRIVATE_KEY_PEM_ARN\"
+                  }
+                }
+              },
+              \"AutoDeploymentsEnabled\":true,
+              \"AuthenticationConfiguration\":{
+                \"AccessRoleArn\":\"$ECR_ACCESS_ROLE_ARN\"
+              }
+            }" \
+            --instance-configuration "{
+              \"Cpu\":\"1 vCPU\",
+              \"Memory\":\"2 GB\",
+              \"InstanceRoleArn\":\"$INSTANCE_ROLE_ARN\"
+            }" \
+            --health-check-configuration "{
+              \"Protocol\":\"HTTP\",
+              \"Path\":\"/live\",
+              \"Interval\":5,
+              \"Timeout\":2,
+              \"HealthyThreshold\":1,
+              \"UnhealthyThreshold\":5
+            }" \
+            --auto-scaling-configuration-arn "arn:aws:apprunner:$AWS_REGION:$AWS_ACCOUNT_ID:autoscalingconfiguration/DefaultConfiguration/1/00000000000000000000000000000001"
+          
+          echo "✅ App Runner service created successfully"
+
+      - name: Update existing App Runner service
+        if: steps.lookup.outputs.found == 'true'
+        run: |
+          aws apprunner start-deployment \
+            --service-arn "${{ steps.lookup.outputs.service_arn }}"
+          
+          echo "✅ Deployment started for existing service"
+
+      - name: Wait for deployment
+        run: |
+          echo "⏳ Waiting for deployment to complete..."
+          
+          SERVICE_ARN=$(aws apprunner list-services \
+            --query "ServiceSummaryList[?ServiceName=='${{ env.SERVICE_NAME }}'].ServiceArn | [0]" \
+            --output text)
+          
+          for i in {1..60}; do
+            STATUS=$(aws apprunner describe-service \
+              --service-arn "$SERVICE_ARN" \
+              --query "Service.Status" \
+              --output text)
+            
+            if [ "$STATUS" = "RUNNING" ]; then
+              echo "✅ Deployment successful! Service is running."
+              SERVICE_URL=$(aws apprunner describe-service \
+                --service-arn "$SERVICE_ARN" \
+                --query "Service.ServiceUrl" \
+                --output text)
+              echo "🌐 Service URL: https://$SERVICE_URL"
+              exit 0
+            elif [ "$STATUS" = "CREATE_FAILED" ] || [ "$STATUS" = "DELETE_FAILED" ]; then
+              echo "❌ Deployment failed with status: $STATUS"
+              exit 1
+            fi
+            
+            echo "  Status: $STATUS (attempt $i/60)"
+            sleep 10
+          done
+          
+          echo "⚠️ Deployment timed out. Check AWS Console for status."
+          exit 1

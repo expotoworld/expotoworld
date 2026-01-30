@@ -194,7 +194,15 @@ func load() (*Config, error) {
 	if corsHeaders := v.GetString("CORS_ALLOWED_HEADERS"); corsHeaders != "" {
 		config.CORS.AllowedHeaders = strings.Split(corsHeaders, ",")
 	} else {
-		config.CORS.AllowedHeaders = []string{"Accept", "Authorization", "Content-Type", "X-Correlation-ID"}
+		config.CORS.AllowedHeaders = []string{
+			"Accept",
+			"Authorization",
+			"Content-Type",
+			"X-Correlation-ID",
+			"X-Request-ID",
+			"X-Require-Existing",
+			"X-Require-Role",
+		}
 	}
 
 	// Load secrets from AWS Secrets Manager in production

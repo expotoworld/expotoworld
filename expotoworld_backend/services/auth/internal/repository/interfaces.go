@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/expotoworld/expotoworld_backend/services/auth/internal/domain"
 )
@@ -56,6 +57,12 @@ type RefreshTokenRepository interface {
 
 	// FindByHash retrieves a refresh token by its hash.
 	FindByHash(ctx context.Context, tokenHash string) (*domain.RefreshToken, error)
+
+	// FindByUserAndDevice retrieves a refresh token by user ID and device fingerprint.
+	FindByUserAndDevice(ctx context.Context, userID string, deviceFingerprint *string) (*domain.RefreshToken, error)
+
+	// UpdateExpiry extends the expiration time of a refresh token (sliding window).
+	UpdateExpiry(ctx context.Context, id string, newExpiry time.Time, ipAddress, userAgent *string) error
 
 	// Revoke revokes a refresh token by its ID.
 	Revoke(ctx context.Context, id string) error

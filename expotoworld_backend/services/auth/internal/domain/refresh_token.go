@@ -16,14 +16,15 @@ const AccessTokenTTL = 15 * time.Minute
 
 // RefreshToken represents a refresh token for session management.
 type RefreshToken struct {
-	ID        string
-	UserID    string
-	TokenHash string
-	IssuedAt  time.Time
-	ExpiresAt time.Time
-	Revoked   bool
-	IPAddress *string
-	UserAgent *string
+	ID                string
+	UserID            string
+	TokenHash         string
+	IssuedAt          time.Time
+	ExpiresAt         time.Time
+	Revoked           bool
+	IPAddress         *string
+	UserAgent         *string
+	DeviceFingerprint *string // Hash of device identifiers for per-device token tracking
 }
 
 // IsExpired returns true if the refresh token has expired.
@@ -60,6 +61,28 @@ func HashRefreshToken(token string) string {
 	return base64.RawURLEncoding.EncodeToString(hash[:])
 }
 
+// GenerateDeviceFingerprint creates a stable fingerprint for device identification.
+// Uses IP address and user agent to identify unique devices.
+func GenerateDeviceFingerprint(ipAddress, userAgent *string) *string {
+	if ipAddress == nil && userAgent == nil {
+		return nil
+	}
+
+	// Combine IP and user-agent for fingerprint
+	// Use first part of IP (subnet) for stability when IP changes slightly
+	data := ""
+	if ipAddress != nil {
+		data += *ipAddress
+	}
+	if userAgent != nil {
+		data += "|" + *userAgent
+	}
+
+	hash := sha256.Sum256([]byte(data))
+	fingerprint := base64.RawURLEncoding.EncodeToString(hash[:16]) // Use first 16 bytes for shorter fingerprint
+	return &fingerprint
+}
+
 // NewRefreshToken creates a new refresh token entity.
 func NewRefreshToken(userID string, ipAddress, userAgent *string) (*RefreshToken, string, error) {
 	plainToken, tokenHash, err := GenerateRefreshToken()
@@ -68,14 +91,16 @@ func NewRefreshToken(userID string, ipAddress, userAgent *string) (*RefreshToken
 	}
 
 	now := time.Now()
+	fingerprint := GenerateDeviceFingerprint(ipAddress, userAgent)
 
 	return &RefreshToken{
-		UserID:    userID,
-		TokenHash: tokenHash,
-		IssuedAt:  now,
-		ExpiresAt: now.Add(RefreshTokenTTL),
-		Revoked:   false,
-		IPAddress: ipAddress,
-		UserAgent: userAgent,
+		UserID:            userID,
+		TokenHash:         tokenHash,
+		IssuedAt:          now,
+		ExpiresAt:         now.Add(RefreshTokenTTL),
+		Revoked:           false,
+		IPAddress:         ipAddress,
+		UserAgent:         userAgent,
+		DeviceFingerprint: fingerprint,
 	}, plainToken, nil
 }

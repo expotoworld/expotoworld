@@ -69,7 +69,7 @@ func (h *AuthHandler) SendCode(c *gin.Context) {
 	// Validate that exactly one of email or phone is provided
 	hasEmail := req.Email != ""
 	hasPhone := req.Phone != ""
-	
+
 	if !hasEmail && !hasPhone {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Email or phone number is required"})
 		return
@@ -128,7 +128,7 @@ func (h *AuthHandler) VerifyCode(c *gin.Context) {
 	// Validate that exactly one of email or phone is provided
 	hasEmail := req.Email != ""
 	hasPhone := req.Phone != ""
-	
+
 	if !hasEmail && !hasPhone {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Email or phone number is required"})
 		return

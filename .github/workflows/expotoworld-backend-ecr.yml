@@ -1,0 +1,174 @@
+# =============================================================================
+# EXPO to WORLD - Backend Services ECR Build and Push
+# =============================================================================
+# Unified workflow for building all backend services from expotoworld_backend/
+# Uses matrix strategy to build services in parallel
+#
+# Triggers:
+#   - Push to main branch (changes in expotoworld_backend/)
+#   - Manual dispatch (workflow_dispatch)
+#
+# Services built:
+#   - auth (port 8081)
+#   - user (port 8083)
+#   - catalog (port 8080)
+#   - order (port 8082)
+#   - ebook (port 8084)
+# =============================================================================
+
+name: Backend Services - ECR Build and Push
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'expotoworld_backend/**'
+      - '.github/workflows/expotoworld-backend-ecr.yml'
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to build (leave empty for all)'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - auth
+          - user
+          - catalog
+          - order
+          - ebook
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+  REGISTRY: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+
+jobs:
+  # Detect which services changed
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.set-matrix.outputs.services }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed services
+        id: set-matrix
+        run: |
+          # If manual trigger with specific service
+          if [ -n "${{ inputs.service }}" ]; then
+            echo "services=[\"${{ inputs.service }}\"]" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Get changed files
+          CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "expotoworld_backend/")
+          
+          SERVICES=()
+          
+          # Check for changes in each service
+          if echo "$CHANGED" | grep -q "expotoworld_backend/services/auth/" || \
+             echo "$CHANGED" | grep -q "expotoworld_backend/pkg/" || \
+             echo "$CHANGED" | grep -q "expotoworld_backend/go.mod"; then
+            SERVICES+=("auth")
+          fi
+          
+          if echo "$CHANGED" | grep -q "expotoworld_backend/services/user/" || \
+             echo "$CHANGED" | grep -q "expotoworld_backend/pkg/" || \
+             echo "$CHANGED" | grep -q "expotoworld_backend/go.mod"; then
+            SERVICES+=("user")
+          fi
+          
+          if echo "$CHANGED" | grep -q "expotoworld_backend/services/catalog/" || \
+             echo "$CHANGED" | grep -q "expotoworld_backend/pkg/" || \
+             echo "$CHANGED" | grep -q "expotoworld_backend/go.mod"; then
+            SERVICES+=("catalog")
+          fi
+          
+          if echo "$CHANGED" | grep -q "expotoworld_backend/services/order/" || \
+             echo "$CHANGED" | grep -q "expotoworld_backend/pkg/" || \
+             echo "$CHANGED" | grep -q "expotoworld_backend/go.mod"; then
+            SERVICES+=("order")
+          fi
+          
+          if echo "$CHANGED" | grep -q "expotoworld_backend/services/ebook/" || \
+             echo "$CHANGED" | grep -q "expotoworld_backend/pkg/" || \
+             echo "$CHANGED" | grep -q "expotoworld_backend/go.mod"; then
+            SERVICES+=("ebook")
+          fi
+          
+          # If workflow file changed, build all
+          if echo "$CHANGED" | grep -q ".github/workflows/expotoworld-backend-ecr.yml"; then
+            SERVICES=("auth" "user" "catalog" "order" "ebook")
+          fi
+          
+          # Fallback: if no specific changes detected, assume all need rebuild
+          if [ ${#SERVICES[@]} -eq 0 ]; then
+            SERVICES=("auth" "user" "catalog" "order" "ebook")
+          fi
+          
+          # Convert to JSON array
+          JSON_ARRAY=$(printf '%s\n' "${SERVICES[@]}" | jq -R . | jq -s -c .)
+          echo "services=$JSON_ARRAY" >> $GITHUB_OUTPUT
+          echo "Building services: $JSON_ARRAY"
+
+  # Build and push to ECR
+  build-and-push:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.services != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.services) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActionsECRPush-expotoworld
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set build metadata
+        id: meta
+        run: |
+          echo "GIT_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
+          echo "BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
+          echo "REPOSITORY=expotoworld-${{ matrix.service }}-service" >> $GITHUB_ENV
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./expotoworld_backend
+          file: ./expotoworld_backend/deployments/docker/Dockerfile.${{ matrix.service }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:latest
+            ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ github.sha }}
+          build-args: |
+            GIT_SHA=${{ env.GIT_SHA }}
+            BUILD_TIME=${{ env.BUILD_TIME }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify image push
+        run: |
+          echo "✅ Successfully pushed: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:latest"
+          echo "✅ Successfully pushed: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ github.sha }}"

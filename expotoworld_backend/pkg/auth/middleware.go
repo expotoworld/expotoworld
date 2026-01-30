@@ -14,6 +14,7 @@ const (
 	RoleUser      = "user"
 	RoleCreator   = "creator"
 	RoleModerator = "moderator"
+	RoleAuthor    = "Author" // For ebook authors - case-sensitive match
 )
 
 // GinMiddlewareConfig configures the Gin auth middleware.
@@ -189,6 +190,66 @@ func RequireModerator() gin.HandlerFunc {
 	return RequireRoles(RoleModerator, RoleAdmin)
 }
 
+// RequireAuthor returns a middleware that requires author role (case-insensitive).
+// Used by ebook service for author-only operations like editing drafts.
+func RequireAuthor() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		claims, exists := c.Get("claims")
+		if !exists {
+			ForbiddenHandler(c, "Authentication required")
+			return
+		}
+
+		userClaims, ok := claims.(*Claims)
+		if !ok {
+			ForbiddenHandler(c, "Invalid authentication state")
+			return
+		}
+
+		// Case-insensitive check for "Author" role
+		if !hasAuthorRole(userClaims) {
+			ForbiddenHandler(c, "Author role required")
+			return
+		}
+
+		c.Next()
+	}
+}
+
+// RequireAdminOrAuthor returns a middleware that requires either admin or author role.
+// Used by ebook service for admin-like operations that authors should also access.
+func RequireAdminOrAuthor() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		claims, exists := c.Get("claims")
+		if !exists {
+			ForbiddenHandler(c, "Authentication required")
+			return
+		}
+
+		userClaims, ok := claims.(*Claims)
+		if !ok {
+			ForbiddenHandler(c, "Invalid authentication state")
+			return
+		}
+
+		// Check for admin role OR author role
+		isAdmin := strings.EqualFold(userClaims.Role, RoleAdmin)
+		for _, r := range userClaims.Roles {
+			if strings.EqualFold(r, RoleAdmin) {
+				isAdmin = true
+				break
+			}
+		}
+
+		if !isAdmin && !hasAuthorRole(userClaims) {
+			ForbiddenHandler(c, "Admin or Author role required")
+			return
+		}
+
+		c.Next()
+	}
+}
+
 // OptionalAuth extracts user info if present but doesn't require it.
 func OptionalAuth(validator *Validator) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -276,6 +337,15 @@ func IsCreator(c *gin.Context) bool {
 	return hasAnyRole(claims, RoleCreator, RoleAdmin)
 }
 
+// IsAuthor checks if the current user has author role (case-insensitive).
+func IsAuthor(c *gin.Context) bool {
+	claims, ok := GetClaimsFromContext(c)
+	if !ok {
+		return false
+	}
+	return hasAuthorRole(claims)
+}
+
 // hasAnyRole checks if claims have any of the specified roles.
 func hasAnyRole(claims *Claims, roles ...string) bool {
 	for _, role := range roles {
@@ -310,4 +380,17 @@ func hasAllRoles(claims *Claims, roles ...string) bool {
 // timeNow returns current time in RFC3339 format.
 func timeNow() string {
 	return time.Now().UTC().Format(time.RFC3339)
+}
+
+// hasAuthorRole checks if claims have author role (case-insensitive).
+func hasAuthorRole(claims *Claims) bool {
+	if strings.EqualFold(claims.Role, RoleAuthor) {
+		return true
+	}
+	for _, r := range claims.Roles {
+		if strings.EqualFold(r, RoleAuthor) {
+			return true
+		}
+	}
+	return false
 }

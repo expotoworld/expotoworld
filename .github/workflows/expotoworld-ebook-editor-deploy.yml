@@ -1,0 +1,111 @@
+# =============================================================================
+# EXPO to WORLD - Ebook Editor Frontend Deploy
+# =============================================================================
+# Builds and deploys the ebook editor to S3 + CloudFront
+#
+# Triggers:
+#   - Push to main branch (changes in expotoworld_ebook/)
+#   - Manual dispatch
+#
+# Deployment:
+#   - S3 Bucket: expotoworld-ebook-website
+#   - CloudFront Distribution: E25UL5QH3I1VIU
+#   - Production URL: https://huashangdao.expotoworld.com
+# =============================================================================
+
+name: Ebook Editor - Build and Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'expotoworld_ebook/**'
+      - '.github/workflows/expotoworld-ebook-editor-deploy.yml'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  S3_BUCKET: ${{ vars.S3_BUCKET_EBOOK }}
+  CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DIST_EBOOK }}
+  NODE_VERSION: '18'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: expotoworld_ebook/package-lock.json
+
+      - name: Install dependencies
+        working-directory: expotoworld_ebook
+        run: npm ci
+
+      - name: Build application
+        working-directory: expotoworld_ebook
+        run: npm run build
+        env:
+          # Production environment variables (from .env.production)
+          VITE_API_BASE: https://device-api.expotoworld.com
+          VITE_AUTH_BASE: https://device-api.expotoworld.com
+          VITE_CDN_BASE: https://assets.expotoworld.com
+          VITE_AUTH0_DOMAIN: expotoworld.jp.auth0.com
+          VITE_AUTH0_CLIENT_ID: QhSuFsHvvGZbUq3NNHVxLYbqBJLNvTBs
+          VITE_AUTH0_AUDIENCE: https://api.expotoworld.com
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/GitHubActionsECRPush-expotoworld
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to S3
+        working-directory: expotoworld_ebook
+        run: |
+          # Sync all files with long cache (except HTML)
+          aws s3 sync dist/ s3://${{ env.S3_BUCKET }}/ \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "*.html"
+          
+          # HTML files with no-cache for instant updates
+          aws s3 sync dist/ s3://${{ env.S3_BUCKET }}/ \
+            --cache-control "no-cache, no-store, must-revalidate" \
+            --exclude "*" \
+            --include "*.html"
+          
+          echo "✅ Deployed to S3: s3://${{ env.S3_BUCKET }}/"
+
+      - name: Invalidate CloudFront cache
+        run: |
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*" \
+            --query 'Invalidation.Id' \
+            --output text)
+          
+          echo "✅ CloudFront invalidation started: $INVALIDATION_ID"
+          echo "🌐 Site will be available at: https://huashangdao.expotoworld.com"
+
+      - name: Deployment Summary
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════════════════════════════════╗"
+          echo "║            Ebook Editor Deployment Complete                       ║"
+          echo "╚══════════════════════════════════════════════════════════════════╝"
+          echo ""
+          echo "📦 S3 Bucket: ${{ env.S3_BUCKET }}"
+          echo "🌐 CloudFront: ${{ env.CLOUDFRONT_DISTRIBUTION_ID }}"
+          echo "🔗 URL: https://huashangdao.expotoworld.com"
+          echo ""
