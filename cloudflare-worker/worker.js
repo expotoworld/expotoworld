@@ -101,8 +101,11 @@ export default {
     } else if (path.startsWith('/.well-known')) {
       // JWKS and other .well-known endpoints exposed at gateway root
       backendUrl = backends.AUTH;
-    } else if (path.startsWith('/api/auth')) {
-      // Auth service - handles all authentication
+    } else if (path.startsWith('/api/auth') || path.startsWith('/api/v1/auth')) {
+      // Auth service - handles all authentication (both /api/auth and /api/v1/auth)
+      backendUrl = backends.AUTH;
+    } else if (path.startsWith('/api/v1/admin/auth')) {
+      // Admin auth endpoints
       backendUrl = backends.AUTH;
     } else if (path.startsWith('/api/ebook')) {
       // Ebook service - handles both /api/ebook and /api/ebook/* routes
@@ -126,6 +129,8 @@ export default {
           message: `No backend service configured for path: ${path}`,
           available_routes: [
             '/api/auth/*',
+            '/api/v1/auth/*',
+            '/api/v1/admin/auth/*',
             '/api/admin/users/*',
             '/api/admin/carts/*',
             '/api/admin/orders/*',
