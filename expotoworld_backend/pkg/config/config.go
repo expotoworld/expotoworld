@@ -258,6 +258,11 @@ func setDefaults(v *viper.Viper) {
 	// The auth service derives the public key from the private key (standard RS256 behavior).
 	// Only set this if you explicitly store a separate public key in Secrets Manager.
 
+	// SES/SNS - Required for Viper's AutomaticEnv() to bind these environment variables
+	v.SetDefault("SES_SENDER_EMAIL", "")
+	v.SetDefault("SES_SENDER_NAME", "EXPO to WORLD")
+	v.SetDefault("SNS_SENDER_ID", "")
+
 	// CORS
 	v.SetDefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
 	v.SetDefault("CORS_ALLOW_CREDENTIALS", true)
