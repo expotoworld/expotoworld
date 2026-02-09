@@ -115,6 +115,13 @@ func run() error {
 	authServiceCfg.JWTPrivateKey = jwtPrivateKey
 	authServiceCfg.JWTIssuer = cfg.JWT.Issuer
 
+	// DEBUG: Log the JWT issuer being used - this is critical for cross-service validation
+	log.Info("JWT configuration loaded",
+		"jwt_issuer_from_config", cfg.JWT.Issuer,
+		"jwt_issuer_in_service_config", authServiceCfg.JWTIssuer,
+		"jwt_issuer_default", service.DefaultConfig().JWTIssuer,
+	)
+
 	authService, err := service.NewAuthService(
 		userRepo,
 		codeRepo,

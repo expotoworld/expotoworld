@@ -5,14 +5,14 @@
  * backend microservices running on AWS App Runner (production) or localhost (development).
  *
  * Deployed at: device-api.expotoworld.com
- * Last Updated: November 27, 2025
+ * Last Updated: February 2, 2026
  *
  * Production Backend Services (AWS App Runner):
- * - Auth Service: https://ge6ik5nm6e.eu-central-1.awsapprunner.com
- * - User Service: https://yumaw38pdp.eu-central-1.awsapprunner.com
- * - Catalog Service: https://kykqma8nq4.eu-central-1.awsapprunner.com
- * - Order Service: https://mttci22rgj.eu-central-1.awsapprunner.com
- * - Ebook Service: https://brdmfppyst.eu-central-1.awsapprunner.com
+ * - Auth Service: https://4qexmd5mk9.eu-central-1.awsapprunner.com
+ * - Ebook Service: https://255isteuvd.eu-central-1.awsapprunner.com
+ * - User Service: (not deployed yet)
+ * - Catalog Service: (not deployed yet)
+ * - Order Service: (not deployed yet)
  *
  * Local Development Ports:
  * - Auth Service: http://localhost:8081
@@ -24,8 +24,8 @@
 
 // Backend service URLs - use environment variables for local dev, fallback to production
 const getBackendUrls = (env) => {
-  // Check if running locally (wrangler dev sets certain env characteristics)
-  const isLocal = env?.LOCAL_DEV === 'true' || typeof env?.AUTH_SERVICE === 'undefined';
+  // Check if running locally (wrangler dev sets LOCAL_DEV=true)
+  const isLocal = env?.LOCAL_DEV === 'true';
 
   if (isLocal) {
     // Local development - connect to localhost services
@@ -38,13 +38,13 @@ const getBackendUrls = (env) => {
     };
   }
 
-  // Production - use AWS App Runner URLs
+  // Production - use AWS App Runner URLs (hardcoded for reliability)
   return {
-    AUTH: env?.AUTH_SERVICE || 'https://ge6ik5nm6e.eu-central-1.awsapprunner.com',
-    USER: env?.USER_SERVICE || 'https://yumaw38pdp.eu-central-1.awsapprunner.com',
-    CATALOG: env?.CATALOG_SERVICE || 'https://kykqma8nq4.eu-central-1.awsapprunner.com',
-    ORDER: env?.ORDER_SERVICE || 'https://mttci22rgj.eu-central-1.awsapprunner.com',
-    EBOOK: env?.EBOOK_SERVICE || 'https://brdmfppyst.eu-central-1.awsapprunner.com',
+    AUTH: 'https://4qexmd5mk9.eu-central-1.awsapprunner.com',
+    USER: 'https://yumaw38pdp.eu-central-1.awsapprunner.com',
+    CATALOG: 'https://kykqma8nq4.eu-central-1.awsapprunner.com',
+    ORDER: 'https://mttci22rgj.eu-central-1.awsapprunner.com',
+    EBOOK: 'https://255isteuvd.eu-central-1.awsapprunner.com',
   };
 };
 
@@ -67,12 +67,14 @@ export default {
     ];
 
     const origin = request.headers.get('Origin');
-    const allowOrigin = allowedOrigins.includes(origin) ? origin : '*';
+    // When credentials are used, the origin MUST be explicit (not '*').
+    // Only set CORS origin for allow-listed origins; reject others silently.
+    const allowOrigin = allowedOrigins.includes(origin) ? origin : null;
 
     const corsHeaders = {
-      'Access-Control-Allow-Origin': allowOrigin,
+      ...(allowOrigin ? { 'Access-Control-Allow-Origin': allowOrigin } : {}),
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, X-Require-Existing, X-Require-Role',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, X-Require-Existing, X-Require-Role, X-Device-Id',
       'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Max-Age': '86400',
     };
@@ -165,6 +167,10 @@ export default {
     headers.set('X-Forwarded-Proto', 'https');
     headers.set('X-Forwarded-Host', url.hostname);
     headers.set('X-Real-IP', request.headers.get('CF-Connecting-IP') || '');
+
+    // Extract backend hostname from URL and set correct Host header
+    const backendUrlObj = new URL(backendUrl);
+    headers.set('Host', backendUrlObj.hostname);
 
     // Create backend request
     const backendRequest = new Request(backendRequestUrl, {

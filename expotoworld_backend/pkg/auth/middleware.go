@@ -8,6 +8,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// DebugLogger is an interface for debug logging in the auth middleware.
+// Any logger that implements Error and Debug methods can be used.
+type DebugLogger interface {
+	Error(msg string, args ...any)
+	Debug(msg string, args ...any)
+}
+
 // Common role constants
 const (
 	RoleAdmin     = "admin"
@@ -23,6 +30,8 @@ type GinMiddlewareConfig struct {
 	SkipPaths        []string
 	SkipPathPrefixes []string
 	ErrorHandler     func(c *gin.Context, err error)
+	Debug            bool // Enable debug logging for auth failures
+	Logger           DebugLogger
 }
 
 // AuthErrorHandler is the default error handler for auth failures.
@@ -78,6 +87,31 @@ func GinAuthMiddleware(cfg *GinMiddlewareConfig) gin.HandlerFunc {
 		errorHandler = AuthErrorHandler
 	}
 
+	// Create debug error handler wrapper if debug is enabled
+	debugErrorHandler := func(c *gin.Context, err error) {
+		if cfg.Debug && cfg.Logger != nil {
+			authHeader := c.GetHeader("Authorization")
+			hasHeader := authHeader != ""
+			headerLen := len(authHeader)
+			headerPrefix := ""
+			if headerLen > 20 {
+				headerPrefix = authHeader[:20] + "..."
+			} else if hasHeader {
+				headerPrefix = authHeader
+			}
+
+			cfg.Logger.Error("auth middleware: token validation failed",
+				"error", err.Error(),
+				"path", c.Request.URL.Path,
+				"method", c.Request.Method,
+				"has_auth_header", hasHeader,
+				"auth_header_length", headerLen,
+				"auth_header_prefix", headerPrefix,
+			)
+		}
+		errorHandler(c, err)
+	}
+
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path
 
@@ -101,14 +135,24 @@ func GinAuthMiddleware(cfg *GinMiddlewareConfig) gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 		tokenString, err := ExtractTokenFromHeader(authHeader)
 		if err != nil {
-			errorHandler(c, err)
+			debugErrorHandler(c, err)
 			return
 		}
 
 		claims, err := cfg.Validator.ValidateToken(tokenString)
 		if err != nil {
-			errorHandler(c, err)
+			debugErrorHandler(c, err)
 			return
+		}
+
+		// Debug log successful validation
+		if cfg.Debug && cfg.Logger != nil {
+			cfg.Logger.Debug("auth middleware: token validated successfully",
+				"path", path,
+				"user_id", claims.UserID,
+				"email", claims.Email,
+				"issuer", claims.Issuer,
+			)
 		}
 
 		// Store claims in context

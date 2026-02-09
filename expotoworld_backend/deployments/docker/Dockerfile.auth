@@ -51,9 +51,9 @@ USER appuser
 # Expose service port
 EXPOSE 8081
 
-# Health check
+# Health check - uses /live endpoint as implemented in the Go service
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8081/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8081/live || exit 1
 
 # Run the service
 CMD ["./auth-service"]

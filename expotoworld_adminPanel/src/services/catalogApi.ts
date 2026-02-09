@@ -3,10 +3,13 @@
  * Handles communication with the catalog-service backend for products, categories, stores, and regions.
  */
 import axios, { type AxiosInstance } from 'axios';
+import { getDeviceId, refreshAccessToken } from './authApi';
 
 // ============================================
 // API CONFIGURATION
 // ============================================
+
+const STORAGE_KEY = 'expotoworld-admin-auth';
 
 // Get catalog API base URL from environment or default to localhost
 function getCatalogApiUrl(): string {
@@ -17,20 +20,24 @@ function getCatalogApiUrl(): string {
 const catalogApi: AxiosInstance = axios.create({
   baseURL: getCatalogApiUrl(),
   timeout: 15000,
+  withCredentials: true, // Send httpOnly cookies for dual-storage
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Add auth interceptor (will use stored token when auth is implemented)
+// Request interceptor: attach Bearer token and X-Device-Id
 catalogApi.interceptors.request.use(
   (config) => {
-    const tokenData = localStorage.getItem('admin_token');
+    // Always send device ID for stable fingerprinting
+    config.headers['X-Device-Id'] = getDeviceId();
+
+    const tokenData = localStorage.getItem(STORAGE_KEY);
     if (tokenData) {
       try {
-        const { access_token } = JSON.parse(tokenData);
-        if (access_token) {
-          config.headers.Authorization = `Bearer ${access_token}`;
+        const { accessToken } = JSON.parse(tokenData);
+        if (accessToken) {
+          config.headers.Authorization = `Bearer ${accessToken}`;
         }
       } catch {
         // Invalid token data, ignore
@@ -39,6 +46,86 @@ catalogApi.interceptors.request.use(
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+// Response interceptor: auto-refresh on 401 and retry the failed request
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value: unknown) => void;
+  reject: (reason: unknown) => void;
+}> = [];
+
+const processQueue = (error: unknown, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+catalogApi.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Only handle 401 and avoid infinite loops
+    if (error.response?.status !== 401 || originalRequest._retry) {
+      return Promise.reject(error);
+    }
+
+    if (isRefreshing) {
+      // Queue the request until the token is refreshed
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      }).then((token) => {
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+        return catalogApi(originalRequest);
+      });
+    }
+
+    originalRequest._retry = true;
+    isRefreshing = true;
+
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (!stored?.refreshToken) throw new Error('No refresh token');
+
+      const response = await refreshAccessToken(stored.refreshToken);
+
+      // Save new tokens
+      const expiresAt = Date.now() + response.expires_in * 1000;
+      const refreshExpiresAt =
+        response.refresh_expires_at ||
+        (response.refresh_expires_in
+          ? new Date(Date.now() + response.refresh_expires_in * 1000).toISOString()
+          : stored.refreshExpiresAt);
+
+      const newStored = {
+        accessToken: response.access_token,
+        refreshToken: response.refresh_token,
+        expiresAt,
+        refreshExpiresAt,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newStored));
+
+      processQueue(null, response.access_token);
+
+      // Retry original request with new token
+      originalRequest.headers.Authorization = `Bearer ${response.access_token}`;
+      return catalogApi(originalRequest);
+    } catch (refreshError) {
+      processQueue(refreshError);
+      // Clear auth and force re-login
+      localStorage.removeItem(STORAGE_KEY);
+      window.location.href = '/login';
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
+  }
 );
 
 // ============================================

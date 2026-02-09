@@ -7,6 +7,7 @@ library;
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/auth/auth.dart';
@@ -83,14 +84,22 @@ final authProvider = NotifierProvider<AuthNotifier, AuthState>(() {
 /// Auth state notifier
 class AuthNotifier extends Notifier<AuthState> {
   Timer? _refreshTimer;
+  _LifecycleObserver? _lifecycleObserver;
 
   AuthRepository get _repository => ref.read(authRepositoryProvider);
 
   @override
   AuthState build() {
-    // Clean up timer on dispose
+    // Set up lifecycle observer for app resume recovery
+    _lifecycleObserver = _LifecycleObserver(onResumed: _onAppResumed);
+    WidgetsBinding.instance.addObserver(_lifecycleObserver!);
+
+    // Clean up timer and lifecycle observer on dispose
     ref.onDispose(() {
       _refreshTimer?.cancel();
+      if (_lifecycleObserver != null) {
+        WidgetsBinding.instance.removeObserver(_lifecycleObserver!);
+      }
     });
 
     // Check initial auth status
@@ -172,6 +181,57 @@ class AuthNotifier extends Notifier<AuthState> {
     });
   }
 
+  /// Called when app returns to foreground — Instagram-like recovery
+  Future<void> _onAppResumed() async {
+    if (state is! AuthAuthenticated) return;
+
+    developer.log('App resumed — checking token freshness', name: 'AuthNotifier');
+
+    final storage = ref.read(secureStorageProvider);
+    final jwtService = ref.read(jwtServiceProvider);
+
+    // First check if the refresh token itself has expired
+    final refreshExpiry = await storage.getRefreshTokenExpiry();
+    if (refreshExpiry != null && DateTime.now().isAfter(refreshExpiry)) {
+      developer.log(
+        'Refresh token expired (${refreshExpiry.toIso8601String()}) — logging out',
+        name: 'AuthNotifier',
+      );
+      state = const AuthUnauthenticated();
+      await _repository.logout();
+      return;
+    }
+
+    // Check if access token is expired or about to expire (< 2 min remaining)
+    final accessToken = await storage.getAccessToken();
+    if (accessToken == null) {
+      developer.log('No access token found on resume — logging out', name: 'AuthNotifier');
+      state = const AuthUnauthenticated();
+      return;
+    }
+
+    final isExpired = jwtService.isExpired(accessToken, buffer: Duration.zero);
+    final remaining = jwtService.getTimeUntilExpiration(accessToken);
+    final needsRefresh = isExpired || (remaining != null && remaining.inMinutes < 2);
+
+    if (needsRefresh) {
+      developer.log(
+        'Token expired or expiring soon (remaining: ${remaining?.inSeconds}s) — refreshing',
+        name: 'AuthNotifier',
+      );
+      final success = await _repository.refreshAccessToken();
+
+      if (success) {
+        _scheduleTokenRefresh();
+      } else {
+        state = const AuthUnauthenticated();
+      }
+    } else {
+      // Token still valid — reschedule timer (may have been killed in background)
+      _scheduleTokenRefresh();
+    }
+  }
+
   /// Get current user if authenticated
   UserModel? get currentUser {
     final s = state;
@@ -199,3 +259,20 @@ final currentUserProvider = Provider<UserModel?>((ref) {
   }
   return null;
 });
+
+/// Lifecycle observer that triggers token refresh when app resumes from background.
+/// This ensures session continuity after the app has been suspended — 
+/// the 13-minute Timer gets killed by the OS in background, so on resume
+/// we immediately check freshness and refresh if needed.
+class _LifecycleObserver extends WidgetsBindingObserver {
+  final Future<void> Function() onResumed;
+
+  _LifecycleObserver({required this.onResumed});
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      onResumed(); // fire-and-forget — didChangeAppLifecycleState is void
+    }
+  }
+}

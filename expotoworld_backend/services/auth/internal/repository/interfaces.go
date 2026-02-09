@@ -55,6 +55,10 @@ type RefreshTokenRepository interface {
 	// Create creates a new refresh token.
 	Create(ctx context.Context, token *domain.RefreshToken) (string, error)
 
+	// CreateOrUpdate creates a new refresh token or updates an existing one for the same user+device.
+	// This uses an atomic UPSERT operation to prevent duplicate key violations.
+	CreateOrUpdate(ctx context.Context, token *domain.RefreshToken) (string, error)
+
 	// FindByHash retrieves a refresh token by its hash.
 	FindByHash(ctx context.Context, tokenHash string) (*domain.RefreshToken, error)
 

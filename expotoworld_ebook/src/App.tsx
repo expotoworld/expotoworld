@@ -221,6 +221,26 @@ export default function App() {
     })()
   }, [])
 
+  // Proactively refresh token when user returns to the tab (e.g. after hours away)
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') return
+      const exp = getAccessTokenExp()
+      // If access token is expired or expires within 60s, refresh silently
+      if (!exp || exp - Date.now() < 60_000) {
+        refreshOnce()
+          .then((newTok) => setToken(newTok))
+          .catch(() => {
+            // Refresh failed — session is dead, force re-login
+            clearTokens()
+            setToken(null)
+          })
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [])
+
   const saveDraft = useCallback(async (json: any) => {
     if (!token || !ebookId) return
     markSaving()

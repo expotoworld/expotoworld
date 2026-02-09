@@ -8,6 +8,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:uuid/uuid.dart';
 
 /// Secure Storage Service Provider
 final secureStorageProvider = Provider<SecureStorageService>((ref) {
@@ -19,6 +20,8 @@ class _StorageKeys {
   static const String accessToken = 'access_token';
   static const String refreshToken = 'refresh_token';
   static const String tokenExpiry = 'token_expiry';
+  static const String refreshTokenExpiry = 'refresh_token_expiry';
+  static const String deviceId = 'device_id';
   static const String userId = 'user_id';
   static const String userEmail = 'user_email';
   static const String userPhone = 'user_phone';
@@ -86,6 +89,21 @@ class SecureStorageService {
     return DateTime.tryParse(expiryString);
   }
 
+  /// Save refresh token expiry (for tracking session age)
+  Future<void> saveRefreshTokenExpiry(DateTime expiry) async {
+    await _storage.write(
+      key: _StorageKeys.refreshTokenExpiry,
+      value: expiry.toIso8601String(),
+    );
+  }
+
+  /// Get refresh token expiry
+  Future<DateTime?> getRefreshTokenExpiry() async {
+    final expiryString = await _storage.read(key: _StorageKeys.refreshTokenExpiry);
+    if (expiryString == null) return null;
+    return DateTime.tryParse(expiryString);
+  }
+
   /// Check if tokens exist
   Future<bool> hasTokens() async {
     final accessToken = await getAccessToken();
@@ -98,7 +116,24 @@ class SecureStorageService {
       _storage.delete(key: _StorageKeys.accessToken),
       _storage.delete(key: _StorageKeys.refreshToken),
       _storage.delete(key: _StorageKeys.tokenExpiry),
+      _storage.delete(key: _StorageKeys.refreshTokenExpiry),
     ]);
+  }
+
+  // ============================================================
+  // Device ID Management
+  // ============================================================
+
+  /// Get or create a persistent device ID for stable server-side fingerprinting.
+  /// The device ID is a UUID v4 stored in secure storage and survives app reinstalls
+  /// on platforms that support it (iOS Keychain, Android EncryptedSharedPreferences).
+  Future<String> getDeviceId() async {
+    String? id = await _storage.read(key: _StorageKeys.deviceId);
+    if (id == null || id.isEmpty) {
+      id = const Uuid().v4();
+      await _storage.write(key: _StorageKeys.deviceId, value: id);
+    }
+    return id;
   }
 
   // ============================================================
@@ -177,9 +212,14 @@ class SecureStorageService {
   // Utility Methods
   // ============================================================
 
-  /// Clear all stored data (logout)
+  /// Clear all stored data (logout) but preserve device ID for stable fingerprinting
   Future<void> clearAll() async {
+    // Preserve device ID across logouts for consistent server-side fingerprinting
+    final deviceId = await _storage.read(key: _StorageKeys.deviceId);
     await _storage.deleteAll();
+    if (deviceId != null && deviceId.isNotEmpty) {
+      await _storage.write(key: _StorageKeys.deviceId, value: deviceId);
+    }
   }
 
   /// Check if storage contains any data

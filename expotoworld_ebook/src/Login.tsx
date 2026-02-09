@@ -19,7 +19,7 @@ import {
   Timer as TimerIcon
 } from '@mui/icons-material';
 import axios from 'axios';
-import { setAccessToken, setRefreshToken } from './auth';
+import { setAccessToken, setRefreshToken, getDeviceId } from './auth';
 
 interface LoginNewProps {
   onToken: (token: string) => void;
@@ -70,29 +70,42 @@ export default function LoginNew({ onToken }: LoginNewProps) {
       const res = await axios.post(
         `${AUTH_BASE}/api/v1/auth/verify-code`,
         { email, code },
-        { headers: { 'X-Require-Existing': 'true', 'X-Require-Role': 'Author' } }
+        {
+          withCredentials: true,
+          headers: {
+            'X-Require-Existing': 'true',
+            'X-Require-Role': 'Author',
+            'X-Device-Id': getDeviceId(),
+          },
+        }
       );
 
-      // Backend returns: access_token, refresh_token, token_type, expires_in (seconds)
+      // Backend returns: access_token, refresh_token, token_type, expires_in,
+      //                  refresh_expires_in, refresh_expires_at
       const accessToken: string = res.data?.access_token;
       const refreshToken: string | undefined = res.data?.refresh_token;
-      const expiresIn: number = res.data?.expires_in || 3600; // seconds
+      const expiresIn: number = res.data?.expires_in || 900; // seconds
 
       // Calculate expires_at from expires_in
       const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
-      // Refresh tokens typically last longer (e.g., 7 days)
-      const refreshExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      // Use server-provided refresh expiry (or sensible fallback)
+      const refreshExpiresAt: string | undefined =
+        res.data?.refresh_expires_at
+        || (res.data?.refresh_expires_in
+            ? new Date(Date.now() + res.data.refresh_expires_in * 1000).toISOString()
+            : undefined)
+        || (refreshToken
+            ? new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
+            : undefined);
 
       if (!accessToken) {
         setError('Authentication failed - no token received');
         return;
       }
 
-      // Note: The X-Require-Role header on the request enforces the Author role check on the backend
-      // If we reach this point, the user is already validated as an Author
-
       setAccessToken(accessToken, expiresAt);
-      if (refreshToken) setRefreshToken(refreshToken, refreshExpiresAt);
+      if (refreshToken && refreshExpiresAt) setRefreshToken(refreshToken, refreshExpiresAt);
       onToken(accessToken);
     } catch (e: any) {
       setError(e?.response?.data?.message || 'Invalid verification code');
@@ -122,7 +135,14 @@ export default function LoginNew({ onToken }: LoginNewProps) {
       const response = await axios.post(
         `${AUTH_BASE}/api/v1/auth/send-code`,
         { email },
-        { headers: { 'X-Require-Existing': 'true', 'X-Require-Role': 'Author' } }
+        {
+          withCredentials: true,
+          headers: {
+            'X-Require-Existing': 'true',
+            'X-Require-Role': 'Author',
+            'X-Device-Id': getDeviceId(),
+          },
+        }
       );
 
       setCodeExpiry(response.data.expires_at);

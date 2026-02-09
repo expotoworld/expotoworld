@@ -54,7 +54,7 @@ type Config struct {
 // DefaultConfig returns the default configuration.
 func DefaultConfig() Config {
 	return Config{
-		JWTIssuer:       "expotoworld.com",
+		JWTIssuer:       "expotoworld", // Must match across all services validating JWTs
 		AccessTokenTTL:  15 * time.Minute,
 		RefreshTokenTTL: 90 * 24 * time.Hour, // 90 days
 	}
@@ -247,7 +247,7 @@ type AuthResult struct {
 }
 
 // VerifyCode verifies the OTP code and returns authentication tokens.
-func (s *AuthService) VerifyCode(ctx context.Context, contact, code string, actorType domain.ActorType, ipAddress, userAgent *string) (*AuthResult, error) {
+func (s *AuthService) VerifyCode(ctx context.Context, contact, code string, actorType domain.ActorType, ipAddress, userAgent, clientDeviceID *string) (*AuthResult, error) {
 	// Determine channel type based on contact
 	useEmail := isEmail(contact)
 	var channelType domain.ChannelType
@@ -351,13 +351,18 @@ func (s *AuthService) VerifyCode(ctx context.Context, contact, code string, acto
 		return nil, err
 	}
 
-	refreshToken, plainRefreshToken, err := domain.NewRefreshToken(user.ID, ipAddress, userAgent)
+	refreshToken, plainRefreshToken, err := domain.NewRefreshToken(user.ID, clientDeviceID, userAgent)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 
-	// Store refresh token
-	if _, err := s.tokenRepo.Create(ctx, refreshToken); err != nil {
+	// Store refresh token — also store IP/UA for audit logging
+	refreshToken.IPAddress = ipAddress
+	refreshToken.UserAgent = userAgent
+
+	// Store refresh token using atomic CreateOrUpdate to prevent duplicate key violations
+	// This atomically revokes any existing token for this user+device and creates the new one
+	if _, err := s.tokenRepo.CreateOrUpdate(ctx, refreshToken); err != nil {
 		return nil, fmt.Errorf("failed to store refresh token: %w", err)
 	}
 

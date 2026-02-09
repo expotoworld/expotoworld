@@ -6,6 +6,8 @@ import {
   logout as logoutApi,
   decodeJWT,
   isTokenExpired,
+  getDeviceId,
+  type TokenResponse,
 } from '@services/authApi';
 
 // Admin user extracted from JWT
@@ -46,11 +48,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'expotoworld-admin-auth';
 const REFRESH_BUFFER_MS = 60 * 1000; // Refresh 1 minute before expiry
+const DEFAULT_REFRESH_TTL_DAYS = 90; // Fallback if backend doesn't send refresh_expires_at
 
 interface StoredAuth {
   accessToken: string;
   refreshToken: string;
   expiresAt: number;
+  refreshExpiresAt: string; // ISO 8601 timestamp
 }
 
 interface AuthProviderProps {
@@ -80,15 +84,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   // Save tokens to storage
-  const saveTokens = useCallback((accessToken: string, refreshToken: string, expiresIn: number) => {
-    const expiresAt = Date.now() + expiresIn * 1000;
-    const storedAuth: StoredAuth = { accessToken, refreshToken, expiresAt };
+  const saveTokens = useCallback((response: TokenResponse) => {
+    const expiresAt = Date.now() + response.expires_in * 1000;
+    // Use backend's refresh_expires_at, then refresh_expires_in, then default 90 days
+    const refreshExpiresAt =
+      response.refresh_expires_at ||
+      (response.refresh_expires_in
+        ? new Date(Date.now() + response.refresh_expires_in * 1000).toISOString()
+        : new Date(Date.now() + DEFAULT_REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString());
+
+    const storedAuth: StoredAuth = {
+      accessToken: response.access_token,
+      refreshToken: response.refresh_token,
+      expiresAt,
+      refreshExpiresAt,
+    };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(storedAuth));
     setTokens(storedAuth);
     return storedAuth;
   }, []);
 
-  // Clear tokens from storage
+  // Clear tokens from storage (preserves device ID for stable fingerprinting)
   const clearTokens = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     setTokens(null);
@@ -111,7 +127,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       const response = await refreshAccessToken(stored.refreshToken);
-      const newTokens = saveTokens(response.access_token, response.refresh_token, response.expires_in);
+      const newTokens = saveTokens(response);
       const newUser = extractUserFromToken(response.access_token);
       setUser(newUser);
       return newTokens;
@@ -142,6 +158,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Check for existing session on mount
   useEffect(() => {
+    // Ensure device ID is initialized early
+    getDeviceId();
+
     const checkAuth = async () => {
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
@@ -182,7 +201,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     checkAuth();
 
+    // Visibility change listener: refresh token when tab becomes visible
+    // This handles Chrome's aggressive timer throttling for background tabs
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      try {
+        const stored: StoredAuth = JSON.parse(raw);
+        // If access token is expired or within 60 s of expiry, refresh proactively
+        if (isTokenExpired(stored.accessToken)) {
+          refreshTokens().then((fresh) => {
+            if (fresh) {
+              scheduleRefresh(fresh.expiresAt);
+            }
+          });
+        }
+      } catch {
+        // Malformed storage – ignore
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
       if (refreshTimerRef.current) {
         clearTimeout(refreshTimerRef.current);
       }
@@ -217,8 +259,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await verifyAdminCode(pendingEmail, code);
       
-      // Save tokens
-      const newTokens = saveTokens(response.access_token, response.refresh_token, response.expires_in);
+      // Save tokens (including refresh_expires_at from backend)
+      const newTokens = saveTokens(response);
       
       // Extract user from token
       const newUser = extractUserFromToken(response.access_token);

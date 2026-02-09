@@ -41,6 +41,7 @@ func DefaultCORSConfig() *CORSConfig {
 			"X-Request-ID",
 			"X-Require-Existing",
 			"X-Require-Role",
+			"X-Device-Id",
 		},
 		ExposedHeaders: []string{
 			"X-Correlation-ID",

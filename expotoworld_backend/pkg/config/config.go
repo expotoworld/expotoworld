@@ -175,6 +175,12 @@ func load() (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
+	// WORKAROUND: viper's Unmarshal with mapstructure:",squash" doesn't properly
+	// populate nested struct fields from AutomaticEnv() bindings. We must manually
+	// populate common fields that might be empty after unmarshal.
+	// This affects any field in a nested struct that uses the squash tag.
+	populateFromViper(v, &config)
+
 	// Parse CORS allowed origins from comma-separated string
 	if corsOrigins := v.GetString("CORS_ALLOWED_ORIGINS"); corsOrigins != "" {
 		config.CORS.AllowedOrigins = strings.Split(corsOrigins, ",")
@@ -202,6 +208,7 @@ func load() (*Config, error) {
 			"X-Request-ID",
 			"X-Require-Existing",
 			"X-Require-Role",
+			"X-Device-Id",
 		}
 	}
 
@@ -219,6 +226,59 @@ func load() (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+// populateFromViper manually populates config fields from viper.
+// This is needed because viper's Unmarshal with mapstructure:",squash" doesn't
+// properly populate nested struct fields from AutomaticEnv() or SetDefault() bindings.
+// The env vars are accessible via viper.Get() but not in the unmarshaled struct.
+func populateFromViper(v *viper.Viper, config *Config) {
+	// JWT settings - critical for auth validation across services
+	if config.JWT.Issuer == "" {
+		config.JWT.Issuer = v.GetString("JWT_ISSUER")
+	}
+	if config.JWT.Audience == "" {
+		config.JWT.Audience = v.GetString("JWT_AUDIENCE")
+	}
+	if config.JWT.JWKSURL == "" {
+		config.JWT.JWKSURL = v.GetString("JWKS_URL")
+	}
+	if config.JWT.PrivateKeyPEM == "" {
+		config.JWT.PrivateKeyPEM = v.GetString("JWT_PRIVATE_KEY_PEM")
+	}
+	if config.JWT.PublicKeyPEM == "" {
+		config.JWT.PublicKeyPEM = v.GetString("JWT_PUBLIC_KEY_PEM")
+	}
+
+	// Database URL
+	if config.Database.URL == "" {
+		config.Database.URL = v.GetString("DATABASE_URL")
+	}
+
+	// Server ports - commonly needed across services
+	if config.Server.AuthPort == 0 {
+		config.Server.AuthPort = v.GetInt("AUTH_SERVICE_PORT")
+	}
+	if config.Server.CatalogPort == 0 {
+		config.Server.CatalogPort = v.GetInt("CATALOG_SERVICE_PORT")
+	}
+	if config.Server.EbookPort == 0 {
+		config.Server.EbookPort = v.GetInt("EBOOK_SERVICE_PORT")
+	}
+	if config.Server.OrderPort == 0 {
+		config.Server.OrderPort = v.GetInt("ORDER_SERVICE_PORT")
+	}
+	if config.Server.UserPort == 0 {
+		config.Server.UserPort = v.GetInt("USER_SERVICE_PORT")
+	}
+
+	// AWS settings
+	if config.AWS.S3BucketEbooks == "" {
+		config.AWS.S3BucketEbooks = v.GetString("AWS_S3_BUCKET_EBOOKS")
+	}
+	if config.AWS.CloudFrontDomain == "" {
+		config.AWS.CloudFrontDomain = v.GetString("CLOUDFRONT_DOMAIN")
+	}
 }
 
 // setDefaults configures default values for configuration.
@@ -246,6 +306,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("DATABASE_MAX_CONN_IDLE_TIME", "5m")
 
 	// JWT
+	v.SetDefault("JWT_ISSUER", "expotoworld") // Must match across all services
+	v.SetDefault("JWT_AUDIENCE", "")          // Empty = skip audience validation
 	v.SetDefault("JWT_ACCESS_TOKEN_EXPIRY", "15m")
 	v.SetDefault("JWT_REFRESH_TOKEN_EXPIRY", "168h")
 	v.SetDefault("JWKS_URL", "http://localhost:8081/.well-known/jwks.json")
@@ -253,10 +315,11 @@ func setDefaults(v *viper.Viper) {
 	// AWS
 	v.SetDefault("AWS_REGION", "eu-central-1")
 	v.SetDefault("AWS_SECRET_DATABASE", "expotoworld/neon/db")
-	v.SetDefault("AWS_SECRET_JWT_PRIVATE", "expotoworld/jwt/rs256/private_pem")
-	// Note: AWS_SECRET_JWT_PUBLIC is intentionally not set by default.
-	// The auth service derives the public key from the private key (standard RS256 behavior).
-	// Only set this if you explicitly store a separate public key in Secrets Manager.
+	// Note: AWS_SECRET_JWT_PRIVATE is intentionally NOT set by default.
+	// Only the auth service needs to sign JWTs - other services validate via JWKS.
+	// Set this ONLY in auth service: AWS_SECRET_JWT_PRIVATE=expotoworld/jwt/rs256/private_pem
+	// Note: AWS_SECRET_JWT_PUBLIC is also not set - the auth service derives the public key
+	// from the private key (standard RS256 behavior), and other services use JWKS.
 
 	// SES/SNS - Required for Viper's AutomaticEnv() to bind these environment variables
 	v.SetDefault("SES_SENDER_EMAIL", "")
@@ -282,7 +345,27 @@ func setDefaults(v *viper.Viper) {
 }
 
 // loadAWSSecrets loads sensitive configuration from AWS Secrets Manager.
+// It only loads secrets that are not already provided via environment variables OR .env file.
 func loadAWSSecrets(config *Config) error {
+	// Check if we actually need to load any secrets
+	//
+	// We check the config struct which has been populated by populateFromViper().
+	// This captures values from BOTH:
+	// 1. OS environment variables (used in App Runner production)
+	// 2. .env file loaded by Viper (used in local development)
+	//
+	// Previously we used os.Getenv() which only sees OS env vars, not .env file values.
+	// This caused local dev (APP_ENV=staging) to incorrectly load from AWS Secrets Manager
+	// because os.Getenv("DATABASE_URL") returned "" even though .env had the value.
+	needsDBSecret := config.Database.AWSSecretPath != "" && config.Database.URL == ""
+	needsJWTPrivate := config.JWT.AWSSecretPrivate != "" && config.JWT.PrivateKeyPEM == ""
+	needsJWTPublic := config.JWT.AWSSecretPublic != "" && config.JWT.PublicKeyPEM == ""
+
+	// If all secrets are already provided, skip AWS SDK initialization entirely
+	if !needsDBSecret && !needsJWTPrivate && !needsJWTPublic {
+		return nil
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -297,7 +380,7 @@ func loadAWSSecrets(config *Config) error {
 	client := secretsmanager.NewFromConfig(awsCfg)
 
 	// Load database URL
-	if config.Database.AWSSecretPath != "" && config.Database.URL == "" {
+	if needsDBSecret {
 		secret, err := getSecret(ctx, client, config.Database.AWSSecretPath)
 		if err != nil {
 			return fmt.Errorf("failed to load database secret: %w", err)
@@ -315,7 +398,7 @@ func loadAWSSecrets(config *Config) error {
 	}
 
 	// Load JWT private key
-	if config.JWT.AWSSecretPrivate != "" && config.JWT.PrivateKeyPEM == "" {
+	if needsJWTPrivate {
 		secret, err := getSecret(ctx, client, config.JWT.AWSSecretPrivate)
 		if err != nil {
 			return fmt.Errorf("failed to load JWT private key: %w", err)
@@ -324,7 +407,7 @@ func loadAWSSecrets(config *Config) error {
 	}
 
 	// Load JWT public key
-	if config.JWT.AWSSecretPublic != "" && config.JWT.PublicKeyPEM == "" {
+	if needsJWTPublic {
 		secret, err := getSecret(ctx, client, config.JWT.AWSSecretPublic)
 		if err != nil {
 			return fmt.Errorf("failed to load JWT public key: %w", err)

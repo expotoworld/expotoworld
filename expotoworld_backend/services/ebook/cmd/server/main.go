@@ -67,6 +67,33 @@ func run() error {
 		"environment", cfg.App.Env,
 	)
 
+	// Debug: Log database endpoint (mask password for security)
+	if cfg.App.Debug {
+		// Extract just the host from the database URL for logging
+		dbURL := cfg.Database.URL
+		if len(dbURL) > 0 {
+			// Find the @ symbol to get the host portion
+			atIdx := -1
+			for i, c := range dbURL {
+				if c == '@' {
+					atIdx = i
+					break
+				}
+			}
+			if atIdx > 0 && atIdx < len(dbURL)-1 {
+				hostPart := dbURL[atIdx+1:]
+				// Truncate at first / to get just host:port
+				for i, c := range hostPart {
+					if c == '/' {
+						hostPart = hostPart[:i]
+						break
+					}
+				}
+				log.Debug("Database configuration", "host", hostPart)
+			}
+		}
+	}
+
 	// Initialize database pool
 	pool, err := database.NewPool(ctx, &database.PoolConfig{
 		URL:             cfg.Database.URL,
@@ -163,8 +190,13 @@ func run() error {
 	// Use auth service's JWKS endpoint for JWT validation
 	// Note: JWKS is at root level, not under /api/v1/auth
 	jwksURL := getEnvOrDefault("JWKS_URL", "http://localhost:8081/.well-known/jwks.json")
-	jwtIssuer := getEnvOrDefault("JWT_ISSUER", "expotoworld.com")
-	jwtAudience := getEnvOrDefault("JWT_AUDIENCE", "") // Empty means skip audience validation
+	jwtIssuer := getEnvOrDefault("JWT_ISSUER", "expotoworld") // Must match auth service issuer
+	jwtAudience := getEnvOrDefault("JWT_AUDIENCE", "")        // Empty means skip audience validation
+	log.Info("initializing auth validator",
+		"jwks_url", jwksURL,
+		"jwt_issuer", jwtIssuer,
+		"jwt_audience", jwtAudience,
+	)
 	validator, err := auth.NewValidator(auth.ValidatorConfig{
 		JWKSURL:  jwksURL,
 		Issuer:   jwtIssuer,
@@ -174,8 +206,12 @@ func run() error {
 		return fmt.Errorf("initialize auth validator: %w", err)
 	}
 
+	// Enable debug logging for auth middleware in non-production environments
+	authDebugEnabled := cfg.App.Env != "production"
 	authMiddleware := auth.GinAuthMiddleware(&auth.GinMiddlewareConfig{
 		Validator: validator,
+		Debug:     authDebugEnabled,
+		Logger:    log,
 	})
 
 	if cfg.App.Env == "production" {

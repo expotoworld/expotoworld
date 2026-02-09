@@ -62,36 +62,41 @@ func HashRefreshToken(token string) string {
 }
 
 // GenerateDeviceFingerprint creates a stable fingerprint for device identification.
-// Uses IP address and user agent to identify unique devices.
-func GenerateDeviceFingerprint(ipAddress, userAgent *string) *string {
-	if ipAddress == nil && userAgent == nil {
-		return nil
+// Priority order:
+//  1. Client-provided device ID (most stable — persists across network changes)
+//  2. User-Agent only (stable across IP changes, common per browser+OS)
+//  3. nil if nothing available
+//
+// IP address is intentionally excluded because it changes frequently (mobile networks,
+// VPN toggling, ISP rotation), causing orphan tokens and unnecessary re-authentication.
+func GenerateDeviceFingerprint(clientDeviceID *string, userAgent *string) *string {
+	// Prefer client-generated persistent device ID (stored in localStorage/cookie)
+	if clientDeviceID != nil && *clientDeviceID != "" {
+		hash := sha256.Sum256([]byte("device:" + *clientDeviceID))
+		fingerprint := base64.RawURLEncoding.EncodeToString(hash[:16])
+		return &fingerprint
 	}
 
-	// Combine IP and user-agent for fingerprint
-	// Use first part of IP (subnet) for stability when IP changes slightly
-	data := ""
-	if ipAddress != nil {
-		data += *ipAddress
-	}
-	if userAgent != nil {
-		data += "|" + *userAgent
+	// Fallback: User-Agent only (no IP — too volatile)
+	if userAgent != nil && *userAgent != "" {
+		hash := sha256.Sum256([]byte("ua:" + *userAgent))
+		fingerprint := base64.RawURLEncoding.EncodeToString(hash[:16])
+		return &fingerprint
 	}
 
-	hash := sha256.Sum256([]byte(data))
-	fingerprint := base64.RawURLEncoding.EncodeToString(hash[:16]) // Use first 16 bytes for shorter fingerprint
-	return &fingerprint
+	return nil
 }
 
 // NewRefreshToken creates a new refresh token entity.
-func NewRefreshToken(userID string, ipAddress, userAgent *string) (*RefreshToken, string, error) {
+// clientDeviceID is a persistent identifier sent by web clients (preferred for fingerprinting).
+func NewRefreshToken(userID string, clientDeviceID, userAgent *string) (*RefreshToken, string, error) {
 	plainToken, tokenHash, err := GenerateRefreshToken()
 	if err != nil {
 		return nil, "", err
 	}
 
 	now := time.Now()
-	fingerprint := GenerateDeviceFingerprint(ipAddress, userAgent)
+	fingerprint := GenerateDeviceFingerprint(clientDeviceID, userAgent)
 
 	return &RefreshToken{
 		UserID:            userID,
@@ -99,7 +104,6 @@ func NewRefreshToken(userID string, ipAddress, userAgent *string) (*RefreshToken
 		IssuedAt:          now,
 		ExpiresAt:         now.Add(RefreshTokenTTL),
 		Revoked:           false,
-		IPAddress:         ipAddress,
 		UserAgent:         userAgent,
 		DeviceFingerprint: fingerprint,
 	}, plainToken, nil
