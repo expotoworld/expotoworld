@@ -1,75 +1,157 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
-  Paper,
+  Card,
+  CardContent,
   TextField,
   Button,
   Typography,
+  InputAdornment,
+  IconButton,
   Alert,
   CircularProgress,
-  Container,
-  Stepper,
-  Step,
-  StepLabel,
-  LinearProgress
+  Fade,
+  Link,
+  CssBaseline,
 } from '@mui/material';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
 import {
   Email as EmailIcon,
-  Security as SecurityIcon,
-  Timer as TimerIcon
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 import { setAccessToken, setRefreshToken, getDeviceId } from './auth';
+
+// Default MUI theme — matches admin panel login appearance (it uses standard MUI blue gradient + default components)
+const muiTheme = createTheme();
+
+const OTP_LENGTH = 6;
+const CODE_EXPIRY_SECONDS = 10 * 60; // 10 minutes
 
 interface LoginNewProps {
   onToken: (token: string) => void;
 }
 
 export default function LoginNew({ onToken }: LoginNewProps) {
-  const [step, setStep] = useState(0); // 0: email, 1: verification code
+  const [step, setStep] = useState<'email' | 'otp'>('email');
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
+  const [otp, setOtp] = useState<string[]>(new Array(OTP_LENGTH).fill(''));
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [codeExpiry, setCodeExpiry] = useState<string | null>(null);
-  const [timeLeft, setTimeLeft] = useState(0);
-  const verifyAttemptedRef = useRef(false); // Track if we already attempted verification for current code
+  const [countdown, setCountdown] = useState(CODE_EXPIRY_SECONDS);
+  const [canResend, setCanResend] = useState(false);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const AUTH_BASE = import.meta.env.VITE_AUTH_BASE || 'https://device-api.expotoworld.com';
 
-
-  // Countdown timer for code expiration
+  // Countdown timer for OTP expiry
   useEffect(() => {
-    if (!codeExpiry) return;
+    if (step !== 'otp') return;
+
+    setCountdown(CODE_EXPIRY_SECONDS);
+    setCanResend(false);
 
     const timer = setInterval(() => {
-      const now = new Date().getTime();
-      const expiry = new Date(codeExpiry).getTime();
-      const difference = expiry - now;
-
-      if (difference > 0) {
-        setTimeLeft(Math.floor(difference / 1000));
-      } else {
-        setTimeLeft(0);
-        setStep(0); // Reset to email step if code expired
-        setError('Verification code has expired. Please request a new one.');
-      }
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setCanResend(true);
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [codeExpiry]);
+  }, [step, email]);
 
-  // Auto-submit when 6 digits are entered on the verification step
-  const handleVerifyCode = useCallback(async () => {
-    if (verifyAttemptedRef.current) return; // Prevent re-attempts on same code
-    verifyAttemptedRef.current = true;
+  // Format countdown as MM:SS
+  const formatCountdown = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Handle email submission
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      await axios.post(
+        `${AUTH_BASE}/api/v1/auth/send-code`,
+        { email },
+        {
+          withCredentials: true,
+          headers: {
+            'X-Require-Existing': 'true',
+            'X-Require-Role': 'Author',
+            'X-Device-Id': getDeviceId(),
+          },
+        }
+      );
+      setStep('otp');
+      setOtp(new Array(OTP_LENGTH).fill(''));
+    } catch (e: any) {
+      setError(e?.response?.data?.message || 'Failed to send verification code');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle OTP input change
+  const handleOtpChange = (index: number, value: string) => {
+    if (value && !/^\d$/.test(value)) return;
+
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    // Auto-focus next input
+    if (value && index < OTP_LENGTH - 1) {
+      otpRefs.current[index + 1]?.focus();
+    }
+
+    // Auto-submit when all digits entered
+    if (value && index === OTP_LENGTH - 1) {
+      const code = newOtp.join('');
+      if (code.length === OTP_LENGTH) {
+        handleOtpSubmit(code);
+      }
+    }
+  };
+
+  // Handle OTP key down (backspace navigation)
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  // Handle OTP paste
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
+    if (pastedData.length === OTP_LENGTH) {
+      const newOtp = pastedData.split('');
+      setOtp(newOtp);
+      handleOtpSubmit(pastedData);
+    }
+  };
+
+  // Handle OTP verification
+  const handleOtpSubmit = useCallback(async (code?: string) => {
+    const otpCode = code || otp.join('');
+    if (otpCode.length !== OTP_LENGTH) return;
+
     setIsLoading(true);
     setError('');
 
     try {
       const res = await axios.post(
         `${AUTH_BASE}/api/v1/auth/verify-code`,
-        { email, code },
+        { email, code: otpCode },
         {
           withCredentials: true,
           headers: {
@@ -80,16 +162,10 @@ export default function LoginNew({ onToken }: LoginNewProps) {
         }
       );
 
-      // Backend returns: access_token, refresh_token, token_type, expires_in,
-      //                  refresh_expires_in, refresh_expires_at
       const accessToken: string = res.data?.access_token;
       const refreshToken: string | undefined = res.data?.refresh_token;
-      const expiresIn: number = res.data?.expires_in || 900; // seconds
-
-      // Calculate expires_at from expires_in
+      const expiresIn: number = res.data?.expires_in || 900;
       const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
-
-      // Use server-provided refresh expiry (or sensible fallback)
       const refreshExpiresAt: string | undefined =
         res.data?.refresh_expires_at
         || (res.data?.refresh_expires_in
@@ -109,30 +185,20 @@ export default function LoginNew({ onToken }: LoginNewProps) {
       onToken(accessToken);
     } catch (e: any) {
       setError(e?.response?.data?.message || 'Invalid verification code');
-      // Do NOT reset verifyAttemptedRef here - user must manually change code to retry
+      setOtp(new Array(OTP_LENGTH).fill(''));
+      otpRefs.current[0]?.focus();
     } finally {
       setIsLoading(false);
     }
-  }, [email, code, AUTH_BASE, onToken]);
+  }, [email, otp, AUTH_BASE, onToken]);
 
-  useEffect(() => {
-    if (step === 1 && code.length === 6 && !isLoading && !verifyAttemptedRef.current) {
-      handleVerifyCode();
-    }
-  }, [step, code, isLoading, handleVerifyCode]);
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  const handleSendCode = async () => {
+  // Handle resend code
+  const handleResend = async () => {
     setIsLoading(true);
     setError('');
 
     try {
-      const response = await axios.post(
+      await axios.post(
         `${AUTH_BASE}/api/v1/auth/send-code`,
         { email },
         {
@@ -144,84 +210,66 @@ export default function LoginNew({ onToken }: LoginNewProps) {
           },
         }
       );
-
-      setCodeExpiry(response.data.expires_at);
-      setStep(1);
-      setCode('');
-      verifyAttemptedRef.current = false; // Reset attempt flag for new code
+      setOtp(new Array(OTP_LENGTH).fill(''));
+      otpRefs.current[0]?.focus();
+      setCountdown(CODE_EXPIRY_SECONDS);
+      setCanResend(false);
     } catch (e: any) {
-      setError(e?.response?.data?.message || 'Failed to send verification code');
+      setError(e?.response?.data?.message || 'Failed to resend code');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-    setCode(value);
-    verifyAttemptedRef.current = false; // Reset attempt flag when code changes
-    if (error) setError('');
-  };
-
-  const handleBackToEmail = () => {
-    setStep(0);
-    setCode('');
+  // Handle back to email
+  const handleBack = () => {
+    setStep('email');
+    setOtp(new Array(OTP_LENGTH).fill(''));
     setError('');
-    setCodeExpiry(null);
-    verifyAttemptedRef.current = false; // Reset attempt flag
   };
-
-  const steps = ['Email Verification', 'Enter Code'];
 
   return (
-    <Container maxWidth="sm">
+    <ThemeProvider theme={muiTheme}>
+      <CssBaseline />
       <Box
         sx={{
+          minHeight: '100vh',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          minHeight: '100vh',
-          py: 4
+          bgcolor: 'background.default',
+          p: 2,
         }}
       >
-        <Paper
-          elevation={3}
-          sx={{
-            p: 4,
-            width: '100%',
-            maxWidth: 500
-          }}
-        >
-          {/* Logo/Brand */}
+      <Card
+        elevation={0}
+        sx={{
+          maxWidth: 420,
+          width: '100%',
+          border: 1,
+          borderColor: 'divider',
+        }}
+      >
+        <CardContent sx={{ p: 4 }}>
+          {/* Logo / Brand */}
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Typography
               variant="h4"
               sx={{
                 fontWeight: 700,
-                color: 'primary.main',
-                mb: 1
+                background: 'linear-gradient(135deg, #1976D2 0%, #42A5F5 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                mb: 1,
               }}
             >
-              EXPO to World
+              EXPO to WORLD
             </Typography>
-            <Typography
-              variant="h6"
-              color="text.secondary"
-              sx={{ fontWeight: 500 }}
-            >
+            <Typography variant="body1" color="text.secondary">
               Ebook Editor
             </Typography>
           </Box>
-
-          {/* Stepper */}
-          <Stepper activeStep={step} sx={{ mb: 4 }}>
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
 
           {/* Error Alert */}
           {error && (
@@ -230,14 +278,12 @@ export default function LoginNew({ onToken }: LoginNewProps) {
             </Alert>
           )}
 
-          {/* Step 0: Email Verification */}
-          {step === 0 && (
-            <>
-              <Alert severity="info" sx={{ mb: 3 }}>
-                <Typography variant="body2">
-                  <strong>Author-Only Access:</strong> Enter your author email to receive a 6-digit verification code.
-                </Typography>
-              </Alert>
+          {/* Step 1: Email Entry */}
+          <Fade in={step === 'email'} unmountOnExit>
+            <Box component="form" onSubmit={handleEmailSubmit}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Enter your author email to receive a verification code.
+              </Typography>
 
               <TextField
                 fullWidth
@@ -245,147 +291,136 @@ export default function LoginNew({ onToken }: LoginNewProps) {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                margin="normal"
+                required
+                sx={{ mb: 3 }}
+                autoFocus
                 InputProps={{
-                  startAdornment: <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailIcon color="action" />
+                    </InputAdornment>
+                  ),
                 }}
-                placeholder="author@company.com"
-                helperText="Enter your author email address"
-                disabled={isLoading}
-                autoComplete="email"
               />
+
+              <Button
+                fullWidth
+                type="submit"
+                variant="contained"
+                size="large"
+                disabled={isLoading || !email}
+              >
+                {isLoading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  'Send Verification Code'
+                )}
+              </Button>
+            </Box>
+          </Fade>
+
+          {/* Step 2: OTP Entry */}
+          <Fade in={step === 'otp'} unmountOnExit>
+            <Box>
+              {/* Back button */}
+              <IconButton
+                onClick={handleBack}
+                sx={{ mb: 2, ml: -1 }}
+                disabled={isLoading}
+              >
+                <ArrowBackIcon />
+              </IconButton>
+
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Enter the 6-digit code sent to
+              </Typography>
+              <Typography variant="body2" fontWeight={500} sx={{ mb: 3 }}>
+                {email}
+              </Typography>
+
+              {/* OTP Input Fields */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 1,
+                  justifyContent: 'center',
+                  mb: 3,
+                }}
+                onPaste={handleOtpPaste}
+              >
+                {otp.map((digit, index) => (
+                  <TextField
+                    key={index}
+                    inputRef={(el) => (otpRefs.current[index] = el)}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    inputProps={{
+                      maxLength: 1,
+                      style: {
+                        textAlign: 'center',
+                        fontSize: '1.5rem',
+                        fontWeight: 600,
+                        padding: '12px 8px',
+                      },
+                      inputMode: 'numeric',
+                    }}
+                    sx={{
+                      width: 48,
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                      },
+                    }}
+                    disabled={isLoading}
+                  />
+                ))}
+              </Box>
+
+              {/* Timer and Resend */}
+              <Box sx={{ textAlign: 'center', mb: 3 }}>
+                {countdown > 0 ? (
+                  <Typography variant="body2" color="text.secondary">
+                    Code expires in {formatCountdown(countdown)}
+                  </Typography>
+                ) : (
+                  <Typography variant="body2" color="error">
+                    Code has expired
+                  </Typography>
+                )}
+
+                {canResend && (
+                  <Link
+                    component="button"
+                    type="button"
+                    variant="body2"
+                    onClick={handleResend}
+                    disabled={isLoading}
+                    sx={{ mt: 1, display: 'block', mx: 'auto' }}
+                  >
+                    Resend Code
+                  </Link>
+                )}
+              </Box>
 
               <Button
                 fullWidth
                 variant="contained"
                 size="large"
-                onClick={handleSendCode}
-                disabled={isLoading || !email}
-                sx={{
-                  mt: 3,
-                  mb: 2,
-                  py: 1.5,
-                  fontWeight: 600
-                }}
+                onClick={() => handleOtpSubmit()}
+                disabled={isLoading || otp.join('').length !== OTP_LENGTH}
               >
                 {isLoading ? (
-                  <>
-                    <CircularProgress size={20} sx={{ mr: 1 }} />
-                    Sending Code...
-                  </>
+                  <CircularProgress size={24} color="inherit" />
                 ) : (
-                  <>
-                    <SecurityIcon sx={{ mr: 1 }} />
-                    Send Verification Code
-                  </>
+                  'Verify & Sign In'
                 )}
               </Button>
-            </>
-          )}
-
-          {/* Step 1: Code Verification */}
-          {step === 1 && (
-            <>
-              <Alert severity="success" sx={{ mb: 3 }}>
-                <Typography variant="body2">
-                  <strong>Code Sent!</strong> Check your email at <strong>{email}</strong> for the 6-digit verification code.
-                </Typography>
-              </Alert>
-
-              {/* Timer Display */}
-              {timeLeft > 0 && (
-                <Box sx={{ mb: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <TimerIcon sx={{ mr: 1, color: 'warning.main' }} />
-                    <Typography variant="body2" color="warning.main">
-                      Code expires in: <strong>{formatTime(timeLeft)}</strong>
-                    </Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={(timeLeft / 600) * 100}
-                    sx={{ height: 6, borderRadius: 3 }}
-                  />
-                </Box>
-              )}
-
-              <TextField
-                fullWidth
-                label="Verification Code"
-                value={code}
-                onChange={handleCodeChange}
-                margin="normal"
-                placeholder="Enter 6-digit code"
-                inputProps={{
-                  maxLength: 6,
-                  style: {
-                    textAlign: 'center',
-                    fontSize: '24px',
-                    letterSpacing: '8px',
-                    fontFamily: 'monospace'
-                  }
-                }}
-                disabled={isLoading}
-                autoFocus
-              />
-
-              <Box sx={{ display: 'flex', gap: 2, mt: 3, flexWrap: 'wrap' }}>
-                <Button
-                  variant="outlined"
-                  onClick={handleBackToEmail}
-                  disabled={isLoading}
-                  sx={{ flex: 1, minWidth: 120 }}
-                >
-                  Back
-                </Button>
-
-                <Button
-                  variant="contained"
-                  onClick={handleVerifyCode}
-                  disabled={isLoading || code.length !== 6}
-                  sx={{ flex: 2, fontWeight: 600, minWidth: 180 }}
-                >
-                  {isLoading ? (
-                    <>
-                      <CircularProgress size={20} sx={{ mr: 1 }} />
-                      Verifying...
-                    </>
-                  ) : (
-                    'Verify & Sign In'
-                  )}
-                </Button>
-
-                <Button
-                  variant="text"
-                  onClick={handleSendCode}
-                  disabled={isLoading || timeLeft > 0}
-                  sx={{ flex: 1, minWidth: 160 }}
-                >
-                  {timeLeft > 0 ? `Resend in ${formatTime(timeLeft)}` : 'Resend Code'}
-                </Button>
-              </Box>
-
-              {/* Security Info */}
-              <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                <Typography variant="caption" color="text.secondary">
-                  <strong>Security Features:</strong><br/>
-                  • Code expires in 10 minutes<br/>
-                  • Maximum 3 verification attempts<br/>
-                  • Rate limited to 5 requests per hour
-                </Typography>
-              </Box>
-            </>
-          )}
-
-          {/* Footer */}
-          <Box sx={{ textAlign: 'center', mt: 4 }}>
-            <Typography variant="body2" color="text.secondary">
-              EXPO to World Ebook Editor - Author Authentication
-            </Typography>
-          </Box>
-        </Paper>
-      </Box>
-    </Container>
+            </Box>
+          </Fade>
+        </CardContent>
+      </Card>
+    </Box>
+    </ThemeProvider>
   );
 }
 

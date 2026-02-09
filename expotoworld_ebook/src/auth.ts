@@ -3,6 +3,7 @@ import axios from 'axios'
 const TOKEN_KEY = 'ebook_token'
 const REFRESH_KEY = 'ebook_refresh_token'
 const DEVICE_ID_KEY = 'ebook_device_id'
+const LOGGED_OUT_KEY = 'ebook_logged_out'
 
 export const AUTH_BASE = import.meta.env.VITE_AUTH_BASE || 'https://device-api.expotoworld.com'
 
@@ -56,6 +57,38 @@ export function clearTokens() {
   // NOTE: Device ID is intentionally NOT cleared — it identifies the device across sessions
 }
 
+// ── Explicit-logout flag ────────────────────────────────────────────────────
+// Prevents the visibilitychange listener from resurrecting a session via the
+// httpOnly cookie after the user intentionally logged out.
+
+export function setLoggedOut() { localStorage.setItem(LOGGED_OUT_KEY, '1') }
+export function wasExplicitlyLoggedOut(): boolean { return localStorage.getItem(LOGGED_OUT_KEY) === '1' }
+export function clearLoggedOutFlag() { localStorage.removeItem(LOGGED_OUT_KEY) }
+
+/**
+ * Full logout: revoke refresh token on backend, clear httpOnly cookie,
+ * clear localStorage tokens, and set the explicit-logout flag.
+ */
+export async function logout(): Promise<void> {
+  const rt = getRefreshToken()
+  try {
+    await axios.post(
+      `${AUTH_BASE}/api/v1/auth/logout`,
+      rt ? { refresh_token: rt } : {},
+      {
+        withCredentials: true, // ensures httpOnly cookie is sent & cleared by backend
+        headers: { 'X-Device-Id': getDeviceId() },
+      }
+    )
+  } catch {
+    // Best-effort: even if the backend call fails, proceed with client-side cleanup
+  }
+  // Ensure ALL cleanup steps run even if one fails (e.g. storage quota error)
+  try { clearTokens() } catch {}
+  try { setLoggedOut() } catch {}
+  try { delete axios.defaults.headers.common['Authorization'] } catch {}
+}
+
 let isRefreshing = false
 let waiters: { resolve: (t: string)=>void; reject: (e:any)=>void }[] = []
 
@@ -69,6 +102,10 @@ let waiters: { resolve: (t: string)=>void; reject: (e:any)=>void }[] = []
  * This ensures session survives even if one storage mechanism is cleared.
  */
 export async function refreshOnce(): Promise<string> {
+  // Nuclear guard: never attempt refresh after explicit logout.
+  // Without this, interceptors or auth-boot could resurrect a session via the httpOnly cookie.
+  if (wasExplicitlyLoggedOut()) throw new Error('Session ended by user')
+
   if (isRefreshing) return new Promise((resolve,reject)=>waiters.push({resolve,reject}))
   isRefreshing = true
   try {
@@ -133,7 +170,7 @@ export function installAxiosInterceptors() {
 
     // Proactively refresh if access token is very close to expiring (<10s)
     // IMPORTANT: never try to refresh while performing the refresh call itself to avoid deadlocks.
-    if (!isRefreshCall) {
+    if (!isRefreshCall && !wasExplicitlyLoggedOut()) {
       const exp = getAccessTokenExp()
       if (exp && exp - Date.now() < 10_000) {
         try { await refreshOnce() } catch {}
@@ -156,7 +193,7 @@ export function installAxiosInterceptors() {
     const url = typeof original.url === 'string' ? original.url : ''
     const isRefreshCall = url.includes('/api/v1/auth/refresh')
 
-    if (!isRefreshCall && error?.response?.status === 401 && !original?._retry) {
+    if (!isRefreshCall && error?.response?.status === 401 && !original?._retry && !wasExplicitlyLoggedOut()) {
       original._retry = true
       try {
         const newTok = await refreshOnce()

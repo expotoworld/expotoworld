@@ -405,28 +405,33 @@ body {
 .ProseMirror ul, .ProseMirror ol { padding-left: 24px; }
 
 /* Task List Styling - Clean inline checkbox + text layout */
+/* NOTE: TipTap's TaskItem NodeView does NOT set data-type="taskItem" on the live <li>;
+   it only sets data-checked. We target `li` inside the taskList (matching TipTap's official demo CSS). */
 .ProseMirror ul[data-type="taskList"] {
   list-style: none;
   padding-left: 0;
   margin: 0.5em 0;
 }
 
-.ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] {
+.ProseMirror ul[data-type="taskList"] li {
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   align-items: flex-start;
   gap: 8px;
   margin: 4px 0;
   padding: 0;
 }
 
-.ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] > label {
+.ProseMirror ul[data-type="taskList"] li > label {
   display: flex;
   align-items: center;
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  user-select: none;
   margin-top: 4px;
 }
 
-.ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] > label input[type="checkbox"] {
+.ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
   width: 18px;
@@ -439,34 +444,34 @@ body {
   margin: 0;
 }
 
-.ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] > label input[type="checkbox"]:checked {
+.ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
   background: var(--color-primary);
   border-color: var(--color-primary);
 }
 
-.ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] > label input[type="checkbox"]:checked::after {
+.ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"]:checked::after {
   content: '';
   position: absolute;
-  left: 5px;
-  top: 2px;
+  left: 50%;
+  top: 45%;
   width: 5px;
   height: 9px;
   border: solid white;
   border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+  transform: translate(-50%, -50%) rotate(45deg);
 }
 
-.ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] > div {
-  flex: 1;
+.ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
-.ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] > div p {
+.ProseMirror ul[data-type="taskList"] li > div p {
   margin: 0;
   line-height: 1.6;
 }
 
-.ProseMirror ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div {
+.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
   text-decoration: line-through;
   opacity: 0.6;
 }
@@ -494,8 +499,8 @@ body {
   cursor: pointer;
 }
 
-/* Inputs (Login etc.) */
-input[type="email"], input[type="text"], input[type="password"] {
+/* Inputs (Editor-only — scoped to avoid overriding MUI components on Login) */
+.editor-app input[type="email"], .editor-app input[type="text"], .editor-app input[type="password"] {
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid var(--color-border);
