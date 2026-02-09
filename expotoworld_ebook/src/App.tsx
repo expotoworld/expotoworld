@@ -25,7 +25,7 @@ import WordCount from './WordCount'
 import { ThemeProvider, useThemeMode } from './theme'
 import './i18n'
 import { useTranslation } from 'react-i18next'
-import { AUTH_BASE, getRefreshToken, setAccessToken, setRefreshToken, clearTokens, refreshOnce, getAccessToken, getAccessTokenExp } from './auth'
+import { AUTH_BASE, getRefreshToken, setAccessToken, setRefreshToken, clearTokens, refreshOnce, getAccessToken, getAccessTokenExp, logout, wasExplicitlyLoggedOut, clearLoggedOutFlag } from './auth'
 import { MediaDeletionExtension, deleteMediaFromS3 } from './MediaDeletionExtension'
 import { VideoNode } from './nodes/VideoNode'
 import { AudioNode } from './nodes/AudioNode'
@@ -145,11 +145,8 @@ function Shell({ children, status, lastSavedAt, toolbar, actionsRight, afterUser
               )}
             </button>
             <UserMenu token={token} ebookId={ebookId} onLogout={() => {
-              clearTokens(); // Clear both access and refresh tokens
-              localStorage.removeItem('token'); // Clear old token key if exists
-              delete axios.defaults.headers.common['Authorization']; // Remove auth header
-              // Force immediate page reload to show login page
-              window.location.reload();
+              // Full logout: revoke server-side token, clear httpOnly cookie, clear localStorage
+              logout().finally(() => window.location.reload())
             }} />
             {afterUserMenu}
           </div>
@@ -196,6 +193,9 @@ export default function App() {
   useEffect(() => {
     (async () => {
       try {
+        // If user explicitly logged out, skip any session recovery
+        if (wasExplicitlyLoggedOut()) return
+
         // Check if we have a valid access token
         const tok = getAccessToken()
         const exp = getAccessTokenExp()
@@ -225,6 +225,8 @@ export default function App() {
   useEffect(() => {
     const onVisibilityChange = () => {
       if (document.visibilityState !== 'visible') return
+      // Do NOT restore session if user explicitly logged out
+      if (wasExplicitlyLoggedOut()) return
       const exp = getAccessTokenExp()
       // If access token is expired or expires within 60s, refresh silently
       if (!exp || exp - Date.now() < 60_000) {
@@ -366,7 +368,7 @@ export default function App() {
   }, [token, editor, ebookId])
 
   if (authBoot) return <div />
-  if (!token) return <Login onToken={setToken} />
+  if (!token) return <Login onToken={(t) => { clearLoggedOutFlag(); setToken(t) }} />
   if (!ebookId) return <div>Missing ebook ID</div>
 
   return (
