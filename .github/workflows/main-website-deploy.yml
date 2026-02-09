@@ -17,6 +17,10 @@ on:
           - global
           - china
 
+concurrency:
+  group: main-website-global-deploy
+  cancel-in-progress: true
+
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
   S3_BUCKET: ${{ vars.S3_BUCKET_MAIN_WEBSITE }}

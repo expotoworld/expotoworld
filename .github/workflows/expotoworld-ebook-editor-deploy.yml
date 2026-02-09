@@ -23,6 +23,10 @@ on:
       - '.github/workflows/expotoworld-ebook-editor-deploy.yml'
   workflow_dispatch:
 
+concurrency:
+  group: ebook-editor-deploy
+  cancel-in-progress: true
+
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
   S3_BUCKET: ${{ vars.S3_BUCKET_EBOOK }}

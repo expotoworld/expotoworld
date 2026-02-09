@@ -44,7 +44,7 @@ jobs:
       - name: Set computed variables
         run: |
           echo "ECR_REPOSITORY_URI=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.SERVICE_NAME }}" >> $GITHUB_ENV
-          echo "INSTANCE_ROLE_ARN=arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/apprunner-expotoworld-auth-instance-role" >> $GITHUB_ENV
+          echo "INSTANCE_ROLE_ARN=arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/apprunner-expotoworld-ebook-instance-role" >> $GITHUB_ENV
           echo "ECR_ACCESS_ROLE_ARN=arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/AppRunnerECRAccessRole-expotoworld" >> $GITHUB_ENV
 
       - name: Lookup App Runner service
