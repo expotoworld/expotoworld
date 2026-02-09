@@ -108,11 +108,14 @@ class AuthRepository {
       refreshToken: result.tokens.refreshToken,
     );
     
+    // Store refresh token expiry for session tracking
+    await _storage.saveRefreshTokenExpiry(result.tokens.refreshExpiresAt);
+    
     // Store user data
     await _storage.saveUser(result.user.toJson());
     
     developer.log(
-      'Auth successful: ${result.user.displayName}',
+      'Auth successful: ${result.user.displayName}, refresh expires: ${result.tokens.refreshExpiresAt}',
       name: 'AuthRepository',
     );
     
@@ -196,6 +199,9 @@ class AuthRepository {
         accessToken: newTokens.accessToken,
         refreshToken: newTokens.refreshToken,
       );
+      
+      // Update refresh token expiry (sliding window — each refresh extends it)
+      await _storage.saveRefreshTokenExpiry(newTokens.refreshExpiresAt);
       
       developer.log('Tokens refreshed successfully', name: 'AuthRepository');
       return true;

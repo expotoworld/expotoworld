@@ -44,6 +44,8 @@ Resources:
                 Value: '100'
               - Name: RATE_LIMIT_WINDOW
                 Value: '1m'
+              - Name: JWKS_URL
+                Value: 'https://device-api.expotoworld.com/.well-known/jwks.json'
             RuntimeEnvironmentSecrets:
               - Name: DATABASE_URL
                 Value: !Sub 'arn:aws:secretsmanager:eu-central-1:834076182408:secret:expotoworld/neon/db'

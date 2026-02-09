@@ -129,7 +129,8 @@ func (v *Validator) ValidateToken(tokenString string) (*Claims, error) {
 
 	// Validate issuer
 	if v.issuer != "" && claims.Issuer != v.issuer {
-		return nil, fmt.Errorf("%w: invalid issuer", ErrInvalidClaims)
+		// DEBUG: Return detailed error showing the mismatch
+		return nil, fmt.Errorf("%w: invalid issuer (expected=%q, got=%q)", ErrInvalidClaims, v.issuer, claims.Issuer)
 	}
 
 	// Validate audience

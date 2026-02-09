@@ -36,8 +36,8 @@ routes = [
 # Production environment variables (AWS App Runner URLs)
 [env.production]
 [env.production.vars]
-AUTH_SERVICE = "https://ge6ik5nm6e.eu-central-1.awsapprunner.com"
+AUTH_SERVICE = "https://4qexmd5mk9.eu-central-1.awsapprunner.com"
 USER_SERVICE = "https://yumaw38pdp.eu-central-1.awsapprunner.com"
 CATALOG_SERVICE = "https://kykqma8nq4.eu-central-1.awsapprunner.com"
 ORDER_SERVICE = "https://mttci22rgj.eu-central-1.awsapprunner.com"
-EBOOK_SERVICE = "https://brdmfppyst.eu-central-1.awsapprunner.com"
+EBOOK_SERVICE = "https://255isteuvd.eu-central-1.awsapprunner.com"

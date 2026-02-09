@@ -196,7 +196,7 @@ class ApiClient {
   }
 }
 
-/// Auth Interceptor - handles token refresh
+/// Auth Interceptor - handles token refresh and X-Device-Id header
 class _AuthInterceptor extends Interceptor {
   final SecureStorageService _secureStorage;
   final Dio _dio;
@@ -206,6 +206,14 @@ class _AuthInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+    // Always include the persistent device ID for stable server-side fingerprinting
+    try {
+      final deviceId = await _secureStorage.getDeviceId();
+      options.headers['X-Device-Id'] = deviceId;
+    } catch (_) {
+      // Non-fatal: proceed without device ID
+    }
+
     // Skip auth header for auth endpoints
     final authPaths = [
       AuthEndpoints.sendCode,

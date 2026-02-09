@@ -2,8 +2,34 @@ import axios from 'axios'
 
 const TOKEN_KEY = 'ebook_token'
 const REFRESH_KEY = 'ebook_refresh_token'
+const DEVICE_ID_KEY = 'ebook_device_id'
 
 export const AUTH_BASE = import.meta.env.VITE_AUTH_BASE || 'https://device-api.expotoworld.com'
+
+// ── Device ID ───────────────────────────────────────────────────────────────
+// A persistent, client-generated UUID stored in localStorage.
+// Much more stable than IP+UA hashing because it survives network changes,
+// VPN toggling, and ISP rotations — only lost on explicit storage clear.
+
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
+  // Fallback for older browsers
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = (Math.random() * 16) | 0
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+  })
+}
+
+export function getDeviceId(): string {
+  let id = localStorage.getItem(DEVICE_ID_KEY)
+  if (!id) {
+    id = generateUUID()
+    localStorage.setItem(DEVICE_ID_KEY, id)
+  }
+  return id
+}
+
+// ── Token storage (localStorage as fallback alongside httpOnly cookies) ──────
 
 export function getAccessToken(): string | null {
   try { return JSON.parse(localStorage.getItem(TOKEN_KEY) || 'null')?.token || null } catch { return null }
@@ -18,12 +44,16 @@ export function getAccessTokenExp(): number | null {
 export function getRefreshToken(): string | null {
   try { return JSON.parse(localStorage.getItem(REFRESH_KEY) || 'null')?.refresh_token || null } catch { return null }
 }
+export function getRefreshTokenExp(): number | null {
+  try { return new Date(JSON.parse(localStorage.getItem(REFRESH_KEY) || 'null')?.refresh_expires_at).getTime() || null } catch { return null }
+}
 export function setRefreshToken(refresh_token: string, refresh_expires_at?: string) {
   localStorage.setItem(REFRESH_KEY, JSON.stringify({ refresh_token, refresh_expires_at }))
 }
 export function clearTokens() {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(REFRESH_KEY)
+  // NOTE: Device ID is intentionally NOT cleared — it identifies the device across sessions
 }
 
 let isRefreshing = false
@@ -31,24 +61,50 @@ let waiters: { resolve: (t: string)=>void; reject: (e:any)=>void }[] = []
 
 /**
  * Refresh access token with mutex protection.
- * This ensures only one refresh call happens at a time, preventing duplicate tokens.
- * Exported for use in App.tsx initial auth bootstrap.
+ * Dual-source strategy:
+ *   1. Sends refresh_token in JSON body (backward compatible, from localStorage)
+ *   2. Browser also sends httpOnly cookie automatically (withCredentials: true)
+ *   3. Backend checks body first, cookie second — whichever is present wins.
+ *
+ * This ensures session survives even if one storage mechanism is cleared.
  */
 export async function refreshOnce(): Promise<string> {
   if (isRefreshing) return new Promise((resolve,reject)=>waiters.push({resolve,reject}))
   isRefreshing = true
   try {
     const rt = getRefreshToken()
-    if (!rt) throw new Error('No refresh token')
-    const res = await axios.post(`${AUTH_BASE}/api/v1/auth/refresh`, { refresh_token: rt })
-    // Backend returns: access_token, refresh_token, token_type, expires_in (seconds)
-    // Note: Backend now returns the SAME refresh_token (no rotation) with sliding expiry
+
+    // Check if the locally-stored refresh token is known-expired before network call
+    const rtExp = getRefreshTokenExp()
+    if (!rt && !rtExp) {
+      // No localStorage token at all — still attempt refresh via cookie only
+    } else if (rt && rtExp && rtExp < Date.now()) {
+      // Locally stored token is expired — clear it, but still try cookie-based refresh
+      clearTokens()
+    }
+
+    // Build request: include body token if available, always send cookie via withCredentials
+    const res = await axios.post(
+      `${AUTH_BASE}/api/v1/auth/refresh`,
+      rt ? { refresh_token: rt } : {},
+      {
+        withCredentials: true, // sends httpOnly cookie
+        headers: { 'X-Device-Id': getDeviceId() },
+      }
+    )
+
     const token = res.data?.access_token as string
     const expiresInSec = res.data?.expires_in as number || 900
     const tokenExp = new Date(Date.now() + expiresInSec * 1000).toISOString()
+
+    // Use server-provided refresh metadata (ideal) or estimate from expires_in
     const newRt = res.data?.refresh_token as string | undefined
-    // Backend doesn't return refresh_expires_at, so we estimate 90 days
-    const newRtExp = newRt ? new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString() : undefined
+    const refreshExpiresAt = res.data?.refresh_expires_at as string | undefined
+    const refreshExpiresIn = res.data?.refresh_expires_in as number | undefined
+    const newRtExp = refreshExpiresAt
+      || (refreshExpiresIn ? new Date(Date.now() + refreshExpiresIn * 1000).toISOString() : undefined)
+      || (newRt ? new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString() : undefined)
+
     if (!token) throw new Error('Invalid refresh response')
     setAccessToken(token, tokenExp)
     if (newRt && newRtExp) setRefreshToken(newRt, newRtExp)
@@ -64,9 +120,16 @@ export async function refreshOnce(): Promise<string> {
 }
 
 export function installAxiosInterceptors() {
+  // Enable cookie-based auth globally for cross-origin requests to our API
+  axios.defaults.withCredentials = true
+
   axios.interceptors.request.use(async (cfg) => {
     const url = typeof cfg.url === 'string' ? cfg.url : ''
     const isRefreshCall = url.includes('/api/v1/auth/refresh')
+
+    // Always attach device ID for fingerprinting
+    if (!cfg.headers) cfg.headers = {} as any
+    ;(cfg.headers as any)['X-Device-Id'] = getDeviceId()
 
     // Proactively refresh if access token is very close to expiring (<10s)
     // IMPORTANT: never try to refresh while performing the refresh call itself to avoid deadlocks.
