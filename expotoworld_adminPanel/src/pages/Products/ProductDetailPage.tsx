@@ -145,7 +145,6 @@ const ProductDetailPage: React.FC = () => {
     try {
       await productApi.archiveProduct(id);
       setSuccess(t('products.archiveSuccess'));
-      setDeleteDialogOpen(false);
       // Refresh product data
       await fetchProduct();
     } catch (err) {
@@ -153,6 +152,24 @@ const ProductDetailPage: React.FC = () => {
       setError(t('products.archiveError'));
     } finally {
       setDeleting(false);
+    }
+  };
+
+  // Handle permanent delete
+  const handleDelete = async () => {
+    if (!id) return;
+
+    setDeleting(true);
+    try {
+      await productApi.deleteProduct(id);
+      // Product no longer exists — navigate back to products list
+      navigate('/products');
+    } catch (err) {
+      console.error('Failed to delete product:', err);
+      setError(t('products.deleteError'));
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -685,7 +702,7 @@ const ProductDetailPage: React.FC = () => {
         message={t('products.deleteMessage', { name: product.name })}
         confirmText={t('common.delete')}
         confirmColor="error"
-        onConfirm={handleArchive}
+        onConfirm={handleDelete}
         onCancel={() => setDeleteDialogOpen(false)}
         loading={deleting}
       />
