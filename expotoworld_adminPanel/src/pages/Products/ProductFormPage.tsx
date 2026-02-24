@@ -30,12 +30,28 @@ import {
   Image as ImageIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { PageHeader } from '@components/common';
 import {
   productApi,
   categoryApi,
   storeApi,
-  type Product,
   type Category,
   type Subcategory,
   type Store,
@@ -74,6 +90,7 @@ interface AttributeFormData {
 }
 
 interface ImageFormData {
+  id: string; // actual DB id for existing images, temp UUID for new ones
   imageUrl: string;
   displayOrder: number;
   isPrimary: boolean;
@@ -175,7 +192,7 @@ const ProductFormPage: React.FC = () => {
         costPrice: product.costPrice ? String(product.costPrice) : '',
         stockLeft: String(product.stockLeft),
         minimumOrderQuantity: String(product.minimumOrderQuantity),
-        weight: product.weight ? String(product.weight) : '1.00',
+        weight: product.logisticsWeight ? String(product.logisticsWeight) : '1.00',
         shelfCode: product.shelfCode,
         isActive: product.isActive,
         isFeatured: product.isFeatured,
@@ -201,6 +218,7 @@ const ProductFormPage: React.FC = () => {
       // Map images
       if (product.images) {
         setImages(product.images.map((img) => ({
+          id: img.id,
           imageUrl: img.imageUrl,
           displayOrder: img.displayOrder,
           isPrimary: img.isPrimary,
@@ -267,6 +285,7 @@ const ProductFormPage: React.FC = () => {
   // Image management
   const addImage = () => {
     setImages((prev) => [...prev, {
+      id: `temp-${crypto.randomUUID()}`,
       imageUrl: '',
       displayOrder: prev.length,
       isPrimary: prev.length === 0, // First image is primary by default
@@ -297,6 +316,138 @@ const ProductFormPage: React.FC = () => {
       }
       return filtered;
     });
+  };
+
+  // Image drag-and-drop reorder
+  const imageSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleImageDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setImages((prev) => {
+      const oldIndex = prev.findIndex(img => img.id === active.id);
+      const newIndex = prev.findIndex(img => img.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return arrayMove(prev, oldIndex, newIndex).map((img, i) => ({
+        ...img,
+        displayOrder: i,
+      }));
+    });
+  }, []);
+
+  // Sortable image card component (inner, has access to closure)
+  const SortableImageCard = ({ img, index }: { img: ImageFormData; index: number }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: img.id });
+
+    return (
+      <Grid
+        item
+        xs={12}
+        sm={6}
+        md={4}
+        ref={setNodeRef}
+        style={{
+          transform: CSS.Transform.toString(transform),
+          transition,
+        }}
+        sx={{ opacity: isDragging ? 0.5 : 1 }}
+      >
+        <Box
+          sx={{
+            border: '1px solid',
+            borderColor: img.isPrimary ? 'primary.main' : 'divider',
+            borderRadius: 1,
+            p: 2,
+            position: 'relative',
+          }}
+        >
+          {/* Drag handle */}
+          <IconButton
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: 4,
+              left: 4,
+              cursor: 'grab',
+              touchAction: 'none',
+              zIndex: 2,
+            }}
+            {...attributes}
+            {...listeners}
+          >
+            <DragIcon fontSize="small" color="action" />
+          </IconButton>
+          {img.isPrimary && (
+            <Chip
+              label={t('products.form.primary')}
+              size="small"
+              color="primary"
+              sx={{ position: 'absolute', top: 8, left: 40 }}
+            />
+          )}
+          <IconButton
+            size="small"
+            sx={{ position: 'absolute', top: 4, right: 4, zIndex: 2 }}
+            onClick={() => removeImage(index)}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+          <Box
+            sx={{
+              width: '100%',
+              aspectRatio: '1',
+              bgcolor: 'action.hover',
+              borderRadius: 1,
+              mb: 2,
+              mt: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+            }}
+          >
+            {img.imageUrl ? (
+              <img
+                src={img.imageUrl}
+                alt={`Product ${index + 1}`}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <ImageIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
+            )}
+          </Box>
+          <TextField
+            fullWidth
+            label={t('products.form.imageUrl')}
+            value={img.imageUrl}
+            onChange={(e) => updateImage(index, 'imageUrl', e.target.value)}
+            size="small"
+            sx={{ mb: 1 }}
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={img.isPrimary}
+                onChange={(e) => updateImage(index, 'isPrimary', e.target.checked)}
+                size="small"
+              />
+            }
+            label={t('products.form.setPrimary')}
+          />
+        </Box>
+      </Grid>
+    );
   };
 
   // Form submission
@@ -336,7 +487,7 @@ const ProductFormPage: React.FC = () => {
         costPrice: formData.costPrice ? Number(formData.costPrice) : undefined,
         stockLeft: Number(formData.stockLeft) || 0,
         minimumOrderQuantity: Number(formData.minimumOrderQuantity) || 1,
-        weight: formData.weight ? Number(formData.weight) : undefined,
+        logisticsWeight: formData.weight ? Number(formData.weight) : undefined,
         shelfCode: formData.shelfCode || undefined,
         isActive: formData.isActive,
         isFeatured: formData.isFeatured,
@@ -361,10 +512,10 @@ const ProductFormPage: React.FC = () => {
       };
 
       if (isEditing && id) {
-        await productApi.updateProduct(id, productData as unknown as Partial<Product>);
+        await productApi.updateProduct(id, productData);
         setSuccess(t('products.form.updateSuccess'));
       } else {
-        const created = await productApi.createProduct(productData as unknown as Partial<Product>);
+        const created = await productApi.createProduct(productData);
         setSuccess(t('products.form.createSuccess'));
         // Navigate to the created product
         setTimeout(() => navigate(`/products/${created.id}`), 1500);
@@ -670,78 +821,22 @@ const ProductFormPage: React.FC = () => {
                   {t('products.form.noImages')}
                 </Typography>
               ) : (
-                <Grid container spacing={2}>
-                  {images.map((img, index) => (
-                    <Grid item xs={12} sm={6} md={4} key={index}>
-                      <Box
-                        sx={{
-                          border: '1px solid',
-                          borderColor: img.isPrimary ? 'primary.main' : 'divider',
-                          borderRadius: 1,
-                          p: 2,
-                          position: 'relative',
-                        }}
-                      >
-                        {img.isPrimary && (
-                          <Chip
-                            label={t('products.form.primary')}
-                            size="small"
-                            color="primary"
-                            sx={{ position: 'absolute', top: 8, left: 8 }}
-                          />
-                        )}
-                        <IconButton
-                          size="small"
-                          sx={{ position: 'absolute', top: 4, right: 4 }}
-                          onClick={() => removeImage(index)}
-                        >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
-                        <Box
-                          sx={{
-                            width: '100%',
-                            aspectRatio: '1',
-                            bgcolor: 'action.hover',
-                            borderRadius: 1,
-                            mb: 2,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          {img.imageUrl ? (
-                            <img
-                              src={img.imageUrl}
-                              alt={`Product ${index + 1}`}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                          ) : (
-                            <ImageIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
-                          )}
-                        </Box>
-                        <TextField
-                          fullWidth
-                          label={t('products.form.imageUrl')}
-                          value={img.imageUrl}
-                          onChange={(e) => updateImage(index, 'imageUrl', e.target.value)}
-                          size="small"
-                          sx={{ mb: 1 }}
-                        />
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={img.isPrimary}
-                              onChange={(e) => updateImage(index, 'isPrimary', e.target.checked)}
-                              size="small"
-                            />
-                          }
-                          label={t('products.form.setPrimary')}
-                        />
-                      </Box>
+                <DndContext
+                  sensors={imageSensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleImageDragEnd}
+                >
+                  <SortableContext
+                    items={images.map(img => img.id)}
+                    strategy={rectSortingStrategy}
+                  >
+                    <Grid container spacing={2}>
+                      {images.map((img, index) => (
+                        <SortableImageCard key={img.id} img={img} index={index} />
+                      ))}
                     </Grid>
-                  ))}
-                </Grid>
+                  </SortableContext>
+                </DndContext>
               )}
             </CardContent>
           </Card>

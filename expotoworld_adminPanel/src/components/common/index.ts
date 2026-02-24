@@ -14,3 +14,5 @@ export { default as FilterDropdown } from './FilterDropdown';
 export type { FilterOption } from './FilterDropdown';
 export { default as CustomDropdown } from './CustomDropdown';
 export type { DropdownOption, CustomDropdownProps } from './CustomDropdown';
+export { SortableItem, SortableList, DragHandle, useSortableRow } from './SortableList';
+export type { DragEndEvent } from './SortableList';

@@ -133,7 +133,7 @@ const NotificationsPage: React.FC = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [_selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
   const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -315,7 +315,7 @@ const NotificationsPage: React.FC = () => {
 
   const handleDeleteConfirm = () => {
     // TODO: NEED TO FULLY IMPLEMENT - Call delete API
-    // TODO: Implement delete notification API call for notification: ${selectedNotification?.id}
+    // TODO: Implement delete notification API call for notification: ${_selectedNotification?.id}
     setDeleteDialogOpen(false);
     setSelectedNotification(null);
   };

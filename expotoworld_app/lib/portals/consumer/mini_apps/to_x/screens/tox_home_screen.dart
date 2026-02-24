@@ -22,29 +22,32 @@ class ToXHomeScreen extends ConsumerStatefulWidget {
 class _ToXHomeScreenState extends ConsumerState<ToXHomeScreen> {
   final ScrollController _scrollController = ScrollController();
   double _borderRadius = 24.0;
-  
+
   // Configuration for the corner animation (consistent with super-app home)
   static const double _maxRadius = 24.0;
   static const double _scrollThreshold = 50.0; // Flatten within 50px of scroll
-  
+
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
   }
-  
+
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
-  
+
   void _onScroll() {
     final scrollOffset = _scrollController.offset;
-    final newRadius = (_maxRadius - (scrollOffset / _scrollThreshold * _maxRadius))
-        .clamp(0.0, _maxRadius);
-    
+    final newRadius =
+        (_maxRadius - (scrollOffset / _scrollThreshold * _maxRadius)).clamp(
+          0.0,
+          _maxRadius,
+        );
+
     if (newRadius != _borderRadius) {
       setState(() {
         _borderRadius = newRadius;
@@ -60,7 +63,7 @@ class _ToXHomeScreenState extends ConsumerState<ToXHomeScreen> {
       Navigator.of(context, rootNavigator: true).pop();
       return;
     }
-    
+
     // Fallback to standard pop
     if (context.canPop()) {
       context.pop();
@@ -72,7 +75,8 @@ class _ToXHomeScreenState extends ConsumerState<ToXHomeScreen> {
   }
 
   void _handleCategorySelected(String? categoryId) {
-    ref.read(selectedCategoryIdProvider(MiniAppType.toX).notifier).state = categoryId;
+    ref.read(selectedCategoryIdProvider(MiniAppType.toX).notifier).state =
+        categoryId;
   }
 
   void _handleSubcategoryTap(MiniAppSubcategory subcategory) {
@@ -116,12 +120,23 @@ class _ToXHomeScreenState extends ConsumerState<ToXHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final categories = ref.watch(miniAppCategoriesProvider(MiniAppType.toX));
-    final selectedCategoryId = ref.watch(selectedCategoryIdProvider(MiniAppType.toX));
-    final subcategories = ref.watch(miniAppSubcategoriesProvider((
-      miniAppType: MiniAppType.toX,
-      categoryId: selectedCategoryId,
-    )));
+    final categoriesAsync = ref.watch(
+      miniAppCategoriesProvider(MiniAppType.toX),
+    );
+    final selectedCategoryId = ref.watch(
+      selectedCategoryIdProvider(MiniAppType.toX),
+    );
+    final subcategoriesAsync = ref.watch(
+      miniAppSubcategoriesProvider((
+        miniAppType: MiniAppType.toX,
+        categoryId: selectedCategoryId,
+      )),
+    );
+
+    // Non-blocking: render immediately with whatever is available
+    final categories = categoriesAsync.value ?? [];
+    final subcategories = subcategoriesAsync.value ?? [];
+    final isLoadingSubcategories = subcategoriesAsync.isLoading;
 
     // Return content directly without nested Scaffold
     // MiniAppShell provides the outer Scaffold with bottomNavigationBar
@@ -136,13 +151,15 @@ class _ToXHomeScreenState extends ConsumerState<ToXHomeScreen> {
             onClose: _handleClose,
             showSearch: true,
           ),
-          
+
           // Scrollable content area with dynamic rounded top corners
           Expanded(
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 50),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF121212) : AppColors.neutralWhite,
+                color: isDark
+                    ? const Color(0xFF121212)
+                    : AppColors.neutralWhite,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(_borderRadius),
                   topRight: Radius.circular(_borderRadius),
@@ -170,21 +187,31 @@ class _ToXHomeScreenState extends ConsumerState<ToXHomeScreen> {
                         ),
                       ),
                     ),
-                    
+
                     const SliverToBoxAdapter(
                       child: SizedBox(height: AppSpacing.md),
                     ),
-                    
-                    // Subcategory grid
-                    SliverSubcategoryGrid(
-                      subcategories: subcategories,
-                      onSubcategoryTap: _handleSubcategoryTap,
-                    ),
-                    
+
+                    // Subcategory grid (or loading indicator)
+                    if (isLoadingSubcategories)
+                      const SliverToBoxAdapter(
+                        child: Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(AppSpacing.xl),
+                            child: CircularProgressIndicator(
+                              color: AppColors.themeRed,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      SliverSubcategoryGrid(
+                        subcategories: subcategories,
+                        onSubcategoryTap: _handleSubcategoryTap,
+                      ),
+
                     // Bottom padding for safe area
-                    const SliverToBoxAdapter(
-                      child: SizedBox(height: 100),
-                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
                   ],
                 ),
               ),
@@ -201,10 +228,7 @@ class _QuoteRequestPopup extends StatefulWidget {
   final MiniAppService service;
   final ValueChanged<Map<String, String>> onSubmit;
 
-  const _QuoteRequestPopup({
-    required this.service,
-    required this.onSubmit,
-  });
+  const _QuoteRequestPopup({required this.service, required this.onSubmit});
 
   @override
   State<_QuoteRequestPopup> createState() => _QuoteRequestPopupState();
@@ -244,9 +268,9 @@ class _QuoteRequestPopupState extends State<_QuoteRequestPopup> {
     }
 
     setState(() => _isSubmitting = true);
-    
+
     await Future.delayed(const Duration(seconds: 1));
-    
+
     if (mounted) {
       widget.onSubmit({
         'name': _nameController.text,
@@ -288,7 +312,7 @@ class _QuoteRequestPopupState extends State<_QuoteRequestPopup> {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          
+
           // Title
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -326,14 +350,14 @@ class _QuoteRequestPopupState extends State<_QuoteRequestPopup> {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          
+
           // Service info card
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: _ServiceInfoCard(service: widget.service),
           ),
           const SizedBox(height: AppSpacing.lg),
-          
+
           // Form
           Flexible(
             child: SingleChildScrollView(
@@ -380,7 +404,7 @@ class _QuoteRequestPopupState extends State<_QuoteRequestPopup> {
               ),
             ),
           ),
-          
+
           // Submit button
           Container(
             padding: EdgeInsets.only(
@@ -475,9 +499,7 @@ class _ServiceInfoCard extends StatelessWidget {
             ? AppColors.themeRed.withValues(alpha: 0.1)
             : AppColors.themeRed.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(
-          color: AppColors.themeRed.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: AppColors.themeRed.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -576,9 +598,7 @@ class _QuoteTextField extends StatelessWidget {
         controller: controller,
         keyboardType: keyboardType,
         maxLines: maxLines,
-        style: AppTypography.bodyMedium(
-          color: AppColors.foreground(context),
-        ),
+        style: AppTypography.bodyMedium(color: AppColors.foreground(context)),
         decoration: InputDecoration(
           hintText: label,
           hintStyle: AppTypography.bodyMedium(

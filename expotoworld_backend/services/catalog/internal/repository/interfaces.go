@@ -71,6 +71,18 @@ type SubcategoryRepository interface {
 	Reorder(ctx context.Context, categoryID int32, orderedIDs []int32) error
 }
 
+// CollectionRepository defines the interface for collection data access.
+type CollectionRepository interface {
+	Create(ctx context.Context, params *domain.CreateCollectionParams) (*domain.Collection, error)
+	GetByID(ctx context.Context, id int32) (*domain.Collection, error)
+	GetBySubcategoryID(ctx context.Context, subcategoryID int32) ([]domain.Collection, error)
+	List(ctx context.Context, filter *domain.CollectionFilter, pagination Pagination) (*PaginatedResult[domain.Collection], error)
+	Update(ctx context.Context, id int32, params *domain.UpdateCollectionParams) error
+	Delete(ctx context.Context, id int32) error
+	Move(ctx context.Context, collectionID int32, targetSubcategoryID int32) error
+	Reorder(ctx context.Context, subcategoryID int32, orderedIDs []int32) error
+}
+
 // StoreRepository defines the interface for store data access.
 type StoreRepository interface {
 	Create(ctx context.Context, params *domain.CreateStoreParams) (*domain.Store, error)
@@ -80,6 +92,7 @@ type StoreRepository interface {
 	Update(ctx context.Context, id int32, params *domain.UpdateStoreParams) error
 	Delete(ctx context.Context, id int32) error
 	CountProducts(ctx context.Context, storeID int32) (int64, error)
+	CountCategories(ctx context.Context, storeID int32) (int64, error)
 }
 
 // RegionRepository defines the interface for region data access.
@@ -87,6 +100,8 @@ type RegionRepository interface {
 	Create(ctx context.Context, params *domain.CreateRegionParams) (*domain.Region, error)
 	GetByID(ctx context.Context, id int32) (*domain.Region, error)
 	GetByStoreID(ctx context.Context, storeID int32) ([]domain.Region, error)
+	List(ctx context.Context, filter *domain.RegionFilter, pagination Pagination) (*PaginatedResult[domain.Region], error)
+	ListAll(ctx context.Context) ([]domain.Region, error)
 	Update(ctx context.Context, id int32, params *domain.UpdateRegionParams) error
 	Delete(ctx context.Context, id int32) error
 }
@@ -164,6 +179,22 @@ type SubcategoryMappingRepository interface {
 	DeleteBySubcategoryID(ctx context.Context, subcategoryID int32) error
 	SetSubcategories(ctx context.Context, productID int32, subcategoryIDs []int32) error
 	SetSubcategoriesTx(ctx context.Context, tx pgx.Tx, productID int32, subcategoryIDs []int32) error
+}
+
+// CollectionMappingRepository defines the interface for product-collection mapping data access.
+type CollectionMappingRepository interface {
+	Create(ctx context.Context, productID int32, collectionID int32) (*domain.CollectionMapping, error)
+	CreateTx(ctx context.Context, tx pgx.Tx, productID int32, collectionID int32) (*domain.CollectionMapping, error)
+	GetByProductID(ctx context.Context, productID int32) ([]domain.CollectionMapping, error)
+	GetByProductIDTx(ctx context.Context, tx pgx.Tx, productID int32) ([]domain.CollectionMapping, error)
+	GetByCollectionID(ctx context.Context, collectionID int32) ([]domain.CollectionMapping, error)
+	Delete(ctx context.Context, productID int32, collectionID int32) error
+	DeleteTx(ctx context.Context, tx pgx.Tx, productID int32, collectionID int32) error
+	DeleteByProductID(ctx context.Context, productID int32) error
+	DeleteByProductIDTx(ctx context.Context, tx pgx.Tx, productID int32) error
+	DeleteByCollectionID(ctx context.Context, collectionID int32) error
+	SetCollections(ctx context.Context, productID int32, collectionIDs []int32) error
+	SetCollectionsTx(ctx context.Context, tx pgx.Tx, productID int32, collectionIDs []int32) error
 }
 
 // SpecificationRepository defines the interface for product specification data access.

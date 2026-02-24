@@ -16,6 +16,7 @@ type Category struct {
 	ETWStoreType     *ETWStoreType   // Store type classification
 	ETWMiniAppType   *ETWMiniAppType // Mini-app type classification
 	SubcategoryCount int             // Number of subcategories (computed)
+	ProductCount     int             // Number of products mapped to this category (computed)
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
@@ -81,6 +82,7 @@ type Subcategory struct {
 	ImageURL      *string
 	DisplayOrder  int32
 	IsActive      bool
+	ProductCount  int // Number of products mapped to this subcategory (computed)
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
@@ -123,6 +125,69 @@ type SubcategoryFilter struct {
 	Search           *string
 }
 
+// Collection represents a product collection belonging to a parent subcategory.
+type Collection struct {
+	CollectionID  int32
+	SubcategoryID int32 // FK to admin_product_subcategory
+	Name          string
+	ImageURL      *string
+	DisplayOrder  int32
+	IsActive      bool
+	ProductCount  int // Number of products mapped to this collection (computed)
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+}
+
+// CollectionWithCounts extends Collection with computed counts.
+type CollectionWithCounts struct {
+	CollectionID  int32
+	SubcategoryID int32
+	Name          string
+	ImageURL      *string
+	DisplayOrder  int32
+	IsActive      bool
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	ProductCount  int // Number of products in this collection
+}
+
+// CreateCollectionParams contains the parameters for creating a new collection.
+type CreateCollectionParams struct {
+	SubcategoryID int32
+	Name          string
+	ImageURL      *string
+	DisplayOrder  int32
+	IsActive      bool
+}
+
+// UpdateCollectionParams contains the parameters for updating an existing collection.
+type UpdateCollectionParams struct {
+	SubcategoryID *int32
+	Name          *string
+	ImageURL      *string
+	DisplayOrder  *int32
+	IsActive      *bool
+}
+
+// CollectionFilter contains filter options for listing collections.
+type CollectionFilter struct {
+	ParentSubcategoryID *int32
+	IsActive            *bool
+	Search              *string
+}
+
+// SubcategoryWithCollections extends Subcategory with its collections.
+type SubcategoryWithCollections struct {
+	Subcategory
+	Collections []Collection
+}
+
+// CategoryWithFullHierarchy extends Category with subcategories and their collections.
+type CategoryWithFullHierarchy struct {
+	Category
+	Subcategories []SubcategoryWithCollections
+}
+
 // CategoryTree represents the full category hierarchy with nested subcategories.
 type CategoryTree struct {
 	Categories []CategoryWithSubcategories
@@ -138,4 +203,10 @@ type CategoryMapping struct {
 type SubcategoryMapping struct {
 	ProductID     int32
 	SubcategoryID int32
+}
+
+// CollectionMapping represents the association between a product and a collection.
+type CollectionMapping struct {
+	ProductID    int32
+	CollectionID int32
 }

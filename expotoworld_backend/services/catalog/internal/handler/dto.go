@@ -51,6 +51,7 @@ type CreateProductRequest struct {
 	Images                  []ImageInput     `json:"images"`
 	CategoryIDs             []int32          `json:"category_ids"`
 	SubcategoryIDs          []int32          `json:"subcategory_ids"`
+	CollectionIDs           []int32          `json:"collection_ids"`
 }
 
 // AttributeInput represents an attribute input.
@@ -101,8 +102,9 @@ func (r *CreateProductRequest) toInput() *service.CreateProductInput {
 			ParentID:                r.ParentID,
 			IsDefaultVariant:        r.IsDefaultVariant,
 		},
-		CategoryIDs: r.CategoryIDs,
-		SubcatIDs:   r.SubcategoryIDs,
+		CategoryIDs:   r.CategoryIDs,
+		SubcatIDs:     r.SubcategoryIDs,
+		CollectionIDs: r.CollectionIDs,
 	}
 
 	// Set visibility (default to not_visible if not provided)
@@ -177,6 +179,7 @@ type UpdateProductRequest struct {
 	Images                  *[]ImageInput     `json:"images"`
 	CategoryIDs             *[]int32          `json:"category_ids"`
 	SubcategoryIDs          *[]int32          `json:"subcategory_ids"`
+	CollectionIDs           *[]int32          `json:"collection_ids"`
 }
 
 func (r *UpdateProductRequest) toInput(productID int32) *service.UpdateProductInput {
@@ -209,8 +212,9 @@ func (r *UpdateProductRequest) toInput(productID int32) *service.UpdateProductIn
 			IsMiniAppRecommendation: r.IsMiniAppRecommendation,
 			IsDefaultVariant:        r.IsDefaultVariant,
 		},
-		CategoryIDs: r.CategoryIDs,
-		SubcatIDs:   r.SubcategoryIDs,
+		CategoryIDs:   r.CategoryIDs,
+		SubcatIDs:     r.SubcategoryIDs,
+		CollectionIDs: r.CollectionIDs,
 	}
 
 	if r.Visibility != nil {
@@ -313,6 +317,7 @@ type ProductWithRelationsResponse struct {
 	Images         []ImageResponse         `json:"images"`
 	Categories     []CategoryResponse      `json:"categories"`
 	Subcategories  []SubcategoryResponse   `json:"subcategories,omitempty"`
+	Collections    []CollectionResponse    `json:"collections,omitempty"`
 	Children       []ProductResponse       `json:"children,omitempty"`
 }
 
@@ -560,6 +565,7 @@ type CategoryResponse struct {
 	ETWStoreType     *string `json:"etw_store_type"`
 	ETWMiniAppType   *string `json:"etw_mini_app_type"`
 	SubcategoryCount int     `json:"subcategory_count"`
+	ProductCount     int     `json:"product_count"`
 	CreatedAt        string  `json:"created_at"`
 	UpdatedAt        string  `json:"updated_at"`
 }
@@ -595,6 +601,7 @@ func toCategoryResponse(c *domain.Category) *CategoryResponse {
 		IsActive:         c.IsActive,
 		StoreID:          c.StoreID,
 		SubcategoryCount: c.SubcategoryCount,
+		ProductCount:     c.ProductCount,
 		CreatedAt:        c.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt:        c.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
@@ -653,7 +660,7 @@ func toPaginatedCategoriesResponse(result *repository.PaginatedResult[domain.Cat
 }
 
 func toCategoryTreeResponse(categories []domain.CategoryWithSubcategories) []CategoryWithSubcategoriesResponse {
-	var resp []CategoryWithSubcategoriesResponse
+	resp := make([]CategoryWithSubcategoriesResponse, 0, len(categories))
 	for _, c := range categories {
 		resp = append(resp, *toCategoryWithSubcategoriesResponse(&c))
 	}
@@ -717,6 +724,7 @@ type SubcategoryResponse struct {
 	ImageURL      *string `json:"image_url"`
 	DisplayOrder  int32   `json:"display_order"`
 	IsActive      bool    `json:"is_active"`
+	ProductCount  int     `json:"product_count"`
 	CreatedAt     string  `json:"created_at"`
 	UpdatedAt     string  `json:"updated_at"`
 }
@@ -735,6 +743,7 @@ func toSubcategoryResponse(s *domain.Subcategory) *SubcategoryResponse {
 		ImageURL:      s.ImageURL,
 		DisplayOrder:  s.DisplayOrder,
 		IsActive:      s.IsActive,
+		ProductCount:  s.ProductCount,
 		CreatedAt:     s.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt:     s.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
@@ -757,9 +766,131 @@ func toSubcategoryWithCountsResponse(s *domain.SubcategoryWithCounts) *Subcatego
 }
 
 func toSubcategoriesResponse(subcategories []domain.Subcategory) []SubcategoryResponse {
-	var resp []SubcategoryResponse
+	resp := make([]SubcategoryResponse, 0, len(subcategories))
 	for _, s := range subcategories {
 		resp = append(resp, *toSubcategoryResponse(&s))
+	}
+	return resp
+}
+
+// --------------------------------
+// Collection DTOs
+// --------------------------------
+
+// CreateCollectionRequest represents a request to create a collection.
+type CreateCollectionRequest struct {
+	Name         string  `json:"name" binding:"required"`
+	ImageURL     *string `json:"image_url"`
+	DisplayOrder int32   `json:"display_order"`
+	IsActive     bool    `json:"is_active"`
+}
+
+func (r *CreateCollectionRequest) toParams(subcategoryID int32) *domain.CreateCollectionParams {
+	return &domain.CreateCollectionParams{
+		SubcategoryID: subcategoryID,
+		Name:          r.Name,
+		ImageURL:      r.ImageURL,
+		DisplayOrder:  r.DisplayOrder,
+		IsActive:      r.IsActive,
+	}
+}
+
+// UpdateCollectionRequest represents a request to update a collection.
+type UpdateCollectionRequest struct {
+	Name         *string `json:"name"`
+	ImageURL     *string `json:"image_url"`
+	DisplayOrder *int32  `json:"display_order"`
+	IsActive     *bool   `json:"is_active"`
+}
+
+func (r *UpdateCollectionRequest) toParams() *domain.UpdateCollectionParams {
+	return &domain.UpdateCollectionParams{
+		Name:         r.Name,
+		ImageURL:     r.ImageURL,
+		DisplayOrder: r.DisplayOrder,
+		IsActive:     r.IsActive,
+	}
+}
+
+// MoveCollectionRequest represents a request to move a collection.
+type MoveCollectionRequest struct {
+	TargetSubcategoryID int32 `json:"target_subcategory_id" binding:"required"`
+}
+
+// CollectionResponse represents a collection in API responses.
+type CollectionResponse struct {
+	CollectionID  int32   `json:"collection_id"`
+	SubcategoryID int32   `json:"subcategory_id"`
+	Name          string  `json:"name"`
+	ImageURL      *string `json:"image_url"`
+	DisplayOrder  int32   `json:"display_order"`
+	IsActive      bool    `json:"is_active"`
+	ProductCount  int     `json:"product_count"`
+	CreatedAt     string  `json:"created_at"`
+	UpdatedAt     string  `json:"updated_at"`
+}
+
+// CollectionWithCountsResponse includes product count.
+type CollectionWithCountsResponse struct {
+	CollectionResponse
+	ProductCount int `json:"product_count"`
+}
+
+// SubcategoryWithCollectionsResponse includes nested collections.
+type SubcategoryWithCollectionsResponse struct {
+	SubcategoryResponse
+	Collections []CollectionResponse `json:"collections"`
+}
+
+// CategoryWithFullHierarchyResponse includes subcategories with their collections.
+type CategoryWithFullHierarchyResponse struct {
+	CategoryResponse
+	Subcategories []SubcategoryWithCollectionsResponse `json:"subcategories"`
+}
+
+func toCollectionResponse(c *domain.Collection) *CollectionResponse {
+	return &CollectionResponse{
+		CollectionID:  c.CollectionID,
+		SubcategoryID: c.SubcategoryID,
+		Name:          c.Name,
+		ImageURL:      c.ImageURL,
+		DisplayOrder:  c.DisplayOrder,
+		IsActive:      c.IsActive,
+		ProductCount:  c.ProductCount,
+		CreatedAt:     c.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:     c.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	}
+}
+
+func toCollectionWithCountsResponse(c *domain.Collection) *CollectionWithCountsResponse {
+	return &CollectionWithCountsResponse{
+		CollectionResponse: *toCollectionResponse(c),
+		ProductCount:       c.ProductCount,
+	}
+}
+
+func toCollectionsResponse(collections []domain.Collection) []CollectionResponse {
+	resp := make([]CollectionResponse, 0, len(collections))
+	for _, c := range collections {
+		resp = append(resp, *toCollectionResponse(&c))
+	}
+	return resp
+}
+
+func toCategoryTreeFullResponse(categories []domain.CategoryWithFullHierarchy) []CategoryWithFullHierarchyResponse {
+	resp := make([]CategoryWithFullHierarchyResponse, 0, len(categories))
+	for _, c := range categories {
+		catResp := CategoryWithFullHierarchyResponse{
+			CategoryResponse: *toCategoryResponse(&c.Category),
+		}
+		for _, sub := range c.Subcategories {
+			subResp := SubcategoryWithCollectionsResponse{
+				SubcategoryResponse: *toSubcategoryResponse(&sub.Subcategory),
+			}
+			subResp.Collections = toCollectionsResponse(sub.Collections)
+			catResp.Subcategories = append(catResp.Subcategories, subResp)
+		}
+		resp = append(resp, catResp)
 	}
 	return resp
 }
@@ -966,9 +1097,34 @@ func toRegionResponse(r *domain.Region) *RegionResponse {
 }
 
 func toRegionsResponse(regions []domain.Region) []RegionResponse {
-	var resp []RegionResponse
+	resp := make([]RegionResponse, 0, len(regions))
 	for _, r := range regions {
 		resp = append(resp, *toRegionResponse(&r))
+	}
+	return resp
+}
+
+// PaginatedRegionsResponse represents a paginated list of regions.
+type PaginatedRegionsResponse struct {
+	Items      []RegionResponse `json:"items"`
+	TotalCount int64            `json:"total_count"`
+	Page       int              `json:"page"`
+	PageSize   int              `json:"page_size"`
+	TotalPages int              `json:"total_pages"`
+}
+
+func toPaginatedRegionsResponse(result *repository.PaginatedResult[domain.Region]) *PaginatedRegionsResponse {
+	resp := &PaginatedRegionsResponse{
+		TotalCount: result.TotalCount,
+		Page:       result.Page,
+		PageSize:   result.PageSize,
+		TotalPages: result.TotalPages,
+	}
+	for _, r := range result.Items {
+		resp.Items = append(resp.Items, *toRegionResponse(&r))
+	}
+	if resp.Items == nil {
+		resp.Items = []RegionResponse{}
 	}
 	return resp
 }

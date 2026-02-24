@@ -8,7 +8,7 @@ import (
 // ProductImage represents an image associated with a product.
 type ProductImage struct {
 	ImageID      int32
-	ProductID    *int32 // FK to admin_products
+	ProductID    *int32 // FK to admin_product
 	ImageURL     *string
 	DisplayOrder int32
 	IsPrimary    bool // Whether this is the primary/main image

@@ -20,7 +20,7 @@ import {
   Add as AddIcon,
   Upload as UploadIcon,
 } from '@mui/icons-material';
-import { DataTable, StatusChip, ConfirmDialog, PageTitle, ActionMenu, FilterDropdown, type Column, type FilterOption } from '@components/common';
+import { DataTable, StatusChip, ConfirmDialog, PageTitle, ActionMenu, FilterDropdown, type Column } from '@components/common';
 import type { Order } from '@/types';
 
 // TODO: DUMMY DATA - Replace with actual API calls

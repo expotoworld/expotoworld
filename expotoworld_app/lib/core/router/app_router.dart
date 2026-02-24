@@ -116,7 +116,7 @@ class RoutePaths {
   // Auth routes removed - now handled via modal dialog
   static const String qrScan = '/qr-scan';
   static const String search = '/search';
-  
+
   // Mini-app routes
   static const String miniApp = '/mini-app';
   static String miniAppHome(String type) => '/mini-app/$type/home';
@@ -124,6 +124,8 @@ class RoutePaths {
   static String miniAppMap(String type) => '/mini-app/$type/map';
   static String miniAppProducts(String type, String subcategoryId) =>
       '/mini-app/$type/products/$subcategoryId';
+  static String miniAppCollections(String type, String subcategoryId) =>
+      '/mini-app/$type/collections/$subcategoryId';
   static String miniAppServices(String type, String subcategoryId) =>
       '/mini-app/$type/services/$subcategoryId';
 }
@@ -168,7 +170,7 @@ final GoRouter appRouter = GoRouter(
     ),
     // Auth is now handled via modal dialog (showAuthDialog)
     // No separate login/signup routes needed
-    
+
     // Search screen (outside shell, premium fade transition)
     GoRoute(
       path: RoutePaths.search,
@@ -329,7 +331,10 @@ final GoRouter appRouter = GoRouter(
                   begin: const Offset(0, 1),
                   end: Offset.zero,
                 ).animate(
-                  CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
                 );
             return SlideTransition(position: slideAnimation, child: child);
           },
@@ -361,10 +366,10 @@ final GoRouter appRouter = GoRouter(
         return '/mini-app/$type?tab=map';
       },
     ),
-    // Mini-app products screen (vertical slide-up for consistency with shell)
+    // Mini-app collections screen (3rd-tier: subcategory → collections)
     GoRoute(
-      path: '/mini-app/:type/products/:subcategoryId',
-      name: 'miniAppProducts',
+      path: '/mini-app/:type/collections/:subcategoryId',
+      name: 'miniAppCollections',
       pageBuilder: (context, state) {
         final typeString = state.pathParameters['type'] ?? 'toB';
         final subcategoryId = state.pathParameters['subcategoryId'] ?? '';
@@ -377,22 +382,73 @@ final GoRouter appRouter = GoRouter(
             overrides: [
               currentMiniAppTypeProvider.overrideWith((ref) => miniAppType),
             ],
+            child: MiniAppShell(
+              miniAppType: miniAppType,
+              child: CollectionsScreen(
+                miniAppType: miniAppType,
+                subcategoryId: subcategoryId,
+              ),
+            ),
+          ),
+          transitionDuration: const Duration(milliseconds: 300),
+          reverseTransitionDuration: const Duration(milliseconds: 250),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            final slideAnimation =
+                Tween<Offset>(
+                  begin: const Offset(0, 1),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                );
+            return SlideTransition(position: slideAnimation, child: child);
+          },
+        );
+      },
+    ),
+    // Mini-app products screen (vertical slide-up for consistency with shell)
+    GoRoute(
+      path: '/mini-app/:type/products/:subcategoryId',
+      name: 'miniAppProducts',
+      pageBuilder: (context, state) {
+        final typeString = state.pathParameters['type'] ?? 'toB';
+        final subcategoryId = state.pathParameters['subcategoryId'] ?? '';
+        final collectionId = state.uri.queryParameters['collectionId'];
+        final miniAppType = MiniAppType.values.firstWhere(
+          (e) => e.name == typeString,
+          orElse: () => MiniAppType.toB,
+        );
+        return CustomTransitionPage(
+          child: ProviderScope(
+            overrides: [
+              currentMiniAppTypeProvider.overrideWith((ref) => miniAppType),
+            ],
             // Wrap with MiniAppShell to show bottom navigation
             child: MiniAppShell(
               miniAppType: miniAppType,
-              child: _buildProductsScreen(miniAppType, subcategoryId),
+              child: _buildProductsScreen(
+                miniAppType,
+                subcategoryId,
+                collectionId: collectionId,
+              ),
             ),
           ),
           transitionDuration: const Duration(milliseconds: 300),
           reverseTransitionDuration: const Duration(milliseconds: 250),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             // Use vertical animation (same as mini-app shell) for consistency
-            final slideAnimation = Tween<Offset>(
-              begin: const Offset(0, 1), // Start from bottom
-              end: Offset.zero, // End at center
-            ).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-            );
+            final slideAnimation =
+                Tween<Offset>(
+                  begin: const Offset(0, 1), // Start from bottom
+                  end: Offset.zero, // End at center
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                );
             return SlideTransition(position: slideAnimation, child: child);
           },
         );
@@ -415,12 +471,16 @@ final GoRouter appRouter = GoRouter(
           reverseTransitionDuration: const Duration(milliseconds: 250),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             // Use vertical animation (same as mini-app shell) for consistency
-            final slideAnimation = Tween<Offset>(
-              begin: const Offset(0, 1), // Start from bottom
-              end: Offset.zero, // End at center
-            ).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-            );
+            final slideAnimation =
+                Tween<Offset>(
+                  begin: const Offset(0, 1), // Start from bottom
+                  end: Offset.zero, // End at center
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                );
             return SlideTransition(position: slideAnimation, child: child);
           },
         );
@@ -441,14 +501,27 @@ MiniAppType _getMiniAppType(GoRouterState state) {
 }
 
 /// Build the products screen based on mini-app type
-Widget _buildProductsScreen(MiniAppType miniAppType, String subcategoryId) {
+Widget _buildProductsScreen(
+  MiniAppType miniAppType,
+  String subcategoryId, {
+  String? collectionId,
+}) {
   switch (miniAppType) {
     case MiniAppType.toB:
-      return ToBProductsScreen(subcategoryId: subcategoryId);
+      return ToBProductsScreen(
+        subcategoryId: subcategoryId,
+        collectionId: collectionId,
+      );
     case MiniAppType.toC:
-      return ToCProductsScreen(subcategoryId: subcategoryId);
+      return ToCProductsScreen(
+        subcategoryId: subcategoryId,
+        collectionId: collectionId,
+      );
     case MiniAppType.toU:
-      return ToUProductsScreen(subcategoryId: subcategoryId);
+      return ToUProductsScreen(
+        subcategoryId: subcategoryId,
+        collectionId: collectionId,
+      );
     case MiniAppType.toX:
       // toX doesn't have products, only services
       return const SizedBox(); // This shouldn't happen

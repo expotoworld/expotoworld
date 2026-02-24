@@ -1,102 +1,10 @@
 /**
  * EXPO to WORLD Admin Panel - Type Definitions
- * Based on Flutter app models
+ *
+ * NOTE: Catalog-related types (Product, Category, Subcategory, Store, Region)
+ * are defined in @/services/catalogApi.ts — the single source of truth for all
+ * catalog types that match the backend API contract. Do NOT re-define them here.
  */
-
-// ============================================
-// STORE TYPES
-// ============================================
-
-export type StoreType = 'mega' | 'market' | 'toGo' | 'xpress';
-
-export interface Store {
-  id: string;
-  name: string;
-  storeType: StoreType;
-  address: string;
-  latitude: number;
-  longitude: number;
-  imageUrl?: string;
-  operatingHours?: string;
-  capacity?: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// ============================================
-// CATEGORY TYPES
-// ============================================
-
-export interface Category {
-  id: string;
-  name: string;
-  iconUrl?: string;
-  imageUrl?: string;
-  description?: string;
-  isActive: boolean;
-  productCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Subcategory {
-  id: string;
-  name: string;
-  categoryId: string;
-  iconUrl?: string;
-  imageUrl?: string;
-  description?: string;
-  productCount: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// ============================================
-// PRODUCT TYPES
-// ============================================
-
-export interface Product {
-  id: string;
-  name: string;
-  description: string;
-  originalPrice: number;
-  currentPrice: number;
-  stockLeft: number;
-  minimumOrderQuantity: number;
-  unit?: string;
-  quantity?: number;
-  multiplier?: number;
-  shelfCode: string;
-  imageUrls: string[];
-  categoryId: string;
-  subcategoryId: string;
-  storeId: string;
-  organizationId?: string;
-  isFeatured: boolean;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ProductFormData {
-  name: string;
-  description: string;
-  originalPrice: number;
-  currentPrice: number;
-  stockLeft: number;
-  minimumOrderQuantity: number;
-  unit?: string;
-  quantity?: number;
-  shelfCode: string;
-  categoryId: string;
-  subcategoryId: string;
-  storeId: string;
-  organizationId?: string;
-  isFeatured: boolean;
-  isActive: boolean;
-}
 
 // ============================================
 // ORDER TYPES
@@ -184,20 +92,6 @@ export interface Organization {
   description?: string;
   logoUrl?: string;
   productCount: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// ============================================
-// REGION TYPES
-// ============================================
-
-export interface Region {
-  id: string;
-  name: string;
-  coverageArea?: string; // GeoJSON or description
-  deliveryFee: number;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

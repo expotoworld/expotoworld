@@ -23,7 +23,7 @@ import {
   Upload as UploadIcon,
 } from '@mui/icons-material';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
-import { DataTable, ConfirmDialog, ActionMenu, PageTitle, FilterDropdown, type Column } from '@components/common';
+import { DataTable, ConfirmDialog, ActionMenu, PageTitle, type Column } from '@components/common';
 
 // NOTE: The Marker component uses the deprecated google.maps.Marker under the hood.
 // When @react-google-maps/api adds support for AdvancedMarkerElement, or when migrating
@@ -35,7 +35,6 @@ interface Region {
   name: string;
   deliveryFee: number;
   storeCount: number;
-  isActive: boolean;
   lat: number;
   lng: number;
   description?: string;
@@ -45,13 +44,13 @@ interface Region {
 
 // TODO: DUMMY DATA - Replace with actual API calls
 const mockRegions: Region[] = [
-  { id: '1', name: 'Manhattan', deliveryFee: 5.99, storeCount: 12, isActive: true, lat: 40.7831, lng: -73.9712, description: 'Central Manhattan area', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-15T10:00:00Z' },
-  { id: '2', name: 'Brooklyn', deliveryFee: 7.99, storeCount: 8, isActive: true, lat: 40.6782, lng: -73.9442, description: 'Brooklyn borough coverage', createdAt: '2024-01-02T00:00:00Z', updatedAt: '2024-01-14T11:00:00Z' },
-  { id: '3', name: 'Queens', deliveryFee: 8.99, storeCount: 5, isActive: true, lat: 40.7282, lng: -73.7949, description: 'Queens service area', createdAt: '2024-01-03T00:00:00Z', updatedAt: '2024-01-13T12:00:00Z' },
-  { id: '4', name: 'Bronx', deliveryFee: 9.99, storeCount: 3, isActive: false, lat: 40.8448, lng: -73.8648, description: 'Bronx region (currently inactive)', createdAt: '2024-01-04T00:00:00Z', updatedAt: '2024-01-12T13:00:00Z' },
-  { id: '5', name: 'Staten Island', deliveryFee: 12.99, storeCount: 2, isActive: true, lat: 40.5795, lng: -74.1502, description: 'Staten Island delivery zone', createdAt: '2024-01-05T00:00:00Z', updatedAt: '2024-01-11T14:00:00Z' },
-  { id: '6', name: 'Hoboken', deliveryFee: 10.99, storeCount: 4, isActive: true, lat: 40.7440, lng: -74.0324, description: 'New Jersey Hoboken area', createdAt: '2024-01-06T00:00:00Z', updatedAt: '2024-01-10T15:00:00Z' },
-  { id: '7', name: 'Jersey City', deliveryFee: 11.99, storeCount: 3, isActive: true, lat: 40.7178, lng: -74.0431, description: 'Jersey City coverage', createdAt: '2024-01-07T00:00:00Z', updatedAt: '2024-01-09T16:00:00Z' },
+  { id: '1', name: 'Manhattan', deliveryFee: 5.99, storeCount: 12, lat: 40.7831, lng: -73.9712, description: 'Central Manhattan area', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-15T10:00:00Z' },
+  { id: '2', name: 'Brooklyn', deliveryFee: 7.99, storeCount: 8, lat: 40.6782, lng: -73.9442, description: 'Brooklyn borough coverage', createdAt: '2024-01-02T00:00:00Z', updatedAt: '2024-01-14T11:00:00Z' },
+  { id: '3', name: 'Queens', deliveryFee: 8.99, storeCount: 5, lat: 40.7282, lng: -73.7949, description: 'Queens service area', createdAt: '2024-01-03T00:00:00Z', updatedAt: '2024-01-13T12:00:00Z' },
+  { id: '4', name: 'Bronx', deliveryFee: 9.99, storeCount: 3, lat: 40.8448, lng: -73.8648, description: 'Bronx region', createdAt: '2024-01-04T00:00:00Z', updatedAt: '2024-01-12T13:00:00Z' },
+  { id: '5', name: 'Staten Island', deliveryFee: 12.99, storeCount: 2, lat: 40.5795, lng: -74.1502, description: 'Staten Island delivery zone', createdAt: '2024-01-05T00:00:00Z', updatedAt: '2024-01-11T14:00:00Z' },
+  { id: '6', name: 'Hoboken', deliveryFee: 10.99, storeCount: 4, lat: 40.7440, lng: -74.0324, description: 'New Jersey Hoboken area', createdAt: '2024-01-06T00:00:00Z', updatedAt: '2024-01-10T15:00:00Z' },
+  { id: '7', name: 'Jersey City', deliveryFee: 11.99, storeCount: 3, lat: 40.7178, lng: -74.0431, description: 'Jersey City coverage', createdAt: '2024-01-07T00:00:00Z', updatedAt: '2024-01-09T16:00:00Z' },
 ];
 
 const RegionsPage: React.FC = () => {
@@ -60,7 +59,6 @@ const RegionsPage: React.FC = () => {
 
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -135,8 +133,8 @@ const RegionsPage: React.FC = () => {
               width: 40,
               height: 40,
               borderRadius: 2,
-              bgcolor: row.isActive ? 'primary.light' : 'grey.200',
-              color: row.isActive ? 'primary.main' : 'grey.500',
+              bgcolor: 'primary.light',
+              color: 'primary.main',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -172,18 +170,6 @@ const RegionsPage: React.FC = () => {
       align: 'center',
       format: (value) => (
         <Chip label={value} size="small" variant="outlined" />
-      ),
-    },
-    {
-      id: 'isActive',
-      label: t('common.status'),
-      minWidth: 100,
-      format: (value) => (
-        <Chip
-          label={value ? t('common.active') : t('common.inactive')}
-          size="small"
-          color={value ? 'success' : 'default'}
-        />
       ),
     },
     {
@@ -243,11 +229,7 @@ const RegionsPage: React.FC = () => {
     const matchesSearch =
       region.name.toLowerCase().includes(search.toLowerCase()) ||
       (region.description?.toLowerCase().includes(search.toLowerCase()) ?? false);
-    const matchesStatus =
-      statusFilter === 'all' ||
-      (statusFilter === 'active' && region.isActive) ||
-      (statusFilter === 'inactive' && !region.isActive);
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
   const handleDeleteConfirm = () => {
@@ -318,9 +300,6 @@ const RegionsPage: React.FC = () => {
             position={{ lat: region.lat, lng: region.lng }}
             onClick={() => handleMarkerClick(region.id)}
             title={region.name}
-            icon={region.isActive ? undefined : {
-              url: 'http://maps.google.com/mapfiles/ms/icons/grey.png',
-            }}
             animation={selectedRegion === region.id ? google.maps.Animation.BOUNCE : undefined}
           />
         ))}
@@ -372,17 +351,6 @@ const RegionsPage: React.FC = () => {
                   </InputAdornment>
                 ),
               }}
-            />
-            <FilterDropdown
-              label={t('common.status')}
-              value={statusFilter}
-              options={[
-                { value: 'all', label: t('common.all') },
-                { value: 'active', label: t('common.active') },
-                { value: 'inactive', label: t('common.inactive') },
-              ]}
-              onChange={(value) => setStatusFilter(value)}
-              minWidth={180}
             />
           </Box>
         </CardContent>

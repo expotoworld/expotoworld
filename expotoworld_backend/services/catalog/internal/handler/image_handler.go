@@ -57,6 +57,9 @@ func (h *ImageHandler) RegisterRoutes(r *gin.RouterGroup) {
 		images.PUT("/:imageId/primary", h.SetPrimaryImage)
 		images.PUT("/reorder", h.ReorderImages)
 	}
+
+	// S3 orphan cleanup endpoint
+	r.DELETE("/s3-cleanup", h.CleanupS3Object)
 }
 
 // GetUploadURLRequest represents a request to get a presigned upload URL.
@@ -275,7 +278,44 @@ func (h *ImageHandler) ReorderImages(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "images reordered successfully"})
 }
 
-// Helper functions
+// CleanupS3Object handles DELETE /s3-cleanup?object_key=...
+// Removes an orphaned S3 object that was uploaded but whose DB record creation failed.
+// Only allows deletion of objects under the admin-panel/ prefix for safety.
+func (h *ImageHandler) CleanupS3Object(c *gin.Context) {
+	objectKey := c.Query("object_key")
+	if objectKey == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "object_key query parameter is required"})
+		return
+	}
+
+	// Security: only allow cleanup of objects under admin-panel/ prefix
+	allowedPrefixes := []string{
+		"admin-panel/products/",
+		"admin-panel/categories/",
+		"admin-panel/subcategories/",
+		"admin-panel/stores/",
+	}
+	allowed := false
+	for _, prefix := range allowedPrefixes {
+		if strings.HasPrefix(objectKey, prefix) {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "object key not in an allowed path"})
+		return
+	}
+
+	if err := h.s3Client.DeleteObject(c.Request.Context(), objectKey); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete S3 object"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "S3 object deleted successfully", "object_key": objectKey})
+}
+
+// ---- Helper functions ----
 
 func isValidImageContentType(contentType string) bool {
 	validTypes := map[string]bool{
@@ -321,8 +361,8 @@ func extractS3Key(imageURL, bucket string) string {
 
 	// Handle CloudFront or custom domain URLs
 	// If the URL contains our expected path structure, extract it
-	if strings.Contains(imageURL, "admin-panel/products/") {
-		idx := strings.Index(imageURL, "admin-panel/products/")
+	if strings.Contains(imageURL, "admin-panel/") {
+		idx := strings.Index(imageURL, "admin-panel/")
 		if idx != -1 {
 			return imageURL[idx:]
 		}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/expotoworld/expotoworld_backend/pkg/awsutil"
 	"github.com/expotoworld/expotoworld_backend/services/catalog/internal/domain"
+	"github.com/expotoworld/expotoworld_backend/services/catalog/internal/repository"
 	"github.com/expotoworld/expotoworld_backend/services/catalog/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -61,6 +62,11 @@ func (h *StoreHandler) RegisterRoutes(r *gin.RouterGroup) {
 // @Produce json
 // @Param page query int false "Page number" default(1)
 // @Param page_size query int false "Page size" default(20)
+// @Param search query string false "Search by name"
+// @Param region_id query int false "Filter by region ID"
+// @Param is_active query bool false "Filter by active status"
+// @Param etw_store_type query string false "Filter by ETW store type"
+// @Param etw_mini_app_type query string false "Filter by ETW mini app type"
 // @Success 200 {object} PaginatedStoresResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /stores [get]
@@ -75,7 +81,10 @@ func (h *StoreHandler) ListStores(c *gin.Context) {
 		pageSize = 20
 	}
 
-	result, err := h.storeService.ListStores(c.Request.Context(), page, pageSize)
+	filter := parseStoreFilter(c)
+	pagination := repository.Pagination{Page: page, PageSize: pageSize}
+
+	result, err := h.storeService.ListStoresFiltered(c.Request.Context(), filter, pagination)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
@@ -186,6 +195,7 @@ func (h *StoreHandler) UpdateStore(c *gin.Context) {
 // @Param id path int true "Store ID"
 // @Success 204
 // @Failure 404 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /stores/{id} [delete]
 func (h *StoreHandler) DeleteStore(c *gin.Context) {
@@ -198,6 +208,10 @@ func (h *StoreHandler) DeleteStore(c *gin.Context) {
 	if err := h.storeService.DeleteStore(c.Request.Context(), int32(id)); err != nil {
 		if errors.Is(err, domain.ErrStoreNotFound) {
 			c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+			return
+		}
+		if errors.Is(err, domain.ErrStoreHasProducts) || errors.Is(err, domain.ErrStoreHasCategories) {
+			c.JSON(http.StatusConflict, ErrorResponse{Error: err.Error()})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
@@ -234,21 +248,48 @@ func (h *StoreHandler) ListStoreRegions(c *gin.Context) {
 }
 
 // ListRegions godoc
-// @Summary List all regions
+// @Summary List all regions (paginated)
 // @Tags regions
 // @Accept json
 // @Produce json
-// @Success 200 {array} RegionResponse
+// @Param page query int false "Page number" default(1)
+// @Param page_size query int false "Page size" default(20)
+// @Param search query string false "Search by name or description"
+// @Param store_id query int false "Filter by store ID"
+// @Success 200 {object} PaginatedRegionsResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /regions [get]
 func (h *StoreHandler) ListRegions(c *gin.Context) {
-	regions, err := h.storeService.ListRegions(c.Request.Context())
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	filter := &domain.RegionFilter{}
+	if search := c.Query("search"); search != "" {
+		filter.Search = &search
+	}
+	if storeIDStr := c.Query("store_id"); storeIDStr != "" {
+		if storeID, err := strconv.ParseInt(storeIDStr, 10, 32); err == nil {
+			sid := int32(storeID)
+			filter.StoreID = &sid
+		}
+	}
+
+	result, err := h.storeService.ListRegionsPaginated(c.Request.Context(), filter, repository.Pagination{
+		Page:     page,
+		PageSize: pageSize,
+	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, toRegionsResponse(regions))
+	c.JSON(http.StatusOK, toPaginatedRegionsResponse(result))
 }
 
 // GetRegion godoc
@@ -441,4 +482,38 @@ func (h *StoreHandler) GetStoreImageUploadURL(c *gin.Context) {
 		PublicURL: h.s3Client.GetPublicURL(objectKey),
 		ExpiresIn: int(expiresIn.Seconds()),
 	})
+}
+
+// parseStoreFilter extracts store filter parameters from query string.
+func parseStoreFilter(c *gin.Context) *domain.StoreFilter {
+	filter := &domain.StoreFilter{}
+
+	if search := c.Query("search"); search != "" {
+		filter.Search = &search
+	}
+
+	if regionID := c.Query("region_id"); regionID != "" {
+		if id, err := strconv.ParseInt(regionID, 10, 32); err == nil {
+			rid := int32(id)
+			filter.RegionID = &rid
+		}
+	}
+
+	if isActive := c.Query("is_active"); isActive != "" {
+		if val, err := strconv.ParseBool(isActive); err == nil {
+			filter.IsActive = &val
+		}
+	}
+
+	if etwStoreType := c.Query("etw_store_type"); etwStoreType != "" {
+		st := domain.ETWStoreType(etwStoreType)
+		filter.ETWStoreType = &st
+	}
+
+	if etwMiniAppType := c.Query("etw_mini_app_type"); etwMiniAppType != "" {
+		mt := domain.ETWMiniAppType(etwMiniAppType)
+		filter.ETWMiniAppType = &mt
+	}
+
+	return filter
 }

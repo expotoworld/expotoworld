@@ -477,7 +477,7 @@ const ProductDetailPage: React.FC = () => {
                   <Typography variant="body2" color="text.secondary">
                     {t('products.form.weight')}
                   </Typography>
-                  <Typography variant="body1">{product.weight ? `${product.weight}g` : '-'}</Typography>
+                  <Typography variant="body1">{product.logisticsWeight ? `${product.logisticsWeight}g` : '-'}</Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body2" color="text.secondary">

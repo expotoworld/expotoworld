@@ -319,3 +319,149 @@ func (r *SubcategoryMappingRepository) setSubcategoriesWithQuerier(ctx context.C
 	}
 	return nil
 }
+
+// ----------------------------------------------------------------
+// CollectionMappingRepository
+// ----------------------------------------------------------------
+
+// CollectionMappingRepository implements product-collection mapping data access.
+type CollectionMappingRepository struct {
+	pool *pgxpool.Pool
+}
+
+// NewCollectionMappingRepository creates a new collection mapping repository.
+func NewCollectionMappingRepository(pool *pgxpool.Pool) *CollectionMappingRepository {
+	return &CollectionMappingRepository{pool: pool}
+}
+
+// Create creates a new product-collection mapping.
+func (r *CollectionMappingRepository) Create(ctx context.Context, productID int32, collectionID int32) (*domain.CollectionMapping, error) {
+	return r.createWithQuerier(ctx, r.pool, productID, collectionID)
+}
+
+// CreateTx creates a new product-collection mapping within a transaction.
+func (r *CollectionMappingRepository) CreateTx(ctx context.Context, tx pgx.Tx, productID int32, collectionID int32) (*domain.CollectionMapping, error) {
+	return r.createWithQuerier(ctx, tx, productID, collectionID)
+}
+
+func (r *CollectionMappingRepository) createWithQuerier(ctx context.Context, q mappingQuerier, productID int32, collectionID int32) (*domain.CollectionMapping, error) {
+	query := `INSERT INTO admin_product_collection_mapping (product_id, collection_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING product_id, collection_id`
+	var m domain.CollectionMapping
+	err := q.QueryRow(ctx, query, productID, collectionID).Scan(&m.ProductID, &m.CollectionID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return &domain.CollectionMapping{ProductID: productID, CollectionID: collectionID}, nil
+		}
+		return nil, fmt.Errorf("failed to create collection mapping: %w", err)
+	}
+	return &m, nil
+}
+
+// GetByProductID retrieves all collection mappings for a product.
+func (r *CollectionMappingRepository) GetByProductID(ctx context.Context, productID int32) ([]domain.CollectionMapping, error) {
+	return r.getByProductIDWithQuerier(ctx, r.pool, productID)
+}
+
+// GetByProductIDTx retrieves all collection mappings within a transaction.
+func (r *CollectionMappingRepository) GetByProductIDTx(ctx context.Context, tx pgx.Tx, productID int32) ([]domain.CollectionMapping, error) {
+	return r.getByProductIDWithQuerier(ctx, tx, productID)
+}
+
+func (r *CollectionMappingRepository) getByProductIDWithQuerier(ctx context.Context, q mappingQuerier, productID int32) ([]domain.CollectionMapping, error) {
+	rows, err := q.Query(ctx, "SELECT product_id, collection_id FROM admin_product_collection_mapping WHERE product_id = $1", productID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var mappings []domain.CollectionMapping
+	for rows.Next() {
+		var m domain.CollectionMapping
+		if err := rows.Scan(&m.ProductID, &m.CollectionID); err != nil {
+			return nil, err
+		}
+		mappings = append(mappings, m)
+	}
+	return mappings, nil
+}
+
+// GetByCollectionID retrieves all mappings for a collection.
+func (r *CollectionMappingRepository) GetByCollectionID(ctx context.Context, collectionID int32) ([]domain.CollectionMapping, error) {
+	rows, err := r.pool.Query(ctx, "SELECT product_id, collection_id FROM admin_product_collection_mapping WHERE collection_id = $1", collectionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var mappings []domain.CollectionMapping
+	for rows.Next() {
+		var m domain.CollectionMapping
+		if err := rows.Scan(&m.ProductID, &m.CollectionID); err != nil {
+			return nil, err
+		}
+		mappings = append(mappings, m)
+	}
+	return mappings, nil
+}
+
+// Delete deletes a specific product-collection mapping.
+func (r *CollectionMappingRepository) Delete(ctx context.Context, productID int32, collectionID int32) error {
+	return r.deleteWithQuerier(ctx, r.pool, productID, collectionID)
+}
+
+// DeleteTx deletes a mapping within a transaction.
+func (r *CollectionMappingRepository) DeleteTx(ctx context.Context, tx pgx.Tx, productID int32, collectionID int32) error {
+	return r.deleteWithQuerier(ctx, tx, productID, collectionID)
+}
+
+func (r *CollectionMappingRepository) deleteWithQuerier(ctx context.Context, q mappingQuerier, productID int32, collectionID int32) error {
+	_, err := q.Exec(ctx, "DELETE FROM admin_product_collection_mapping WHERE product_id = $1 AND collection_id = $2", productID, collectionID)
+	return err
+}
+
+// DeleteByProductID deletes all collection mappings for a product.
+func (r *CollectionMappingRepository) DeleteByProductID(ctx context.Context, productID int32) error {
+	return r.deleteByProductIDWithQuerier(ctx, r.pool, productID)
+}
+
+// DeleteByProductIDTx deletes all collection mappings within a transaction.
+func (r *CollectionMappingRepository) DeleteByProductIDTx(ctx context.Context, tx pgx.Tx, productID int32) error {
+	return r.deleteByProductIDWithQuerier(ctx, tx, productID)
+}
+
+func (r *CollectionMappingRepository) deleteByProductIDWithQuerier(ctx context.Context, q mappingQuerier, productID int32) error {
+	_, err := q.Exec(ctx, "DELETE FROM admin_product_collection_mapping WHERE product_id = $1", productID)
+	return err
+}
+
+// DeleteByCollectionID deletes all mappings for a collection.
+func (r *CollectionMappingRepository) DeleteByCollectionID(ctx context.Context, collectionID int32) error {
+	_, err := r.pool.Exec(ctx, "DELETE FROM admin_product_collection_mapping WHERE collection_id = $1", collectionID)
+	return err
+}
+
+// SetCollections replaces all collections for a product with the new list.
+func (r *CollectionMappingRepository) SetCollections(ctx context.Context, productID int32, collectionIDs []int32) error {
+	return r.setCollectionsWithQuerier(ctx, r.pool, productID, collectionIDs)
+}
+
+// SetCollectionsTx replaces all collections within a transaction.
+func (r *CollectionMappingRepository) SetCollectionsTx(ctx context.Context, tx pgx.Tx, productID int32, collectionIDs []int32) error {
+	return r.setCollectionsWithQuerier(ctx, tx, productID, collectionIDs)
+}
+
+func (r *CollectionMappingRepository) setCollectionsWithQuerier(ctx context.Context, q mappingQuerier, productID int32, collectionIDs []int32) error {
+	// Delete all existing mappings
+	if err := r.deleteByProductIDWithQuerier(ctx, q, productID); err != nil {
+		return err
+	}
+
+	// Create new mappings
+	for _, collectionID := range collectionIDs {
+		_, err := r.createWithQuerier(ctx, q, productID, collectionID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

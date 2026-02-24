@@ -175,6 +175,7 @@ type CreateProductParams struct {
 	ETWMiniAppType          *ETWMiniAppType
 	CategoryIDs             []int32 // Categories to associate
 	SubcategoryIDs          []int32 // Subcategories to associate
+	CollectionIDs           []int32 // Collections to associate
 }
 
 // UpdateProductParams contains the parameters for updating an existing product.
@@ -224,6 +225,7 @@ type ProductFilter struct {
 	OwnerOrgID     *string
 	CategoryID     *int32
 	SubcategoryID  *int32
+	CollectionID   *int32
 	ProductType    *ProductType
 	Visibility     *ProductVisibility
 	IsActive       *bool

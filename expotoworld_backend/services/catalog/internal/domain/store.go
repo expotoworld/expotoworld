@@ -89,3 +89,9 @@ type UpdateRegionParams struct {
 	Name        *string
 	Description *string
 }
+
+// RegionFilter contains filter options for listing regions.
+type RegionFilter struct {
+	StoreID *int32
+	Search  *string
+}

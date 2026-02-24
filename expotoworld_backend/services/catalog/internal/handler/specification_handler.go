@@ -80,7 +80,7 @@ func (h *SpecificationHandler) GetByProductID(c *gin.Context) {
 		return
 	}
 
-	var resp []SpecificationResponse
+	resp := make([]SpecificationResponse, 0, len(specs))
 	for _, spec := range specs {
 		resp = append(resp, SpecificationResponse{
 			SpecificationID: spec.SpecificationID,
@@ -216,7 +216,7 @@ func (h *SpecificationHandler) BatchCreate(c *gin.Context) {
 		return
 	}
 
-	var resp []SpecificationResponse
+	resp := make([]SpecificationResponse, 0, len(specs))
 	for _, spec := range specs {
 		resp = append(resp, SpecificationResponse{
 			SpecificationID: spec.SpecificationID,
@@ -261,7 +261,7 @@ func (h *SpecificationHandler) ReplaceAll(c *gin.Context) {
 		return
 	}
 
-	var resp []SpecificationResponse
+	resp := make([]SpecificationResponse, 0, len(specs))
 	for _, spec := range specs {
 		resp = append(resp, SpecificationResponse{
 			SpecificationID: spec.SpecificationID,

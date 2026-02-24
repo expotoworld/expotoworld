@@ -202,7 +202,14 @@ func (r *StoreRepository) Delete(ctx context.Context, id int32) error {
 // CountProducts counts the number of products in a store.
 func (r *StoreRepository) CountProducts(ctx context.Context, storeID int32) (int64, error) {
 	var count int64
-	err := r.pool.QueryRow(ctx, "SELECT COUNT(*) FROM admin_products WHERE store_id = $1", storeID).Scan(&count)
+	err := r.pool.QueryRow(ctx, "SELECT COUNT(*) FROM admin_product WHERE store_id = $1", storeID).Scan(&count)
+	return count, err
+}
+
+// CountCategories counts the number of categories in a store.
+func (r *StoreRepository) CountCategories(ctx context.Context, storeID int32) (int64, error) {
+	var count int64
+	err := r.pool.QueryRow(ctx, "SELECT COUNT(*) FROM admin_product_categories WHERE store_id = $1", storeID).Scan(&count)
 	return count, err
 }
 
@@ -294,4 +301,95 @@ func (r *RegionRepository) Update(ctx context.Context, id int32, params *domain.
 func (r *RegionRepository) Delete(ctx context.Context, id int32) error {
 	_, err := r.pool.Exec(ctx, "DELETE FROM admin_regions WHERE region_id = $1", id)
 	return err
+}
+
+// List retrieves regions with filtering and pagination.
+func (r *RegionRepository) List(ctx context.Context, filter *domain.RegionFilter, pagination repository.Pagination) (*repository.PaginatedResult[domain.Region], error) {
+	var conditions []string
+	var args []interface{}
+	argIdx := 1
+
+	if filter != nil {
+		if filter.StoreID != nil {
+			conditions = append(conditions, fmt.Sprintf("store_id = $%d", argIdx))
+			args = append(args, *filter.StoreID)
+			argIdx++
+		}
+		if filter.Search != nil && *filter.Search != "" {
+			conditions = append(conditions, fmt.Sprintf("(name ILIKE $%d OR description ILIKE $%d)", argIdx, argIdx))
+			args = append(args, "%"+*filter.Search+"%")
+			argIdx++
+		}
+	}
+
+	whereClause := ""
+	if len(conditions) > 0 {
+		whereClause = "WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	// Count
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM admin_regions %s", whereClause)
+	var totalCount int64
+	if err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&totalCount); err != nil {
+		return nil, err
+	}
+
+	// Paginate
+	offset := (pagination.Page - 1) * pagination.PageSize
+	query := fmt.Sprintf(`
+		SELECT region_id, store_id, name, description, created_at, updated_at
+		FROM admin_regions %s
+		ORDER BY name
+		LIMIT $%d OFFSET $%d`, whereClause, argIdx, argIdx+1)
+	args = append(args, pagination.PageSize, offset)
+
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var regions []domain.Region
+	for rows.Next() {
+		var region domain.Region
+		if err := rows.Scan(&region.RegionID, &region.StoreID, &region.Name, &region.Description, &region.CreatedAt, &region.UpdatedAt); err != nil {
+			return nil, err
+		}
+		regions = append(regions, region)
+	}
+
+	totalPages := int(totalCount) / pagination.PageSize
+	if int(totalCount)%pagination.PageSize > 0 {
+		totalPages++
+	}
+
+	return &repository.PaginatedResult[domain.Region]{
+		Items:      regions,
+		TotalCount: totalCount,
+		Page:       pagination.Page,
+		PageSize:   pagination.PageSize,
+		TotalPages: totalPages,
+	}, nil
+}
+
+// ListAll retrieves all regions without pagination.
+func (r *RegionRepository) ListAll(ctx context.Context) ([]domain.Region, error) {
+	query := `SELECT region_id, store_id, name, description, created_at, updated_at
+		FROM admin_regions ORDER BY name`
+
+	rows, err := r.pool.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var regions []domain.Region
+	for rows.Next() {
+		var region domain.Region
+		if err := rows.Scan(&region.RegionID, &region.StoreID, &region.Name, &region.Description, &region.CreatedAt, &region.UpdatedAt); err != nil {
+			return nil, err
+		}
+		regions = append(regions, region)
+	}
+	return regions, nil
 }

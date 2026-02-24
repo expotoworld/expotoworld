@@ -718,4 +718,34 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get faqDeleteAccountAnswer =>
       'If you wish to delete your account, please contact our support team through the \"Contact Us\" button below. Note that account deletion is permanent and all your data will be removed from our servers.';
+
+  @override
+  String get collections => 'Collections';
+
+  @override
+  String get noCollectionsAvailable => 'No collections available';
+
+  @override
+  String get failedToLoadCollections => 'Failed to load collections';
+
+  @override
+  String get category => 'Category';
+
+  @override
+  String get subcategory => 'Subcategory';
+
+  @override
+  String get collection => 'Collection';
+
+  @override
+  String get noCategoriesAvailable => 'No categories available';
+
+  @override
+  String get failedToLoadCategories => 'Failed to load categories';
+
+  @override
+  String get noSubcategoriesAvailable => 'No subcategories available';
+
+  @override
+  String get failedToLoadSubcategories => 'Failed to load subcategories';
 }

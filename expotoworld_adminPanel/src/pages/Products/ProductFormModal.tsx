@@ -25,7 +25,25 @@ import {
   Image as ImageIcon,
   Close as CloseIcon,
   CloudUpload as CloudUploadIcon,
+  DragIndicator as DragIndicatorIcon,
 } from '@mui/icons-material';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { CustomDropdown } from '@components/common';
 import { VariationOptionsEditor, type VariationOption } from '@components/products';
 import {
@@ -36,6 +54,7 @@ import {
   type Category,
   type Subcategory,
   type Store,
+  type CreateProductData,
 } from '@/services/catalogApi';
 
 interface FormData {
@@ -71,6 +90,7 @@ interface FormData {
   isFeatured: boolean;
   specifications: Array<{ name: string; value: string }>;
   images: Array<{ 
+    id: string;
     url: string; 
     isPrimary: boolean; 
     file?: File; 
@@ -217,6 +237,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
           value: spec.specValue,
         })) || [],
         images: product.imageUrls?.map((url, idx) => ({
+          id: `existing-${idx}`,
           url,
           isPrimary: idx === 0,
         })) || [],
@@ -417,6 +438,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
       }
       return true;
     }).map((file, idx) => ({
+      id: `upload-${crypto.randomUUID()}`,
       url: '',
       isPrimary: formData.images.length === 0 && idx === 0,
       file,
@@ -484,6 +506,227 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
         isPrimary: i === index,
       })),
     }));
+  };
+
+  // Image drag-and-drop reorder
+  const imageSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleImageDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setFormData(prev => {
+      const oldIndex = prev.images.findIndex(img => img.id === active.id);
+      const newIndex = prev.images.findIndex(img => img.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return { ...prev, images: arrayMove(prev.images, oldIndex, newIndex) };
+    });
+  }, []);
+
+  // Sortable image grid item component
+  const SortableImageGridItem = ({ img, index }: { img: FormData['images'][number]; index: number }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: img.id });
+
+    return (
+      <Grid
+        item
+        xs={6}
+        sm={4}
+        md={3}
+        ref={setNodeRef}
+        style={{
+          transform: CSS.Transform.toString(transform),
+          transition,
+        }}
+        sx={{ opacity: isDragging ? 0.5 : 1 }}
+      >
+        <Box
+          sx={{
+            border: img.isPrimary ? 2 : 1,
+            borderColor: img.isPrimary ? 'primary.main' : 'divider',
+            borderRadius: 2,
+            overflow: 'hidden',
+            bgcolor: 'background.paper',
+            position: 'relative',
+          }}
+        >
+          {/* Drag Handle - top left corner above primary badge */}
+          <IconButton
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: 4,
+              left: 4,
+              zIndex: 3,
+              cursor: 'grab',
+              touchAction: 'none',
+              bgcolor: 'rgba(0, 0, 0, 0.4)',
+              color: 'white',
+              width: 24,
+              height: 24,
+              '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.6)' },
+            }}
+            {...attributes}
+            {...listeners}
+          >
+            <DragIndicatorIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+
+          {/* Square Image Preview */}
+          <Box
+            sx={{
+              width: '100%',
+              paddingBottom: '100%',
+              position: 'relative',
+              bgcolor: 'grey.100',
+              cursor: (img.url || img.previewUrl) ? 'pointer' : 'default',
+            }}
+            onClick={() => {
+              const url = img.url || img.previewUrl;
+              if (url) window.open(url, '_blank');
+            }}
+          >
+            {(img.url || img.previewUrl) ? (
+              <Box
+                component="img"
+                src={img.url || img.previewUrl}
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            ) : (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                }}
+              >
+                <ImageIcon sx={{ fontSize: 48, color: 'grey.400' }} />
+              </Box>
+            )}
+
+            {/* Upload Progress Overlay */}
+            {img.uploading && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  bgcolor: 'rgba(0, 0, 0, 0.5)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <CircularProgress size={32} sx={{ color: 'white', mb: 1 }} />
+                <Typography variant="caption" sx={{ color: 'white' }}>
+                  {img.uploadProgress || 0}%
+                </Typography>
+              </Box>
+            )}
+
+            {/* Primary Badge Button */}
+            <Chip
+              label={img.isPrimary ? t('products.form.primary') : t('products.form.setPrimary')}
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!img.isPrimary && !img.uploading) {
+                  setPrimaryImage(index);
+                }
+              }}
+              sx={{
+                position: 'absolute',
+                top: 8,
+                left: 32,
+                fontSize: '0.65rem',
+                height: 22,
+                fontWeight: 600,
+                cursor: img.isPrimary ? 'default' : 'pointer',
+                ...(img.isPrimary
+                  ? {
+                      bgcolor: 'error.main',
+                      color: 'white',
+                    }
+                  : {
+                      bgcolor: 'transparent',
+                      color: 'error.main',
+                      border: '1.5px solid',
+                      borderColor: 'error.main',
+                      '&:hover': {
+                        bgcolor: 'error.main',
+                        color: 'white',
+                      },
+                    }),
+              }}
+            />
+
+            {/* Delete Button - top right */}
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                removeImage(index);
+              }}
+              disabled={img.uploading}
+              sx={{
+                position: 'absolute',
+                top: 4,
+                right: 4,
+                bgcolor: 'rgba(0, 0, 0, 0.5)',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: 'error.main',
+                },
+                width: 28,
+                height: 28,
+              }}
+            >
+              <DeleteIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+
+            {/* Pending Upload Badge */}
+            {img.file && !img.url && !img.uploading && (
+              <Chip
+                label={t('products.form.pending')}
+                size="small"
+                color="warning"
+                sx={{
+                  position: 'absolute',
+                  bottom: 8,
+                  left: 8,
+                  fontSize: '0.7rem',
+                  height: 22,
+                }}
+              />
+            )}
+          </Box>
+        </Box>
+      </Grid>
+    );
   };
 
   // Handle form submission
@@ -561,15 +804,16 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
         }
       }
 
-      // Prepare product data using Partial<Product> format for the API
-      const productData = {
+      // Prepare product data using CreateProductData format for the API
+      // This ensures all fields are correctly mapped through mapProductToApi()
+      const productData: CreateProductData = {
         sku: formData.sku || undefined,
-        name: formData.title,
+        title: formData.title,
         description: formData.description || undefined,
-        storeId: formData.storeId || undefined,
-        organizationId: formData.ownerOrgId || undefined,
-        currentPrice: parseFloat(formData.mainPrice) || 0,
-        originalPrice: parseFloat(formData.strikethroughPrice) || parseFloat(formData.mainPrice) || 0,
+        storeId: formData.storeId ? Number(formData.storeId) : undefined,
+        ownerOrgId: formData.ownerOrgId || undefined,
+        mainPrice: parseFloat(formData.mainPrice) || 0,
+        strikethroughPrice: parseFloat(formData.strikethroughPrice) || parseFloat(formData.mainPrice) || 0,
         costPrice: parseFloat(formData.costPrice) || undefined,
         taxRate: parseFloat(formData.taxRate) || undefined,
         stockLeft: parseInt(formData.stockLeft) || 0,
@@ -584,17 +828,18 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
         logisticsHeight: parseFloat(formData.logisticsHeight) || undefined,
         logisticsWeight: parseFloat(formData.logisticsWeight) || undefined,
         logisticsVolume: parseFloat(formData.logisticsVolume) || undefined,
-        categoryId: formData.categoryId || undefined,
-        subcategoryId: formData.subcategoryId || undefined,
-        productType: formData.productType,
-        variantOptionsIndex: formData.productType === 'parent' ? apiVariantOptionsIndex : undefined,
+        categoryIds: formData.categoryId ? [Number(formData.categoryId)] : [],
+        subcategoryIds: formData.subcategoryId ? [Number(formData.subcategoryId)] : [],
+        productType: formData.productType as 'standard' | 'parent' | 'child',
         etwStoreType: formData.etwStore || undefined,
         etwMiniAppType: formData.miniAppType || undefined,
         isActive: formData.visibility !== 'hidden',
         isFeatured: formData.visibility === 'featured',
-        imageUrls: uploadedImages
-          .sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0))
-          .map(img => img.url),
+        images: uploadedImages.map((img, idx) => ({
+          imageUrl: img.url,
+          displayOrder: idx,
+          isPrimary: img.isPrimary,
+        })),
       };
 
       let savedProductId: string | undefined;
@@ -1216,165 +1461,22 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
                     {/* Image Grid */}
                     {formData.images.length > 0 && (
-                      <Grid container spacing={2}>
-                        {formData.images.map((img, index) => (
-                          <Grid item xs={6} sm={4} md={3} key={index}>
-                            <Box
-                              sx={{
-                                border: img.isPrimary ? 2 : 1,
-                                borderColor: img.isPrimary ? 'primary.main' : 'divider',
-                                borderRadius: 2,
-                                overflow: 'hidden',
-                                bgcolor: 'background.paper',
-                                position: 'relative',
-                              }}
-                            >
-                              {/* Square Image Preview */}
-                              <Box
-                                sx={{
-                                  width: '100%',
-                                  paddingBottom: '100%', // Creates square aspect ratio
-                                  position: 'relative',
-                                  bgcolor: 'grey.100',
-                                  cursor: (img.url || img.previewUrl) ? 'pointer' : 'default',
-                                }}
-                                onClick={() => {
-                                  const url = img.url || img.previewUrl;
-                                  if (url) window.open(url, '_blank');
-                                }}
-                              >
-                                {(img.url || img.previewUrl) ? (
-                                  <Box
-                                    component="img"
-                                    src={img.url || img.previewUrl}
-                                    sx={{
-                                      position: 'absolute',
-                                      top: 0,
-                                      left: 0,
-                                      width: '100%',
-                                      height: '100%',
-                                      objectFit: 'cover',
-                                    }}
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).style.display = 'none';
-                                    }}
-                                  />
-                                ) : (
-                                  <Box
-                                    sx={{
-                                      position: 'absolute',
-                                      top: '50%',
-                                      left: '50%',
-                                      transform: 'translate(-50%, -50%)',
-                                    }}
-                                  >
-                                    <ImageIcon sx={{ fontSize: 48, color: 'grey.400' }} />
-                                  </Box>
-                                )}
-                                
-                                {/* Upload Progress Overlay */}
-                                {img.uploading && (
-                                  <Box
-                                    sx={{
-                                      position: 'absolute',
-                                      top: 0,
-                                      left: 0,
-                                      right: 0,
-                                      bottom: 0,
-                                      bgcolor: 'rgba(0, 0, 0, 0.5)',
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                    }}
-                                  >
-                                    <CircularProgress size={32} sx={{ color: 'white', mb: 1 }} />
-                                    <Typography variant="caption" sx={{ color: 'white' }}>
-                                      {img.uploadProgress || 0}%
-                                    </Typography>
-                                  </Box>
-                                )}
-                                
-                                {/* Primary Badge Button - top left (clickable for all images) */}
-                                <Chip
-                                  label={img.isPrimary ? t('products.form.primary') : t('products.form.setPrimary')}
-                                  size="small"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!img.isPrimary && !img.uploading) {
-                                      setPrimaryImage(index);
-                                    }
-                                  }}
-                                  sx={{
-                                    position: 'absolute',
-                                    top: 8,
-                                    left: 8,
-                                    fontSize: '0.65rem',
-                                    height: 22,
-                                    fontWeight: 600,
-                                    cursor: img.isPrimary ? 'default' : 'pointer',
-                                    ...(img.isPrimary
-                                      ? {
-                                          bgcolor: 'error.main',
-                                          color: 'white',
-                                        }
-                                      : {
-                                          bgcolor: 'transparent',
-                                          color: 'error.main',
-                                          border: '1.5px solid',
-                                          borderColor: 'error.main',
-                                          '&:hover': {
-                                            bgcolor: 'error.main',
-                                            color: 'white',
-                                          },
-                                        }),
-                                  }}
-                                />
-                                
-                                {/* Delete Button - top right */}
-                                <IconButton
-                                  size="small"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    removeImage(index);
-                                  }}
-                                  disabled={img.uploading}
-                                  sx={{
-                                    position: 'absolute',
-                                    top: 4,
-                                    right: 4,
-                                    bgcolor: 'rgba(0, 0, 0, 0.5)',
-                                    color: 'white',
-                                    '&:hover': {
-                                      bgcolor: 'error.main',
-                                    },
-                                    width: 28,
-                                    height: 28,
-                                  }}
-                                >
-                                  <DeleteIcon sx={{ fontSize: 16 }} />
-                                </IconButton>
-                                
-                                {/* Pending Upload Badge */}
-                                {img.file && !img.url && !img.uploading && (
-                                  <Chip
-                                    label={t('products.form.pending')}
-                                    size="small"
-                                    color="warning"
-                                    sx={{
-                                      position: 'absolute',
-                                      bottom: 8,
-                                      left: 8,
-                                      fontSize: '0.7rem',
-                                      height: 22,
-                                    }}
-                                  />
-                                )}
-                              </Box>
-                            </Box>
+                      <DndContext
+                        sensors={imageSensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleImageDragEnd}
+                      >
+                        <SortableContext
+                          items={formData.images.map(img => img.id)}
+                          strategy={rectSortingStrategy}
+                        >
+                          <Grid container spacing={2}>
+                            {formData.images.map((img, index) => (
+                              <SortableImageGridItem key={img.id} img={img} index={index} />
+                            ))}
                           </Grid>
-                        ))}
-                      </Grid>
+                        </SortableContext>
+                      </DndContext>
                     )}
                   </CardContent>
                 </Card>

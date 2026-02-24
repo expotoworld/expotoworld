@@ -6,7 +6,7 @@ import '../../domain/models/product_model.dart';
 import '../../core/widgets/unified_product_card.dart';
 
 /// toU Products Screen - Business to User (Volume-based)
-/// 
+///
 /// Customizations specific to toU:
 /// - Volume tier pricing display
 /// - Usage-based discounts
@@ -16,13 +16,15 @@ class ToUProductsScreen extends BaseProductsScreen {
   const ToUProductsScreen({
     super.key,
     required super.subcategoryId,
+    super.collectionId,
   }) : super(miniAppType: MiniAppType.toU);
 
   @override
   ConsumerState<ToUProductsScreen> createState() => _ToUProductsScreenState();
 }
 
-class _ToUProductsScreenState extends BaseProductsScreenState<ToUProductsScreen> {
+class _ToUProductsScreenState
+    extends BaseProductsScreenState<ToUProductsScreen> {
   @override
   Widget buildProductCard(
     BuildContext context,

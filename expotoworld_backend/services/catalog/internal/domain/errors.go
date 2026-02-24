@@ -36,10 +36,17 @@ var (
 	ErrSubcategoryHasProducts   = errors.New("subcategory has associated products")
 	ErrInvalidParentCategory    = errors.New("invalid parent category")
 
+	// Collection errors
+	ErrCollectionNotFound       = errors.New("collection not found")
+	ErrCollectionAlreadyExists  = errors.New("collection with this name already exists in the subcategory")
+	ErrCollectionHasProducts    = errors.New("collection has associated products")
+	ErrInvalidParentSubcategory = errors.New("invalid parent subcategory")
+
 	// Store errors
 	ErrStoreNotFound      = errors.New("store not found")
 	ErrStoreAlreadyExists = errors.New("store with this name already exists")
 	ErrStoreHasProducts   = errors.New("store has associated products")
+	ErrStoreHasCategories = errors.New("store has associated categories")
 
 	// Image errors
 	ErrImageNotFound    = errors.New("image not found")
@@ -117,6 +124,8 @@ func (e *NotFoundError) Is(target error) bool {
 		return e.Entity == "category"
 	case ErrSubcategoryNotFound:
 		return e.Entity == "subcategory"
+	case ErrCollectionNotFound:
+		return e.Entity == "collection"
 	case ErrStoreNotFound:
 		return e.Entity == "store"
 	case ErrImageNotFound:

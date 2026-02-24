@@ -22,6 +22,7 @@ type ProductService struct {
 	imageRepo         repository.ImageRepository
 	categoryMapping   repository.CategoryMappingRepository
 	subcatMapping     repository.SubcategoryMappingRepository
+	collectionMapping repository.CollectionMappingRepository
 }
 
 // NewProductService creates a new product service.
@@ -33,6 +34,7 @@ func NewProductService(
 	imageRepo repository.ImageRepository,
 	categoryMapping repository.CategoryMappingRepository,
 	subcatMapping repository.SubcategoryMappingRepository,
+	collectionMapping repository.CollectionMappingRepository,
 ) *ProductService {
 	return &ProductService{
 		pool:              pool,
@@ -42,16 +44,18 @@ func NewProductService(
 		imageRepo:         imageRepo,
 		categoryMapping:   categoryMapping,
 		subcatMapping:     subcatMapping,
+		collectionMapping: collectionMapping,
 	}
 }
 
 // CreateProductInput contains all data needed to create a product.
 type CreateProductInput struct {
-	Product     domain.CreateProductParams
-	Attributes  []domain.CreateAttributeParams
-	Images      []domain.CreateImageParams
-	CategoryIDs []int32
-	SubcatIDs   []int32
+	Product       domain.CreateProductParams
+	Attributes    []domain.CreateAttributeParams
+	Images        []domain.CreateImageParams
+	CategoryIDs   []int32
+	SubcatIDs     []int32
+	CollectionIDs []int32
 }
 
 // CreateProduct creates a new product with all associated data.
@@ -107,6 +111,13 @@ func (s *ProductService) CreateProduct(ctx context.Context, input *CreateProduct
 	if len(input.SubcatIDs) > 0 {
 		if err := s.subcatMapping.SetSubcategoriesTx(ctx, tx, product.ProductID, input.SubcatIDs); err != nil {
 			return nil, fmt.Errorf("failed to set subcategory mappings: %w", err)
+		}
+	}
+
+	// Create collection mappings
+	if len(input.CollectionIDs) > 0 {
+		if err := s.collectionMapping.SetCollectionsTx(ctx, tx, product.ProductID, input.CollectionIDs); err != nil {
+			return nil, fmt.Errorf("failed to set collection mappings: %w", err)
 		}
 	}
 
@@ -167,12 +178,13 @@ func (s *ProductService) ListProducts(ctx context.Context, filter *domain.Produc
 
 // UpdateProductInput contains all data needed to update a product.
 type UpdateProductInput struct {
-	ProductID   int32
-	Product     domain.UpdateProductParams
-	Attributes  *[]domain.CreateAttributeParams // If set, replaces all attributes
-	Images      *[]domain.CreateImageParams     // If set, replaces all images
-	CategoryIDs *[]int32                        // If set, replaces all categories
-	SubcatIDs   *[]int32                        // If set, replaces all subcategories
+	ProductID     int32
+	Product       domain.UpdateProductParams
+	Attributes    *[]domain.CreateAttributeParams // If set, replaces all attributes
+	Images        *[]domain.CreateImageParams     // If set, replaces all images
+	CategoryIDs   *[]int32                        // If set, replaces all categories
+	SubcatIDs     *[]int32                        // If set, replaces all subcategories
+	CollectionIDs *[]int32                        // If set, replaces all collections
 }
 
 // UpdateProduct updates a product and optionally its relations.
@@ -229,6 +241,13 @@ func (s *ProductService) UpdateProduct(ctx context.Context, input *UpdateProduct
 	if input.SubcatIDs != nil {
 		if err := s.subcatMapping.SetSubcategories(ctx, input.ProductID, *input.SubcatIDs); err != nil {
 			return nil, fmt.Errorf("failed to replace subcategory mappings: %w", err)
+		}
+	}
+
+	// Replace collection mappings if provided
+	if input.CollectionIDs != nil {
+		if err := s.collectionMapping.SetCollections(ctx, input.ProductID, *input.CollectionIDs); err != nil {
+			return nil, fmt.Errorf("failed to replace collection mappings: %w", err)
 		}
 	}
 
@@ -620,7 +639,7 @@ func (s *ProductService) GenerateVariants(ctx context.Context, parentID int32, i
 	}
 
 	// Check if there are options defined
-	if parent.VariantOptionsIndex == nil || len(parent.VariantOptionsIndex) == 0 {
+	if len(parent.VariantOptionsIndex) == 0 {
 		return nil, fmt.Errorf("parent product has no variant options defined")
 	}
 

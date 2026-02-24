@@ -3,10 +3,10 @@ import '../../../../../core/theme/app_colors.dart';
 
 /// MiniAppType represents the four ETW sub-applications.
 enum MiniAppType {
-  toB,   // B2B Exposition - MEGA stores
-  toC,   // B2C Marketplace - MARKET stores
-  toU,   // Unmanned Stores - GO + XPRESS stores
-  toX,   // Group buying services - Virtual (no physical stores)
+  toB, // B2B Exposition - MEGA stores
+  toC, // B2C Marketplace - MARKET stores
+  toU, // Unmanned Stores - GO + XPRESS stores
+  toX, // Group buying services - Virtual (no physical stores)
 }
 
 extension MiniAppTypeExtension on MiniAppType {
@@ -88,14 +88,45 @@ extension MiniAppTypeExtension on MiniAppType {
 
   /// Whether this mini-app shows a map
   bool get hasMap => this != MiniAppType.toX;
+
+  /// Backend `etw_mini_app_type` string for API queries.
+  /// Maps: toB → "ETWtoB", toC → "ETWtoC", etc.
+  String get apiValue {
+    switch (this) {
+      case MiniAppType.toB:
+        return 'ETWtoB';
+      case MiniAppType.toC:
+        return 'ETWtoC';
+      case MiniAppType.toU:
+        return 'ETWtoU';
+      case MiniAppType.toX:
+        return 'ETWtoX';
+    }
+  }
+
+  /// Parse from backend string. Returns null for unknown values.
+  static MiniAppType? fromApiValue(String? value) {
+    switch (value) {
+      case 'ETWtoB':
+        return MiniAppType.toB;
+      case 'ETWtoC':
+        return MiniAppType.toC;
+      case 'ETWtoU':
+        return MiniAppType.toU;
+      case 'ETWtoX':
+        return MiniAppType.toX;
+      default:
+        return null;
+    }
+  }
 }
 
 /// StoreType enum for physical stores
 enum StoreType {
-  mega,    // B2B Exposition stores
-  market,  // B2C Marketplace stores
-  toGo,    // Automated/Unmanned stores
-  xpress,  // Express pickup stores
+  mega, // B2B Exposition stores
+  market, // B2C Marketplace stores
+  toGo, // Automated/Unmanned stores
+  xpress, // Express pickup stores
 }
 
 extension StoreTypeExtension on StoreType {
@@ -132,13 +163,13 @@ extension StoreTypeExtension on StoreType {
   Color get color {
     switch (this) {
       case StoreType.mega:
-        return AppColors.blue500;       // Blue for MEGA
+        return AppColors.blue500; // Blue for MEGA
       case StoreType.market:
-        return AppColors.green500;      // Green for MARKET
+        return AppColors.green500; // Green for MARKET
       case StoreType.toGo:
-        return AppColors.purple;        // Purple for to GO
+        return AppColors.purple; // Purple for to GO
       case StoreType.xpress:
-        return AppColors.yellow500;     // Yellow for XPRESS
+        return AppColors.yellow500; // Yellow for XPRESS
     }
   }
 
@@ -167,6 +198,37 @@ extension StoreTypeExtension on StoreType {
         return 'assets/icons/map_markers/toGO.svg';
       case StoreType.xpress:
         return 'assets/icons/map_markers/XPRESS.svg';
+    }
+  }
+
+  /// Backend `etw_store_type` string for API queries.
+  /// Maps: mega → "ETWMega", market → "ETWMarket", etc.
+  String get apiValue {
+    switch (this) {
+      case StoreType.mega:
+        return 'ETWMega';
+      case StoreType.market:
+        return 'ETWMarket';
+      case StoreType.toGo:
+        return 'ETWtoGO';
+      case StoreType.xpress:
+        return 'ETWXpress';
+    }
+  }
+
+  /// Parse from backend string. Returns null for unknown values.
+  static StoreType? fromApiValue(String? value) {
+    switch (value) {
+      case 'ETWMega':
+        return StoreType.mega;
+      case 'ETWMarket':
+        return StoreType.market;
+      case 'ETWtoGO':
+        return StoreType.toGo;
+      case 'ETWXpress':
+        return StoreType.xpress;
+      default:
+        return null;
     }
   }
 }

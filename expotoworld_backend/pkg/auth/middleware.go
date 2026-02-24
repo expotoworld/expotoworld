@@ -390,14 +390,14 @@ func IsAuthor(c *gin.Context) bool {
 	return hasAuthorRole(claims)
 }
 
-// hasAnyRole checks if claims have any of the specified roles.
+// hasAnyRole checks if claims have any of the specified roles (case-insensitive).
 func hasAnyRole(claims *Claims, roles ...string) bool {
 	for _, role := range roles {
-		if claims.Role == role {
+		if strings.EqualFold(claims.Role, role) {
 			return true
 		}
 		for _, r := range claims.Roles {
-			if r == role {
+			if strings.EqualFold(r, role) {
 				return true
 			}
 		}
@@ -405,16 +405,16 @@ func hasAnyRole(claims *Claims, roles ...string) bool {
 	return false
 }
 
-// hasAllRoles checks if claims have all of the specified roles.
+// hasAllRoles checks if claims have all of the specified roles (case-insensitive).
 func hasAllRoles(claims *Claims, roles ...string) bool {
 	roleSet := make(map[string]bool)
-	roleSet[claims.Role] = true
+	roleSet[strings.ToLower(claims.Role)] = true
 	for _, r := range claims.Roles {
-		roleSet[r] = true
+		roleSet[strings.ToLower(r)] = true
 	}
 
 	for _, role := range roles {
-		if !roleSet[role] {
+		if !roleSet[strings.ToLower(role)] {
 			return false
 		}
 	}
