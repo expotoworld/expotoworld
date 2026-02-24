@@ -183,7 +183,7 @@ const commonOptions: ThemeOptions = {
           backdrop: {
             invisible: true,
           },
-        },
+        } as Record<string, unknown>,
       },
       styleOverrides: {
         paper: {
@@ -227,7 +227,7 @@ const commonOptions: ThemeOptions = {
                 position: 'relative',
               },
             },
-          },
+          } as Record<string, unknown>,
         },
       },
       styleOverrides: {

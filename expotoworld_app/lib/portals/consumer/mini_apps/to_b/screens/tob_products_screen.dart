@@ -6,7 +6,7 @@ import '../../domain/models/product_model.dart';
 import '../../core/widgets/unified_product_card.dart';
 
 /// toB Products Screen - Business to Business
-/// 
+///
 /// Customizations specific to toB:
 /// - MOQ badge on product cards
 /// - Bulk discount indicators
@@ -15,13 +15,15 @@ class ToBProductsScreen extends BaseProductsScreen {
   const ToBProductsScreen({
     super.key,
     required super.subcategoryId,
+    super.collectionId,
   }) : super(miniAppType: MiniAppType.toB);
 
   @override
   ConsumerState<ToBProductsScreen> createState() => _ToBProductsScreenState();
 }
 
-class _ToBProductsScreenState extends BaseProductsScreenState<ToBProductsScreen> {
+class _ToBProductsScreenState
+    extends BaseProductsScreenState<ToBProductsScreen> {
   @override
   Widget buildProductCard(
     BuildContext context,

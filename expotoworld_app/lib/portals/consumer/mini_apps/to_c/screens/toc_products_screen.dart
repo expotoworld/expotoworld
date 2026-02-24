@@ -6,7 +6,7 @@ import '../../domain/models/product_model.dart';
 import '../../core/widgets/unified_product_card.dart';
 
 /// toC Products Screen - Business to Consumer
-/// 
+///
 /// Customizations specific to toC:
 /// - Consumer reviews/ratings display
 /// - Wishlist heart button
@@ -16,13 +16,15 @@ class ToCProductsScreen extends BaseProductsScreen {
   const ToCProductsScreen({
     super.key,
     required super.subcategoryId,
+    super.collectionId,
   }) : super(miniAppType: MiniAppType.toC);
 
   @override
   ConsumerState<ToCProductsScreen> createState() => _ToCProductsScreenState();
 }
 
-class _ToCProductsScreenState extends BaseProductsScreenState<ToCProductsScreen> {
+class _ToCProductsScreenState
+    extends BaseProductsScreenState<ToCProductsScreen> {
   @override
   Widget buildProductCard(
     BuildContext context,

@@ -11,7 +11,7 @@ import (
 // They are visible on product detail pages and help customers understand product details.
 type ProductSpecification struct {
 	SpecificationID int32
-	ProductID       int32  // FK to admin_products
+	ProductID       int32  // FK to admin_product
 	SpecName        string // e.g., "Brand", "Material", "Country of Origin"
 	SpecValue       string // e.g., "Nike", "Cotton", "USA"
 	DisplayOrder    int32  // Order for UI display

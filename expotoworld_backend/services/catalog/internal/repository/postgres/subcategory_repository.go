@@ -25,7 +25,7 @@ func NewSubcategoryRepository(pool *pgxpool.Pool) *SubcategoryRepository {
 // Create creates a new subcategory.
 func (r *SubcategoryRepository) Create(ctx context.Context, params *domain.CreateSubcategoryParams) (*domain.Subcategory, error) {
 	query := `
-		INSERT INTO admin_subcategories (parent_category_id, name, image_url, display_order, is_active)
+		INSERT INTO admin_product_subcategory (parent_category_id, name, image_url, display_order, is_active)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING subcategory_id, parent_category_id, name, image_url, display_order, is_active, created_at, updated_at`
 
@@ -44,7 +44,7 @@ func (r *SubcategoryRepository) Create(ctx context.Context, params *domain.Creat
 // GetByID retrieves a subcategory by its ID.
 func (r *SubcategoryRepository) GetByID(ctx context.Context, id int32) (*domain.Subcategory, error) {
 	query := `SELECT subcategory_id, parent_category_id, name, image_url, display_order, is_active, created_at, updated_at
-		FROM admin_subcategories WHERE subcategory_id = $1`
+		FROM admin_product_subcategory WHERE subcategory_id = $1`
 
 	sub := &domain.Subcategory{}
 	err := r.pool.QueryRow(ctx, query, id).Scan(
@@ -62,7 +62,7 @@ func (r *SubcategoryRepository) GetByID(ctx context.Context, id int32) (*domain.
 // GetByCategoryID retrieves all subcategories for a category.
 func (r *SubcategoryRepository) GetByCategoryID(ctx context.Context, categoryID int32) ([]domain.Subcategory, error) {
 	query := `SELECT subcategory_id, parent_category_id, name, image_url, display_order, is_active, created_at, updated_at
-		FROM admin_subcategories WHERE parent_category_id = $1 ORDER BY display_order`
+		FROM admin_product_subcategory WHERE parent_category_id = $1 ORDER BY display_order`
 
 	rows, err := r.pool.Query(ctx, query, categoryID)
 	if err != nil {
@@ -111,7 +111,7 @@ func (r *SubcategoryRepository) List(ctx context.Context, filter *domain.Subcate
 	}
 
 	// Count
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM admin_subcategories %s", whereClause)
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM admin_product_subcategory %s", whereClause)
 	var totalCount int64
 	if err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&totalCount); err != nil {
 		return nil, err
@@ -120,9 +120,10 @@ func (r *SubcategoryRepository) List(ctx context.Context, filter *domain.Subcate
 	// Paginate
 	offset := (pagination.Page - 1) * pagination.PageSize
 	query := fmt.Sprintf(`
-		SELECT subcategory_id, parent_category_id, name, image_url, display_order, is_active, created_at, updated_at
-		FROM admin_subcategories %s
-		ORDER BY display_order
+		SELECT s.subcategory_id, s.parent_category_id, s.name, s.image_url, s.display_order, s.is_active, s.created_at, s.updated_at,
+			COALESCE((SELECT COUNT(*) FROM admin_product_subcategory_mapping psm WHERE psm.subcategory_id = s.subcategory_id), 0) as product_count
+		FROM admin_product_subcategory s %s
+		ORDER BY s.display_order
 		LIMIT $%d OFFSET $%d`, whereClause, argIdx, argIdx+1)
 	args = append(args, pagination.PageSize, offset)
 
@@ -135,7 +136,7 @@ func (r *SubcategoryRepository) List(ctx context.Context, filter *domain.Subcate
 	var subcategories []domain.Subcategory
 	for rows.Next() {
 		var s domain.Subcategory
-		if err := rows.Scan(&s.SubcategoryID, &s.CategoryID, &s.Name, &s.ImageURL, &s.DisplayOrder, &s.IsActive, &s.CreatedAt, &s.UpdatedAt); err != nil {
+		if err := rows.Scan(&s.SubcategoryID, &s.CategoryID, &s.Name, &s.ImageURL, &s.DisplayOrder, &s.IsActive, &s.CreatedAt, &s.UpdatedAt, &s.ProductCount); err != nil {
 			return nil, err
 		}
 		subcategories = append(subcategories, s)
@@ -189,14 +190,14 @@ func (r *SubcategoryRepository) Update(ctx context.Context, id int32, params *do
 	sets = append(sets, "updated_at = NOW()")
 	args = append(args, id)
 
-	query := fmt.Sprintf("UPDATE admin_subcategories SET %s WHERE subcategory_id = $%d", strings.Join(sets, ", "), argIdx)
+	query := fmt.Sprintf("UPDATE admin_product_subcategory SET %s WHERE subcategory_id = $%d", strings.Join(sets, ", "), argIdx)
 	_, err := r.pool.Exec(ctx, query, args...)
 	return err
 }
 
 // Delete deletes a subcategory.
 func (r *SubcategoryRepository) Delete(ctx context.Context, id int32) error {
-	_, err := r.pool.Exec(ctx, "DELETE FROM admin_subcategories WHERE subcategory_id = $1", id)
+	_, err := r.pool.Exec(ctx, "DELETE FROM admin_product_subcategory WHERE subcategory_id = $1", id)
 	return err
 }
 
@@ -204,12 +205,12 @@ func (r *SubcategoryRepository) Delete(ctx context.Context, id int32) error {
 func (r *SubcategoryRepository) Move(ctx context.Context, id int32, newCategoryID int32) error {
 	// Get max display order in the new category
 	var maxOrder int32
-	err := r.pool.QueryRow(ctx, "SELECT COALESCE(MAX(display_order), 0) FROM admin_subcategories WHERE parent_category_id = $1", newCategoryID).Scan(&maxOrder)
+	err := r.pool.QueryRow(ctx, "SELECT COALESCE(MAX(display_order), 0) FROM admin_product_subcategory WHERE parent_category_id = $1", newCategoryID).Scan(&maxOrder)
 	if err != nil {
 		return err
 	}
 
-	_, err = r.pool.Exec(ctx, "UPDATE admin_subcategories SET parent_category_id = $1, display_order = $2, updated_at = NOW() WHERE subcategory_id = $3",
+	_, err = r.pool.Exec(ctx, "UPDATE admin_product_subcategory SET parent_category_id = $1, display_order = $2, updated_at = NOW() WHERE subcategory_id = $3",
 		newCategoryID, maxOrder+1, id)
 	return err
 }
@@ -223,7 +224,7 @@ func (r *SubcategoryRepository) Reorder(ctx context.Context, categoryID int32, o
 	defer tx.Rollback(ctx)
 
 	for i, id := range orderedIDs {
-		_, err := tx.Exec(ctx, "UPDATE admin_subcategories SET display_order = $1 WHERE subcategory_id = $2 AND parent_category_id = $3", i+1, id, categoryID)
+		_, err := tx.Exec(ctx, "UPDATE admin_product_subcategory SET display_order = $1 WHERE subcategory_id = $2 AND parent_category_id = $3", i+1, id, categoryID)
 		if err != nil {
 			return err
 		}

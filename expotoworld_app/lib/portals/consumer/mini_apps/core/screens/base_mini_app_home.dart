@@ -1,222 +1,416 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../../core/l10n/generated/app_localizations.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../domain/enums/mini_app_type.dart';
 import '../../domain/models/store_model.dart';
-import '../../domain/models/product_model.dart';
 import '../providers/mini_app_providers.dart';
-import '../widgets/category_pills.dart';
-import '../widgets/subcategory_grid.dart';
-import '../widgets/unified_product_card.dart';
+import '../widgets/catalog_breadcrumbs.dart';
 
-/// Abstract base class for mini-app home screens
-/// Implements the 70% shared functionality with slots for 30% customization
-/// 
+/// Abstract base class for mini-app home screens.
+///
+/// Implements the **Progressive Disclosure** pattern with **Persistent
+/// Predictive Breadcrumbs**.  Users browse one catalog tier at a time
+/// (Category → Subcategory → Collection) using a single scrollable view.
+/// Selecting an item triggers a slide animation to the next tier.  The
+/// product grid is only shown once all three tiers have been defined (via
+/// navigation to the products screen).
+///
 /// Customization slots (override in subclasses):
-/// - [buildHeader] - App bar with store dropdown or custom header
-/// - [buildSectionHeader] - Optional section header customization
-/// - [getSubcategoryRoute] - Navigation path for subcategory tap
-/// - [bottomPadding] - Space for floating nav bar
-/// 
-/// Example:
-/// ```dart
-/// class ToBHomeScreen extends BaseMiniAppHome {
-///   @override
-///   MiniAppType get miniAppType => MiniAppType.toB;
-///   
-///   @override
-///   Widget buildHeader(BuildContext context, WidgetRef ref) {
-///     return MiniAppAppBar(
-///       miniAppType: miniAppType,
-///       showMOQIndicator: true, // toB-specific
-///       ...
-///     );
-///   }
-/// }
-/// ```
+/// - [buildHeader] – App bar with store dropdown or custom header.
+/// - [bottomPadding] – Space for floating nav bar.
 abstract class BaseMiniAppHome extends ConsumerStatefulWidget {
   const BaseMiniAppHome({super.key});
 
-  /// The mini-app type this screen represents
+  /// The mini-app type this screen represents.
   MiniAppType get miniAppType;
 }
 
-/// Base state class for mini-app home screens
+/// Base state class for mini-app home screens.
 abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
     extends ConsumerState<T> {
-  final ScrollController scrollController = ScrollController();
+  // ── Corner animation ─────────────────────────────────────────────────────
   double _borderRadius = 24.0;
-  
-  // Configuration for the corner animation (consistent with super-app home)
   static const double _maxRadius = 24.0;
-  static const double _scrollThreshold = 50.0; // Flatten within 50px of scroll
+  static const double _scrollThreshold = 50.0;
 
-  @override
-  void initState() {
-    super.initState();
-    scrollController.addListener(_onScroll);
-  }
+  // ── Tier navigation state ────────────────────────────────────────────────
+  int _currentTier = 1; // 1 = category, 2 = subcategory, 3 = collection
+  bool _goingForward = true; // animation direction flag
+  MiniAppCategory? _selectedCategory;
+  MiniAppSubcategory? _selectedSubcategory;
 
-  @override
-  void dispose() {
-    scrollController.removeListener(_onScroll);
-    scrollController.dispose();
-    super.dispose();
-  }
-  
-  void _onScroll() {
-    final scrollOffset = scrollController.offset;
-    final newRadius = (_maxRadius - (scrollOffset / _scrollThreshold * _maxRadius))
-        .clamp(0.0, _maxRadius);
-    
-    if (newRadius != _borderRadius) {
-      setState(() {
-        _borderRadius = newRadius;
-      });
-    }
-  }
+  // Track whether we've already scheduled a redirect for empty collections.
+  bool _emptyCollectionsRedirectScheduled = false;
 
   //
-  // CUSTOMIZATION SLOTS - Override these in subclasses
+  // CUSTOMIZATION SLOTS ───────────────────────────────────────────────────
   //
 
-  /// Build the header/app bar section
-  /// Override to provide type-specific headers
+  /// Build the header / app-bar section.
   Widget buildHeader(BuildContext context);
 
-  /// Build the section header above the subcategory grid
-  /// Returns empty by default (no section header needed)
-  Widget buildSectionHeader(
-    BuildContext context,
-    List<MiniAppCategory> categories,
-    String? selectedCategoryId,
-  ) {
-    // Return empty container - no section header needed
-    return const SizedBox.shrink();
-  }
-
-  /// Get the navigation route for subcategory tap
-  /// Default goes to products, toX should override to services
-  String getSubcategoryRoute(String subcategoryId) {
-    return '/mini-app/${widget.miniAppType.name}/products/$subcategoryId';
-  }
-
-  /// Bottom padding for floating nav bar
-  /// Override if no bottom nav (e.g., toX)
+  /// Bottom padding for floating nav bar.
   double get bottomPadding => 140;
 
-  /// Handle close button tap - navigates back to super-app home
-  /// Uses custom animated navigation to ensure consistent vertical slide-down
-  /// animation regardless of internal navigation state.
+  /// Handle close button tap – navigates back to super-app home.
   void handleClose() {
-    // Check if we can pop from root navigator (preferred - uses GoRouter animation)
     if (Navigator.of(context, rootNavigator: true).canPop()) {
       Navigator.of(context, rootNavigator: true).pop();
       return;
     }
-    
-    // Fallback to standard pop if available
     if (context.canPop()) {
       context.pop();
       return;
     }
-    
-    // If navigation stack is empty (due to context.go() usage), just go home
-    // The animation won't be perfect, but it's better than breaking
     context.go('/');
   }
 
-  /// Handle store selection change
+  /// Handle store selection change.
   void handleStoreChanged(MiniAppStore store) {
     ref.read(selectedStoreProvider(widget.miniAppType).notifier).state = store;
-    // Reset category selection when store changes
-    ref.read(selectedCategoryIdProvider(widget.miniAppType).notifier).state = null;
+    // Reset tier navigation when store changes.
+    _resetToTier(1);
   }
 
-  /// Handle category pill selection
-  void handleCategorySelected(String? categoryId) {
-    ref.read(selectedCategoryIdProvider(widget.miniAppType).notifier).state = categoryId;
+  //
+  // TIER NAVIGATION ──────────────────────────────────────────────────────
+  //
+
+  /// Navigate to a specific tier, clearing subsequent selections.
+  void _resetToTier(int tier) {
+    setState(() {
+      _goingForward = tier > _currentTier;
+      _emptyCollectionsRedirectScheduled = false;
+      if (tier <= 1) {
+        _selectedCategory = null;
+        _selectedSubcategory = null;
+        ref
+                .read(selectedCategoryIdProvider(widget.miniAppType).notifier)
+                .state =
+            null;
+      } else if (tier <= 2) {
+        _selectedSubcategory = null;
+      }
+      _currentTier = tier;
+      _borderRadius = _maxRadius;
+    });
   }
 
-  /// Handle subcategory card tap
-  void handleSubcategoryTap(MiniAppSubcategory subcategory) {
-    context.push(getSubcategoryRoute(subcategory.id));
+  /// Called when the user taps a category card.
+  void _handleCategoryTap(MiniAppCategory category) {
+    setState(() {
+      _selectedCategory = category;
+      _selectedSubcategory = null;
+      _goingForward = true;
+      _currentTier = 2;
+      _borderRadius = _maxRadius;
+      _emptyCollectionsRedirectScheduled = false;
+    });
+    ref.read(selectedCategoryIdProvider(widget.miniAppType).notifier).state =
+        category.id;
   }
 
-  /// Handle product quantity change for recommended products
-  void handleProductQuantityChanged(MiniAppProduct product, int quantity) {
-    final cartController = ref.read(miniAppCartNotifierProvider(widget.miniAppType));
-    if (quantity > 0) {
-      cartController.addProduct(product, quantity - cartController.getQuantity(product.id));
-    } else {
-      cartController.removeProduct(product.id);
-    }
+  /// Called when the user taps a subcategory card.
+  void _handleSubcategoryTap(MiniAppSubcategory subcategory) {
+    setState(() {
+      _selectedSubcategory = subcategory;
+      _goingForward = true;
+      _currentTier = 3;
+      _borderRadius = _maxRadius;
+      _emptyCollectionsRedirectScheduled = false;
+    });
   }
 
-  /// Build the recommended products grid
-  Widget _buildRecommendedProductsGrid() {
-    final selectedStore = ref.watch(selectedStoreProvider(widget.miniAppType));
-    final recommendedProducts = ref.watch(recommendedProductsProvider((
-      miniAppType: widget.miniAppType,
-      storeId: selectedStore?.id,
-    )));
+  /// Called when the user taps a collection card → navigate to products.
+  void _handleCollectionTap(MiniAppCollection collection) {
+    context.push(
+      '/mini-app/${widget.miniAppType.name}/products/${_selectedSubcategory!.id}'
+      '?collectionId=${collection.id}',
+    );
+  }
 
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      sliver: SliverMasonryGrid.count(
-        crossAxisCount: 2,
-        mainAxisSpacing: AppSpacing.md,
-        crossAxisSpacing: AppSpacing.md,
-        childCount: recommendedProducts.length,
-        itemBuilder: (context, index) {
-          final product = recommendedProducts[index];
-          final cartQuantity = ref.watch(productCartQuantityProvider((
-            miniAppType: widget.miniAppType,
-            productId: product.id,
-          )));
+  /// Called when the user taps a breadcrumb node.
+  void _handleBreadcrumbTap(int tier) {
+    _resetToTier(tier);
+  }
 
-          return UnifiedProductCard(
-            product: product,
-            cartQuantity: cartQuantity,
-            onQuantityChanged: (qty) => handleProductQuantityChanged(product, qty),
+  //
+  // TIER CONTENT BUILDERS ────────────────────────────────────────────────
+  //
+
+  /// Build the content for the current tier wrapped with a [ValueKey].
+  Widget _buildTierContent() {
+    return Container(
+      key: ValueKey(_currentTier),
+      child: switch (_currentTier) {
+        1 => _buildCategoriesGrid(),
+        2 => _buildSubcategoriesGrid(),
+        3 => _buildCollectionsGrid(),
+        _ => const SizedBox.shrink(),
+      },
+    );
+  }
+
+  Widget _buildCategoriesGrid() {
+    final categoriesAsync = ref.watch(
+      miniAppCategoriesProvider(widget.miniAppType),
+    );
+
+    return categoriesAsync.when(
+      loading: () => _buildTierLoading(),
+      error: (_, __) =>
+          _buildTierError(AppLocalizations.of(context)!.failedToLoadCategories),
+      data: (categories) {
+        if (categories.isEmpty) {
+          return _buildTierEmpty(
+            AppLocalizations.of(context)!.noCategoriesAvailable,
+            Icons.category_outlined,
           );
-        },
+        }
+        return _buildItemGrid(
+          itemCount: categories.length,
+          itemBuilder: (context, index) {
+            final cat = categories[index];
+            return _TierItemCard(
+              name: cat.name,
+              imageUrl: cat.imageUrl,
+              onTap: () => _handleCategoryTap(cat),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSubcategoriesGrid() {
+    final subcategoriesAsync = ref.watch(
+      miniAppSubcategoriesProvider((
+        miniAppType: widget.miniAppType,
+        categoryId: _selectedCategory?.id,
+      )),
+    );
+
+    return subcategoriesAsync.when(
+      loading: () => _buildTierLoading(),
+      error: (_, __) => _buildTierError(
+        AppLocalizations.of(context)!.failedToLoadSubcategories,
+      ),
+      data: (subcategories) {
+        if (subcategories.isEmpty) {
+          return _buildTierEmpty(
+            AppLocalizations.of(context)!.noSubcategoriesAvailable,
+            Icons.category_outlined,
+          );
+        }
+        return _buildItemGrid(
+          itemCount: subcategories.length,
+          itemBuilder: (context, index) {
+            final sub = subcategories[index];
+            return _TierItemCard(
+              name: sub.name,
+              imageUrl: sub.imageUrl,
+              onTap: () => _handleSubcategoryTap(sub),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildCollectionsGrid() {
+    final collectionsAsync = ref.watch(
+      miniAppCollectionsProvider((
+        miniAppType: widget.miniAppType,
+        subcategoryId: _selectedSubcategory!.id,
+      )),
+    );
+
+    // If zero collections, redirect to products without a collection filter.
+    if (collectionsAsync.hasValue &&
+        collectionsAsync.value!.isEmpty &&
+        !_emptyCollectionsRedirectScheduled) {
+      _emptyCollectionsRedirectScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.push(
+            '/mini-app/${widget.miniAppType.name}/products/${_selectedSubcategory!.id}',
+          );
+        }
+      });
+      return _buildTierLoading();
+    }
+
+    return collectionsAsync.when(
+      loading: () => _buildTierLoading(),
+      error: (_, __) => _buildTierError(
+        AppLocalizations.of(context)!.failedToLoadCollections,
+      ),
+      data: (collections) {
+        if (collections.isEmpty) {
+          // Already handled above – show loading while redirecting.
+          return _buildTierLoading();
+        }
+        return _buildItemGrid(
+          itemCount: collections.length,
+          itemBuilder: (context, index) {
+            final col = collections[index];
+            return _TierItemCard(
+              name: col.name,
+              imageUrl: col.imageUrl,
+              onTap: () => _handleCollectionTap(col),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  //
+  // SHARED HELPER WIDGETS ────────────────────────────────────────────────
+  //
+
+  Widget _buildItemGrid({
+    required int itemCount,
+    required Widget Function(BuildContext, int) itemBuilder,
+  }) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(
+        top: AppSpacing.md,
+        left: AppSpacing.lg,
+        right: AppSpacing.lg,
+        bottom: bottomPadding,
+      ),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          mainAxisSpacing: AppSpacing.md,
+          crossAxisSpacing: AppSpacing.md,
+          childAspectRatio: 1.0,
+        ),
+        itemCount: itemCount,
+        itemBuilder: itemBuilder,
+      ),
+    );
+  }
+
+  Widget _buildTierLoading() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.xl),
+        child: CircularProgressIndicator(color: AppColors.themeRed),
+      ),
+    );
+  }
+
+  Widget _buildTierError(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: AppColors.foregroundMuted(context),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              message,
+              style: AppTypography.bodyMedium(
+                color: AppColors.foregroundMuted(context),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTierEmpty(String message, IconData icon) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 48, color: AppColors.foregroundMuted(context)),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              message,
+              style: AppTypography.bodyMedium(
+                color: AppColors.foregroundMuted(context),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
 
   //
-  // SHARED IMPLEMENTATION - 70% common logic
+  // ANIMATED TIER TRANSITION ─────────────────────────────────────────────
+  //
+
+  Widget _buildTierTransition(Widget child, Animation<double> animation) {
+    final childKey = (child.key as ValueKey<int>).value;
+    final isIncoming = childKey == _currentTier;
+
+    // Forward → new content slides in from below, old slides out to top.
+    // Backward → new content slides in from above, old slides out to bottom.
+    Offset begin;
+    if (_goingForward) {
+      begin = isIncoming
+          ? const Offset(0, 0.15) // enter from below
+          : const Offset(0, -0.15); // exit to top
+    } else {
+      begin = isIncoming
+          ? const Offset(0, -0.15) // enter from above
+          : const Offset(0, 0.15); // exit to bottom
+    }
+
+    final slide = Tween<Offset>(
+      begin: begin,
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
+
+    return FadeTransition(
+      opacity: animation,
+      child: SlideTransition(position: slide, child: child),
+    );
+  }
+
+  //
+  // BUILD ─────────────────────────────────────────────────────────────────
   //
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final categories = ref.watch(miniAppCategoriesProvider(widget.miniAppType));
-    final selectedCategoryId = ref.watch(selectedCategoryIdProvider(widget.miniAppType));
-    final subcategories = ref.watch(miniAppSubcategoriesProvider((
-      miniAppType: widget.miniAppType,
-      categoryId: selectedCategoryId,
-    )));
+    final l10n = AppLocalizations.of(context)!;
 
-    // Return content directly without nested Scaffold
-    // MiniAppShell provides the outer Scaffold with bottomNavigationBar
-    // This ensures modal sheets appear above the bottom nav bar
     return Container(
       color: AppColors.themeRed,
       child: Column(
         children: [
-          // SLOT: Header (customizable per mini-app)
+          // ── SLOT: Header (customizable per mini-app) ──
           buildHeader(context),
 
-          // SHARED: Scrollable content area with dynamic rounded top corners
+          // ── Content area with animated rounded top corners ──
           Expanded(
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 50),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF121212) : AppColors.neutralWhite,
+                color: isDark
+                    ? const Color(0xFF121212)
+                    : AppColors.neutralWhite,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(_borderRadius),
                   topRight: Radius.circular(_borderRadius),
@@ -227,46 +421,54 @@ abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
                   topLeft: Radius.circular(_borderRadius),
                   topRight: Radius.circular(_borderRadius),
                 ),
-                child: CustomScrollView(
-                  controller: scrollController,
-                  slivers: [
-                    // SHARED: Category pills with proper spacing
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.only(
-                          top: AppSpacing.xl, // Increased top spacing
-                          bottom: AppSpacing.md,
-                        ),
-                        child: CategoryPills(
-                          categories: categories,
-                          selectedCategoryId: selectedCategoryId,
-                          onCategorySelected: handleCategorySelected,
+                child: Column(
+                  children: [
+                    // ── Persistent Breadcrumbs (fixed at top) ──
+                    CatalogBreadcrumbs(
+                      currentTier: _currentTier,
+                      selectedCategory: _selectedCategory,
+                      selectedSubcategory: _selectedSubcategory,
+                      onTierTap: _handleBreadcrumbTap,
+                      categoryLabel: l10n.category,
+                      subcategoryLabel: l10n.subcategory,
+                      collectionLabel: l10n.collection,
+                    ),
+
+                    // ── Tier content with slide animation ──
+                    Expanded(
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: (notification) {
+                          if (notification is ScrollUpdateNotification) {
+                            final offset = notification.metrics.pixels;
+                            final newRadius =
+                                (_maxRadius -
+                                        (offset /
+                                            _scrollThreshold *
+                                            _maxRadius))
+                                    .clamp(0.0, _maxRadius);
+                            if (newRadius != _borderRadius) {
+                              setState(() => _borderRadius = newRadius);
+                            }
+                          }
+                          return false;
+                        },
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 350),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          transitionBuilder: _buildTierTransition,
+                          layoutBuilder: (currentChild, previousChildren) {
+                            return Stack(
+                              alignment: Alignment.topCenter,
+                              children: [
+                                ...previousChildren,
+                                if (currentChild != null) currentChild,
+                              ],
+                            );
+                          },
+                          child: _buildTierContent(),
                         ),
                       ),
-                    ),
-
-                    // SLOT: Section header (customizable)
-                    SliverToBoxAdapter(
-                      child: buildSectionHeader(context, categories, selectedCategoryId),
-                    ),
-
-                    const SliverToBoxAdapter(
-                      child: SizedBox(height: AppSpacing.md),
-                    ),
-
-                    // Show recommended products when "Recommended" (null category) is selected,
-                    // otherwise show subcategory grid
-                    if (selectedCategoryId == null)
-                      _buildRecommendedProductsGrid()
-                    else
-                      SliverSubcategoryGrid(
-                        subcategories: subcategories,
-                        onSubcategoryTap: handleSubcategoryTap,
-                      ),
-
-                    // Bottom padding (customizable)
-                    SliverToBoxAdapter(
-                      child: SizedBox(height: bottomPadding),
                     ),
                   ],
                 ),
@@ -279,60 +481,92 @@ abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
   }
 }
 
-/// Default section header widget
-/// Can be used as-is or replaced with custom implementation
-class DefaultSectionHeader extends StatelessWidget {
-  final String title;
-  final String? subtitle;
-  final VoidCallback? onSeeAll;
+// ─────────────────────────────────────────────────────────────────────────
+// Private tier-item card (square image + gradient + text overlay)
+// ─────────────────────────────────────────────────────────────────────────
 
-  const DefaultSectionHeader({
-    super.key,
-    required this.title,
-    this.subtitle,
-    this.onSeeAll,
+class _TierItemCard extends StatelessWidget {
+  final String name;
+  final String? imageUrl;
+  final VoidCallback onTap;
+
+  const _TierItemCard({
+    required this.name,
+    required this.imageUrl,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return GestureDetector(
+      onTap: onTap,
+      child: AspectRatio(
+        aspectRatio: 1.0,
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.neutralMid.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            fit: StackFit.expand,
             children: [
-              Text(
-                title,
-                style: AppTypography.titleMedium.copyWith(
-                  color: AppColors.foreground(context),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (subtitle != null && subtitle!.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text(
-                  subtitle!,
-                  style: AppTypography.caption(
+              // Image
+              if (imageUrl != null && imageUrl!.isNotEmpty)
+                Image.network(
+                  imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Center(
+                    child: Icon(
+                      Icons.image_outlined,
+                      size: 32,
+                      color: AppColors.foregroundMuted(context),
+                    ),
+                  ),
+                )
+              else
+                Center(
+                  child: Icon(
+                    Icons.image_outlined,
+                    size: 32,
                     color: AppColors.foregroundMuted(context),
                   ),
                 ),
-              ],
+
+              // Bottom gradient + name
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.7),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: Text(
+                    name,
+                    style: AppTypography.caption(
+                      color: Colors.white,
+                    ).copyWith(fontWeight: FontWeight.w600),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-        if (onSeeAll != null)
-          GestureDetector(
-            onTap: onSeeAll,
-            child: Text(
-              'See All',
-              style: AppTypography.labelMediumStyle.copyWith(
-                color: AppColors.themeRed,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-      ],
+      ),
     );
   }
 }

@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/expotoworld/expotoworld_backend/pkg/auth"
 	"github.com/expotoworld/expotoworld_backend/pkg/awsutil"
 	"github.com/expotoworld/expotoworld_backend/pkg/config"
 	"github.com/expotoworld/expotoworld_backend/pkg/database"
@@ -97,6 +99,8 @@ func run() error {
 	imageRepo := postgres.NewImageRepository(pgPool)
 	categoryMappingRepo := postgres.NewCategoryMappingRepository(pgPool)
 	subcategoryMappingRepo := postgres.NewSubcategoryMappingRepository(pgPool)
+	collectionRepo := postgres.NewCollectionRepository(pgPool)
+	collectionMappingRepo := postgres.NewCollectionMappingRepository(pgPool)
 	regionRepo := postgres.NewRegionRepository(pgPool)
 	specificationRepo := postgres.NewSpecificationRepository(pgPool)
 
@@ -109,13 +113,16 @@ func run() error {
 		imageRepo,
 		categoryMappingRepo,
 		subcategoryMappingRepo,
+		collectionMappingRepo,
 	)
 	categoryService := service.NewCategoryService(
 		pgPool,
 		categoryRepo,
 		subcategoryRepo,
+		collectionRepo,
 		categoryMappingRepo,
 		subcategoryMappingRepo,
+		collectionMappingRepo,
 	)
 	storeService := service.NewStoreService(storeRepo, regionRepo)
 
@@ -125,6 +132,7 @@ func run() error {
 	storeHandler := handler.NewStoreHandler(storeService, s3Client, "admin-panel/stores")
 	specificationHandler := handler.NewSpecificationHandler(specificationRepo)
 	imageHandler := handler.NewImageHandler(imageRepo, s3Client, "admin-panel/products")
+	publicHandler := handler.NewPublicHandler(productService, categoryService, storeService)
 
 	if cfg.App.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -143,6 +151,37 @@ func run() error {
 	}
 	router.Use(httputil.CORSMiddleware(corsConfig))
 
+	// Initialize auth middleware for JWT validation
+	jwksURL := os.Getenv("JWKS_URL")
+	if jwksURL == "" {
+		jwksURL = "http://localhost:8081/.well-known/jwks.json"
+	}
+	jwtIssuer := os.Getenv("JWT_ISSUER")
+	if jwtIssuer == "" {
+		jwtIssuer = "expotoworld"
+	}
+	jwtAudience := os.Getenv("JWT_AUDIENCE")
+	log.Info("Initializing auth validator",
+		"jwks_url", jwksURL,
+		"jwt_issuer", jwtIssuer,
+		"jwt_audience", jwtAudience,
+	)
+	validator, err := auth.NewValidator(auth.ValidatorConfig{
+		JWKSURL:  jwksURL,
+		Issuer:   jwtIssuer,
+		Audience: jwtAudience,
+	})
+	if err != nil {
+		return fmt.Errorf("initialize auth validator: %w", err)
+	}
+
+	authDebugEnabled := cfg.App.Env != "production"
+	authMiddleware := auth.GinAuthMiddleware(&auth.GinMiddlewareConfig{
+		Validator: validator,
+		Debug:     authDebugEnabled,
+		Logger:    log,
+	})
+
 	router.GET("/live", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "alive"})
 	})
@@ -155,13 +194,20 @@ func run() error {
 		c.JSON(http.StatusOK, gin.H{"status": "ready"})
 	})
 
-	// Setup API routes
+	// Setup API routes — all catalog endpoints require authentication + admin role
 	apiV1 := router.Group("/api/v1")
+	apiV1.Use(authMiddleware)
+	apiV1.Use(auth.RequireAdmin())
 	productHandler.RegisterRoutes(apiV1)
 	categoryHandler.RegisterRoutes(apiV1)
 	storeHandler.RegisterRoutes(apiV1)
 	specificationHandler.RegisterRoutes(apiV1)
 	imageHandler.RegisterRoutes(apiV1)
+
+	// Public read-only routes — require auth but NOT admin role (for consumer apps)
+	publicV1 := router.Group("/api/v1/public")
+	publicV1.Use(authMiddleware)
+	publicHandler.RegisterRoutes(publicV1)
 
 	port := strconv.Itoa(cfg.Server.CatalogPort)
 	srv := &http.Server{

@@ -10,7 +10,7 @@ import (
 // The display_order field is crucial for maintaining consistent ordering in the UI.
 type ProductAttribute struct {
 	AttributeID    int32
-	ProductID      int32  // FK to admin_products
+	ProductID      int32  // FK to admin_product
 	AttributeName  string // e.g., "Color", "Size"
 	AttributeValue string // e.g., "Red", "Large"
 	DisplayOrder   int32  // Order for UI display (NOT alphabetical!)

@@ -11,7 +11,9 @@ export '../domain/models/store_model.dart';
 export 'providers/mini_app_providers.dart';
 
 // Shared widgets
+export 'widgets/catalog_breadcrumbs.dart';
 export 'widgets/category_pills.dart';
+export 'widgets/collection_grid.dart';
 export 'widgets/subcategory_grid.dart';
 export 'widgets/product_card.dart';
 export 'widgets/unified_product_card.dart';
@@ -23,6 +25,7 @@ export 'widgets/mini_app_shell_with_tabs.dart';
 // Base screens
 export 'screens/base_mini_app_home.dart';
 export 'screens/base_products_screen.dart';
+export 'screens/collections_screen.dart';
 
 // Shared screens
 export 'screens/mini_app_cart_screen.dart';

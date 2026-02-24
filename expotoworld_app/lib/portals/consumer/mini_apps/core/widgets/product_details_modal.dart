@@ -7,7 +7,7 @@ import '../../domain/enums/mini_app_type.dart';
 import '../../domain/models/product_model.dart';
 
 /// Product details modal - draggable bottom sheet with image carousel
-/// 
+///
 /// Shows product images in an auto-playing carousel with:
 /// - Horizontal swipe navigation
 /// - Image counter (1/10, 2/10, etc.)
@@ -60,10 +60,10 @@ class ProductDetailsModal extends StatefulWidget {
 class _ProductDetailsModalState extends State<ProductDetailsModal> {
   final DraggableScrollableController _draggableController =
       DraggableScrollableController();
-  
+
   // Local cart quantity state
   late int _localQuantity;
-  
+
   // Flag to prevent multiple close calls
   bool _isClosing = false;
 
@@ -78,7 +78,7 @@ class _ProductDetailsModalState extends State<ProductDetailsModal> {
     _draggableController.dispose();
     super.dispose();
   }
-  
+
   void _updateQuantity(int newQuantity) {
     setState(() => _localQuantity = newQuantity);
     widget.onQuantityChanged(newQuantity);
@@ -88,9 +88,9 @@ class _ProductDetailsModalState extends State<ProductDetailsModal> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    
+
     // Calculate min/max sizes leaving space for tap-to-close
-    const double minSize = 0.70;  // Initial size showing image
+    const double minSize = 0.70; // Initial size showing image
     const double maxSize = 0.87; // Max size leaving ~8% for tap-to-close
 
     return GestureDetector(
@@ -152,13 +152,15 @@ class _ProductDetailsModalState extends State<ProductDetailsModal> {
                               children: [
                                 // Image carousel - handles its own clipping internally
                                 _ProductImageCarousel(product: widget.product),
-                                
+
                                 // Product info
                                 Padding(
                                   padding: const EdgeInsets.all(AppSpacing.lg),
-                                  child: _ProductInfoSection(product: widget.product),
+                                  child: _ProductInfoSection(
+                                    product: widget.product,
+                                  ),
                                 ),
-                                
+
                                 // Extra spacing for action bar
                                 SizedBox(height: 100 + bottomPadding),
                               ],
@@ -166,20 +168,22 @@ class _ProductDetailsModalState extends State<ProductDetailsModal> {
                           ),
                         ],
                       ),
-                        
+
                       // Overlay header (drag handle + close button on top of image)
                       Positioned(
                         top: 0,
                         left: 0,
                         right: 0,
-                        child: _OverlayHeader(onClose: () {
-                          if (!_isClosing) {
-                            _isClosing = true;
-                            widget.onClose();
-                          }
-                        }),
+                        child: _OverlayHeader(
+                          onClose: () {
+                            if (!_isClosing) {
+                              _isClosing = true;
+                              widget.onClose();
+                            }
+                          },
+                        ),
                       ),
-                      
+
                       // Sticky action bar at bottom
                       Positioned(
                         left: 0,
@@ -213,18 +217,13 @@ class _OverlayHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       decoration: BoxDecoration(
         // Subtle gradient for visibility
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withValues(alpha: 0.3),
-            Colors.transparent,
-          ],
+          colors: [Colors.black.withValues(alpha: 0.3), Colors.transparent],
         ),
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppSpacing.radiusXl),
@@ -355,10 +354,7 @@ class _ProductImageCarouselState extends State<_ProductImageCarousel> {
         opaque: false,
         barrierColor: Colors.black.withValues(alpha: 0.9),
         pageBuilder: (context, animation, secondaryAnimation) {
-          return _FullScreenImageViewer(
-            images: _images,
-            initialIndex: index,
-          );
+          return _FullScreenImageViewer(images: _images, initialIndex: index);
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
@@ -384,102 +380,102 @@ class _ProductImageCarouselState extends State<_ProductImageCarousel> {
               onPanDown: (_) => _pauseAutoPlay(),
               onPanEnd: (_) => _resumeAutoPlay(),
               onPanCancel: () => _resumeAutoPlay(),
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPage = _images.length > 1
+              child: PageView.builder(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentPage = _images.length > 1
+                        ? index % _images.length
+                        : 0;
+                  });
+                },
+                itemCount: _images.length > 1 ? _virtualPageCount : 1,
+                itemBuilder: (context, index) {
+                  final actualIndex = _images.length > 1
                       ? index % _images.length
                       : 0;
-                });
-              },
-              itemCount: _images.length > 1 ? _virtualPageCount : 1,
-              itemBuilder: (context, index) {
-                final actualIndex = _images.length > 1
-                    ? index % _images.length
-                    : 0;
-                return GestureDetector(
-                  onTap: () => _openFullScreenViewer(actualIndex),
-                  child: _ProductImage(
-                    imageUrl: _images[actualIndex],
-                    colorIndex: actualIndex,
-                  ),
-                );
-              },
-            ),
-          ),
-
-          // Image counter (bottom right)
-          if (_images.length > 1)
-            Positioned(
-              bottom: AppSpacing.md,
-              right: AppSpacing.md,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                ),
-                child: Text(
-                  '${_currentPage + 1}/${_images.length}',
-                  style: AppTypography.caption(
-                    color: Colors.white,
-                  ).copyWith(fontWeight: FontWeight.w600),
-                ),
+                  return GestureDetector(
+                    onTap: () => _openFullScreenViewer(actualIndex),
+                    child: _ProductImage(
+                      imageUrl: _images[actualIndex],
+                      colorIndex: actualIndex,
+                    ),
+                  );
+                },
               ),
             ),
 
-          // Low stock indicator
-          if (widget.product.stockLeft <= 5 && widget.product.stockLeft > 0)
-            Positioned(
-              top: AppSpacing.md,
-              right: AppSpacing.md,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.orange,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                ),
-                child: Text(
-                  'Only ${widget.product.stockLeft} left',
-                  style: AppTypography.caption(
-                    color: Colors.white,
-                  ).copyWith(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-
-          // Out of stock overlay
-          if (!widget.product.isInStock)
-            Container(
-              color: Colors.black.withValues(alpha: 0.5),
-              child: Center(
+            // Image counter (bottom right)
+            if (_images.length > 1)
+              Positioned(
+                bottom: AppSpacing.md,
+                right: AppSpacing.md,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xl,
-                    vertical: AppSpacing.md,
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                    color: Colors.black.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                   ),
                   child: Text(
-                    'Out of Stock',
-                    style: AppTypography.titleMedium.copyWith(
+                    '${_currentPage + 1}/${_images.length}',
+                    style: AppTypography.caption(
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                    ).copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+
+            // Low stock indicator
+            if (widget.product.stockLeft <= 5 && widget.product.stockLeft > 0)
+              Positioned(
+                top: AppSpacing.md,
+                right: AppSpacing.md,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.orange,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  ),
+                  child: Text(
+                    'Only ${widget.product.stockLeft} left',
+                    style: AppTypography.caption(
+                      color: Colors.white,
+                    ).copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+
+            // Out of stock overlay
+            if (!widget.product.isInStock)
+              Container(
+                color: Colors.black.withValues(alpha: 0.5),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xl,
+                      vertical: AppSpacing.md,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                    ),
+                    child: Text(
+                      'Out of Stock',
+                      style: AppTypography.titleMedium.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
         ),
       ),
     );
@@ -491,15 +487,12 @@ class _ProductImage extends StatelessWidget {
   final String? imageUrl;
   final int colorIndex;
 
-  const _ProductImage({
-    this.imageUrl,
-    this.colorIndex = 0,
-  });
-  
+  const _ProductImage({this.imageUrl, this.colorIndex = 0});
+
   // Placeholder colors for demo - distinct pastel colors
   static const List<Color> _placeholderColors = [
     Color(0xFFFFE5E5), // Light red/pink
-    Color(0xFFE5F0FF), // Light blue  
+    Color(0xFFE5F0FF), // Light blue
     Color(0xFFE5FFE5), // Light green
     Color(0xFFFFF5E5), // Light orange
     Color(0xFFF5E5FF), // Light purple
@@ -507,7 +500,8 @@ class _ProductImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final placeholderColor = _placeholderColors[colorIndex % _placeholderColors.length];
+    final placeholderColor =
+        _placeholderColors[colorIndex % _placeholderColors.length];
 
     return Container(
       color: placeholderColor,
@@ -524,11 +518,10 @@ class _ProductImage extends StatelessWidget {
 
   Widget _buildPlaceholder(Color bgColor) {
     // Calculate icon color based on background brightness
-    final iconColor = HSLColor.fromColor(bgColor)
-        .withLightness(0.4)
-        .withSaturation(0.6)
-        .toColor();
-        
+    final iconColor = HSLColor.fromColor(
+      bgColor,
+    ).withLightness(0.4).withSaturation(0.6).toColor();
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -568,7 +561,8 @@ class _FullScreenImageViewer extends StatefulWidget {
 class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
   late final PageController _pageController;
   late int _currentIndex;
-  final TransformationController _transformController = TransformationController();
+  final TransformationController _transformController =
+      TransformationController();
 
   @override
   void initState() {
@@ -777,7 +771,7 @@ class _ProductInfoSection extends StatelessWidget {
         ],
 
         // Shelf location
-        if (product.shelfCode.isNotEmpty) ...[
+        if (product.shelfCode != null && product.shelfCode!.isNotEmpty) ...[
           _InfoBubble(
             text: 'Shelf: ${product.shelfCode}',
             icon: Icons.location_on_outlined,
@@ -793,9 +787,7 @@ class _ProductInfoSection extends StatelessWidget {
           icon: product.isInStock
               ? Icons.check_circle_outline_rounded
               : Icons.cancel_outlined,
-          color: product.isInStock
-              ? AppColors.green
-              : AppColors.themeRed,
+          color: product.isInStock ? AppColors.green : AppColors.themeRed,
         ),
 
         // Divider
@@ -833,11 +825,7 @@ class _InfoBubble extends StatelessWidget {
   final IconData icon;
   final Color? color;
 
-  const _InfoBubble({
-    required this.text,
-    required this.icon,
-    this.color,
-  });
+  const _InfoBubble({required this.text, required this.icon, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -882,13 +870,13 @@ class _StickyActionBar extends StatelessWidget {
     required this.onQuantityChanged,
     this.onBuyNow,
   });
-  
+
   void _handleBuyNow(BuildContext context) {
     // Get the quantity to purchase (if in cart, use that; otherwise use MOQ or 1)
-    final purchaseQuantity = quantity > 0 
-        ? quantity 
+    final purchaseQuantity = quantity > 0
+        ? quantity
         : (product.minimumOrderQuantity > 1 ? product.minimumOrderQuantity : 1);
-    
+
     // Show the Buy Now checkout popup
     showModalBottomSheet(
       context: context,
@@ -979,7 +967,7 @@ class _StickyActionBar extends StatelessWidget {
                 ),
               ),
             ),
-          
+
           // Floating action bar - EXACT same style as bottom nav bar
           Container(
             height: 70, // Exact same height as bottom nav bar
@@ -1006,7 +994,8 @@ class _StickyActionBar extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.sm, // 8px horizontal padding inside pill
-                vertical: AppSpacing.sm, // 8px vertical to center 54px buttons in 70px bar
+                vertical: AppSpacing
+                    .sm, // 8px vertical to center 54px buttons in 70px bar
               ),
               child: Row(
                 children: [
@@ -1014,14 +1003,15 @@ class _StickyActionBar extends StatelessWidget {
                   Expanded(
                     flex: 3, // Smaller proportion for Buy Now
                     child: _BuyNowButton(
-                      onPressed: product.isInStock 
-                          ? () => _handleBuyNow(context) 
+                      onPressed: product.isInStock
+                          ? () => _handleBuyNow(context)
                           : null,
                     ),
                   ),
-                  
-                  const SizedBox(width: AppSpacing.sm), // Small gap between buttons
-                  
+
+                  const SizedBox(
+                    width: AppSpacing.sm,
+                  ), // Small gap between buttons
                   // Add to Cart / Quantity Counter (now on right)
                   Expanded(
                     flex: 5, // Larger proportion for Add to Cart
@@ -1036,7 +1026,8 @@ class _StickyActionBar extends StatelessWidget {
                             onPressed: product.isInStock
                                 ? () {
                                     HapticFeedback.lightImpact();
-                                    final startQty = product.minimumOrderQuantity > 1
+                                    final startQty =
+                                        product.minimumOrderQuantity > 1
                                         ? product.minimumOrderQuantity
                                         : 1;
                                     onQuantityChanged(startQty);
@@ -1059,10 +1050,7 @@ class _AddToCartButton extends StatefulWidget {
   final MiniAppProduct product;
   final VoidCallback? onPressed;
 
-  const _AddToCartButton({
-    required this.product,
-    this.onPressed,
-  });
+  const _AddToCartButton({required this.product, this.onPressed});
 
   @override
   State<_AddToCartButton> createState() => _AddToCartButtonState();
@@ -1086,15 +1074,15 @@ class _AddToCartButtonState extends State<_AddToCartButton> {
         height: 54, // Sized to fit within 70px action bar
         transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
         decoration: BoxDecoration(
-          color: isDisabled
-              ? Colors.grey.shade400
-              : AppColors.themeRed,
+          color: isDisabled ? Colors.grey.shade400 : AppColors.themeRed,
           borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
           boxShadow: isDisabled
               ? null
               : [
                   BoxShadow(
-                    color: AppColors.themeRed.withValues(alpha: _isPressed ? 0.2 : 0.3),
+                    color: AppColors.themeRed.withValues(
+                      alpha: _isPressed ? 0.2 : 0.3,
+                    ),
                     blurRadius: _isPressed ? 6 : 8,
                     offset: Offset(0, _isPressed ? 1 : 2),
                   ),
@@ -1154,13 +1142,11 @@ class _BuyNowButtonState extends State<_BuyNowButton> {
           color: isDisabled
               ? Colors.transparent
               : (isDark
-                  ? Colors.white.withValues(alpha: _isPressed ? 0.08 : 0.05)
-                  : Colors.black.withValues(alpha: _isPressed ? 0.08 : 0.05)),
+                    ? Colors.white.withValues(alpha: _isPressed ? 0.08 : 0.05)
+                    : Colors.black.withValues(alpha: _isPressed ? 0.08 : 0.05)),
           borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
           border: Border.all(
-            color: isDisabled
-                ? Colors.grey.shade400
-                : AppColors.themeRed,
+            color: isDisabled ? Colors.grey.shade400 : AppColors.themeRed,
             width: 1.5,
           ),
         ),
@@ -1285,7 +1271,9 @@ class _CounterActionButton extends StatelessWidget {
                 : Radius.zero,
             right: isLeft
                 ? Radius.zero
-                : const Radius.circular(27), // Half of 54 for perfect semicircle
+                : const Radius.circular(
+                    27,
+                  ), // Half of 54 for perfect semicircle
           ),
         ),
         child: Center(
@@ -1323,7 +1311,7 @@ class _BuyNowCheckoutPopupState extends State<_BuyNowCheckoutPopup> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
-  
+
   String _selectedPaymentMethod = 'card';
   bool _isProcessing = false;
 
@@ -1357,10 +1345,10 @@ class _BuyNowCheckoutPopupState extends State<_BuyNowCheckoutPopup> {
     }
 
     setState(() => _isProcessing = true);
-    
+
     // Simulate processing
     await Future.delayed(const Duration(seconds: 1));
-    
+
     if (mounted) {
       setState(() => _isProcessing = false);
       widget.onConfirm();
@@ -1398,7 +1386,7 @@ class _BuyNowCheckoutPopupState extends State<_BuyNowCheckoutPopup> {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          
+
           // Title
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -1423,7 +1411,7 @@ class _BuyNowCheckoutPopupState extends State<_BuyNowCheckoutPopup> {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          
+
           // Scrollable form
           Flexible(
             child: SingleChildScrollView(
@@ -1438,7 +1426,7 @@ class _BuyNowCheckoutPopupState extends State<_BuyNowCheckoutPopup> {
                     totalPrice: _totalPrice,
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  
+
                   // Contact info section
                   _BuyNowSectionTitle(title: 'Contact Information'),
                   const SizedBox(height: AppSpacing.md),
@@ -1462,7 +1450,7 @@ class _BuyNowCheckoutPopupState extends State<_BuyNowCheckoutPopup> {
                     keyboardType: TextInputType.phone,
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  
+
                   // Delivery address
                   _BuyNowSectionTitle(title: 'Delivery Address'),
                   const SizedBox(height: AppSpacing.md),
@@ -1473,7 +1461,7 @@ class _BuyNowCheckoutPopupState extends State<_BuyNowCheckoutPopup> {
                     maxLines: 2,
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  
+
                   // Payment method
                   _BuyNowSectionTitle(title: 'Payment Method'),
                   const SizedBox(height: AppSpacing.md),
@@ -1488,7 +1476,7 @@ class _BuyNowCheckoutPopupState extends State<_BuyNowCheckoutPopup> {
               ),
             ),
           ),
-          
+
           // Confirm button
           Container(
             padding: EdgeInsets.only(
@@ -1544,14 +1532,20 @@ class _BuyNowCheckoutPopupState extends State<_BuyNowCheckoutPopup> {
                     ),
                     decoration: BoxDecoration(
                       color: _isProcessing ? Colors.grey : AppColors.themeRed,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-                      boxShadow: _isProcessing ? null : [
-                        BoxShadow(
-                          color: AppColors.themeRed.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.radiusFull,
+                      ),
+                      boxShadow: _isProcessing
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: AppColors.themeRed.withValues(
+                                  alpha: 0.3,
+                                ),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1624,20 +1618,14 @@ class _BuyNowOrderSummary extends StatelessWidget {
             ? AppColors.themeRed.withValues(alpha: 0.1)
             : AppColors.themeRed.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(
-          color: AppColors.themeRed.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: AppColors.themeRed.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.flash_on_rounded,
-                size: 20,
-                color: AppColors.themeRed,
-              ),
+              Icon(Icons.flash_on_rounded, size: 20, color: AppColors.themeRed),
               const SizedBox(width: AppSpacing.sm),
               Text(
                 'Quick Buy',
@@ -1754,9 +1742,7 @@ class _BuyNowTextField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          borderSide: BorderSide(
-            color: AppColors.themeRed,
-          ),
+          borderSide: BorderSide(color: AppColors.themeRed),
         ),
         filled: true,
         fillColor: isDark
@@ -1839,22 +1825,20 @@ class _PaymentOption extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.md,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
           decoration: BoxDecoration(
             color: isSelected
                 ? AppColors.themeRed.withValues(alpha: 0.1)
                 : (isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.grey.shade50),
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.grey.shade50),
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             border: Border.all(
               color: isSelected
                   ? AppColors.themeRed
                   : (isDark
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : Colors.black.withValues(alpha: 0.1)),
+                        ? Colors.white.withValues(alpha: 0.1)
+                        : Colors.black.withValues(alpha: 0.1)),
               width: isSelected ? 2 : 1,
             ),
           ),

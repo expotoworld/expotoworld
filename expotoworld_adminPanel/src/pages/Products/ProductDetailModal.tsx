@@ -398,7 +398,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         <Typography variant="caption" color="text.secondary">{t('products.stock')}</Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <InventoryIcon fontSize="small" color={product.stockLeft === 0 ? 'error' : product.stockLeft < 10 ? 'warning' : 'action'} />
-                          <Typography variant="body1">{product.stockLeft} {product.unit}</Typography>
+                          <Typography variant="body1">{product.stockLeft} {product.contentUnit}</Typography>
                         </Box>
                       </Grid>
                       <Grid item xs={6}>

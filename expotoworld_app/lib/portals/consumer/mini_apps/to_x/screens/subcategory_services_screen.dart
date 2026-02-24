@@ -10,10 +10,7 @@ import '../../core/providers/mini_app_providers.dart';
 class SubcategoryServicesScreen extends ConsumerStatefulWidget {
   final String subcategoryId;
 
-  const SubcategoryServicesScreen({
-    super.key,
-    required this.subcategoryId,
-  });
+  const SubcategoryServicesScreen({super.key, required this.subcategoryId});
 
   @override
   ConsumerState<SubcategoryServicesScreen> createState() =>
@@ -45,8 +42,10 @@ class _SubcategoryServicesScreenState
   void _onScroll() {
     final scrollOffset = _scrollController.offset;
     final newRadius =
-        (_maxRadius - (scrollOffset / _scrollThreshold * _maxRadius))
-            .clamp(0.0, _maxRadius);
+        (_maxRadius - (scrollOffset / _scrollThreshold * _maxRadius)).clamp(
+          0.0,
+          _maxRadius,
+        );
 
     if (newRadius != _borderRadius) {
       setState(() {
@@ -59,18 +58,23 @@ class _SubcategoryServicesScreenState
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final statusBarHeight = MediaQuery.of(context).padding.top;
-    final services = ref.watch(miniAppServicesProvider((
-      subcategoryId: widget.subcategoryId,
-    )));
-    final subcategories = ref.watch(miniAppSubcategoriesProvider((
-      miniAppType: MiniAppType.toX,
-      categoryId: null,
-    )));
-
-    final subcategory = subcategories.firstWhere(
-      (s) => s.id == widget.subcategoryId,
-      orElse: () => subcategories.first,
+    final services = ref.watch(
+      miniAppServicesProvider((subcategoryId: widget.subcategoryId)),
     );
+    final subcategoriesAsync = ref.watch(
+      miniAppSubcategoriesProvider((
+        miniAppType: MiniAppType.toX,
+        categoryId: null,
+      )),
+    );
+    final subcategoriesList = subcategoriesAsync.value ?? [];
+
+    final subcategory = subcategoriesList.isNotEmpty
+        ? subcategoriesList.firstWhere(
+            (s) => s.id == widget.subcategoryId,
+            orElse: () => subcategoriesList.first,
+          )
+        : null;
 
     // Return content wrapped in Scaffold (needed for Material decoration)
     // This screen is displayed standalone (outside MiniAppShell) as a separate route
@@ -106,7 +110,7 @@ class _SubcategoryServicesScreenState
                   // Title only (no service count)
                   Expanded(
                     child: Text(
-                      subcategory.name,
+                      subcategory?.name ?? '',
                       style: AppTypography.titleMedium.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -125,7 +129,9 @@ class _SubcategoryServicesScreenState
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 50),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF121212) : AppColors.neutralWhite,
+                color: isDark
+                    ? const Color(0xFF121212)
+                    : AppColors.neutralWhite,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(_borderRadius),
                   topRight: Radius.circular(_borderRadius),
@@ -231,10 +237,7 @@ class _ServiceListItem extends StatelessWidget {
   final MiniAppService service;
   final VoidCallback onRequestQuote;
 
-  const _ServiceListItem({
-    required this.service,
-    required this.onRequestQuote,
-  });
+  const _ServiceListItem({required this.service, required this.onRequestQuote});
 
   @override
   Widget build(BuildContext context) {
@@ -242,9 +245,7 @@ class _ServiceListItem extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : Colors.white,
+        color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         border: Border.all(
           color: isDark
@@ -288,7 +289,7 @@ class _ServiceListItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
-                
+
                 // Service info
                 Expanded(
                   child: Column(
@@ -323,7 +324,7 @@ class _ServiceListItem extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 // Price indicator
                 if (service.priceRange != null)
                   Container(
@@ -347,7 +348,7 @@ class _ServiceListItem extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Description
           if (service.description.isNotEmpty)
             Padding(
@@ -361,9 +362,9 @@ class _ServiceListItem extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-          
+
           const SizedBox(height: AppSpacing.md),
-          
+
           // Features list
           if (service.features.isNotEmpty)
             Padding(
@@ -381,7 +382,9 @@ class _ServiceListItem extends StatelessWidget {
                       color: isDark
                           ? Colors.white.withValues(alpha: 0.08)
                           : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.radiusFull,
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -404,9 +407,9 @@ class _ServiceListItem extends StatelessWidget {
                 }).toList(),
               ),
             ),
-          
+
           const SizedBox(height: AppSpacing.md),
-          
+
           // Action button
           Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -461,10 +464,7 @@ class _QuoteRequestSheet extends StatefulWidget {
   final MiniAppService service;
   final VoidCallback onSubmit;
 
-  const _QuoteRequestSheet({
-    required this.service,
-    required this.onSubmit,
-  });
+  const _QuoteRequestSheet({required this.service, required this.onSubmit});
 
   @override
   State<_QuoteRequestSheet> createState() => _QuoteRequestSheetState();
@@ -505,7 +505,7 @@ class _QuoteRequestSheetState extends State<_QuoteRequestSheet> {
 
     setState(() => _isSubmitting = true);
     await Future.delayed(const Duration(seconds: 1));
-    
+
     if (mounted) {
       widget.onSubmit();
     }
@@ -542,7 +542,7 @@ class _QuoteRequestSheetState extends State<_QuoteRequestSheet> {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          
+
           // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -599,7 +599,7 @@ class _QuoteRequestSheetState extends State<_QuoteRequestSheet> {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          
+
           // Form fields
           Flexible(
             child: SingleChildScrollView(
@@ -658,7 +658,7 @@ class _QuoteRequestSheetState extends State<_QuoteRequestSheet> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  
+
                   Text(
                     'Contact Information',
                     style: AppTypography.labelMediumStyle.copyWith(
@@ -667,7 +667,7 @@ class _QuoteRequestSheetState extends State<_QuoteRequestSheet> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  
+
                   _TextField(
                     controller: _nameController,
                     label: 'Full Name *',
@@ -699,7 +699,7 @@ class _QuoteRequestSheetState extends State<_QuoteRequestSheet> {
               ),
             ),
           ),
-          
+
           // Submit button
           Container(
             padding: EdgeInsets.only(
@@ -806,9 +806,7 @@ class _TextField extends StatelessWidget {
         controller: controller,
         keyboardType: keyboardType,
         maxLines: maxLines,
-        style: AppTypography.bodyMedium(
-          color: AppColors.foreground(context),
-        ),
+        style: AppTypography.bodyMedium(color: AppColors.foreground(context)),
         decoration: InputDecoration(
           hintText: label,
           hintStyle: AppTypography.bodyMedium(

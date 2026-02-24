@@ -43,7 +43,7 @@ type querier interface {
 
 func (r *ProductRepository) createProduct(ctx context.Context, q querier, params *domain.CreateProductParams) (*domain.Product, error) {
 	query := `
-		INSERT INTO admin_products (
+		INSERT INTO admin_product (
 			sku, title, description, store_id, owner_org_id,
 			main_price, strikethrough_price, cost_price, tax_rate, stock_left,
 			minimum_order_quantity, net_content, content_unit, reference_price, reference_unit,
@@ -131,7 +131,7 @@ func (r *ProductRepository) getProduct(ctx context.Context, q querier, where str
 			is_default_variant, price_min, price_max,
 			stock_total, variant_options_index, etw_store_type,
 			etw_mini_app_type, created_at, updated_at
-		FROM admin_products WHERE %s`, where)
+		FROM admin_product WHERE %s`, where)
 
 	product := &domain.Product{}
 	var variantOptionsJSON []byte
@@ -281,8 +281,53 @@ func (r *ProductRepository) List(ctx context.Context, filter *domain.ProductFilt
 			argIdx++
 		}
 		if filter.Search != nil && *filter.Search != "" {
-			conditions = append(conditions, fmt.Sprintf("(p.title ILIKE $%d OR p.sku ILIKE $%d)", argIdx, argIdx))
+			conditions = append(conditions, fmt.Sprintf("(p.title ILIKE $%d OR p.sku ILIKE $%d OR p.description ILIKE $%d)", argIdx, argIdx, argIdx))
 			args = append(args, "%"+*filter.Search+"%")
+			argIdx++
+		}
+		if filter.ETWStoreType != nil && *filter.ETWStoreType != "" {
+			conditions = append(conditions, fmt.Sprintf("p.etw_store_type = $%d", argIdx))
+			args = append(args, *filter.ETWStoreType)
+			argIdx++
+		}
+		if filter.ETWMiniAppType != nil && *filter.ETWMiniAppType != "" {
+			conditions = append(conditions, fmt.Sprintf("p.etw_mini_app_type = $%d", argIdx))
+			args = append(args, *filter.ETWMiniAppType)
+			argIdx++
+		}
+		if filter.IsFeatured != nil {
+			conditions = append(conditions, fmt.Sprintf("p.is_featured = $%d", argIdx))
+			args = append(args, *filter.IsFeatured)
+			argIdx++
+		}
+		if filter.OwnerOrgID != nil && *filter.OwnerOrgID != "" {
+			conditions = append(conditions, fmt.Sprintf("p.owner_org_id = $%d", argIdx))
+			args = append(args, *filter.OwnerOrgID)
+			argIdx++
+		}
+		if filter.CategoryID != nil {
+			conditions = append(conditions, fmt.Sprintf("p.product_id IN (SELECT pcm.product_id FROM admin_product_category_mapping pcm WHERE pcm.category_id = $%d)", argIdx))
+			args = append(args, *filter.CategoryID)
+			argIdx++
+		}
+		if filter.SubcategoryID != nil {
+			conditions = append(conditions, fmt.Sprintf("p.product_id IN (SELECT psm.product_id FROM admin_product_subcategory_mapping psm WHERE psm.subcategory_id = $%d)", argIdx))
+			args = append(args, *filter.SubcategoryID)
+			argIdx++
+		}
+		if filter.CollectionID != nil {
+			conditions = append(conditions, fmt.Sprintf("p.product_id IN (SELECT pcm2.product_id FROM admin_product_collection_mapping pcm2 WHERE pcm2.collection_id = $%d)", argIdx))
+			args = append(args, *filter.CollectionID)
+			argIdx++
+		}
+		if filter.MinPrice != nil {
+			conditions = append(conditions, fmt.Sprintf("p.main_price >= $%d", argIdx))
+			args = append(args, *filter.MinPrice)
+			argIdx++
+		}
+		if filter.MaxPrice != nil {
+			conditions = append(conditions, fmt.Sprintf("p.main_price <= $%d", argIdx))
+			args = append(args, *filter.MaxPrice)
 			argIdx++
 		}
 	}
@@ -293,7 +338,7 @@ func (r *ProductRepository) List(ctx context.Context, filter *domain.ProductFilt
 	}
 
 	// Count query
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM admin_products p %s", whereClause)
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM admin_product p %s", whereClause)
 	var totalCount int64
 	if err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&totalCount); err != nil {
 		return nil, fmt.Errorf("failed to count products: %w", err)
@@ -322,7 +367,7 @@ func (r *ProductRepository) List(ctx context.Context, filter *domain.ProductFilt
 			(SELECT img.image_url FROM admin_product_images img 
 			 WHERE img.product_id = p.product_id AND img.is_primary = true 
 			 LIMIT 1) as primary_image_url
-		FROM admin_products p %s
+		FROM admin_product p %s
 		ORDER BY %s
 		LIMIT $%d OFFSET $%d`, whereClause, orderBy, argIdx, argIdx+1)
 
@@ -492,14 +537,14 @@ func (r *ProductRepository) updateProduct(ctx context.Context, q querier, id int
 	sets = append(sets, "updated_at = NOW()")
 	args = append(args, id)
 
-	query := fmt.Sprintf("UPDATE admin_products SET %s WHERE product_id = $%d", strings.Join(sets, ", "), argIdx)
+	query := fmt.Sprintf("UPDATE admin_product SET %s WHERE product_id = $%d", strings.Join(sets, ", "), argIdx)
 	_, err := q.Exec(ctx, query, args...)
 	return err
 }
 
 // Delete hard-deletes a product.
 func (r *ProductRepository) Delete(ctx context.Context, id int32) error {
-	_, err := r.pool.Exec(ctx, "DELETE FROM admin_products WHERE product_id = $1", id)
+	_, err := r.pool.Exec(ctx, "DELETE FROM admin_product WHERE product_id = $1", id)
 	return err
 }
 
@@ -514,7 +559,7 @@ func (r *ProductRepository) ArchiveTx(ctx context.Context, tx pgx.Tx, id int32) 
 }
 
 func (r *ProductRepository) archiveProduct(ctx context.Context, q querier, id int32) error {
-	_, err := q.Exec(ctx, "UPDATE admin_products SET is_archived = true, updated_at = NOW() WHERE product_id = $1", id)
+	_, err := q.Exec(ctx, "UPDATE admin_product SET is_archived = true, updated_at = NOW() WHERE product_id = $1", id)
 	return err
 }
 
@@ -541,7 +586,7 @@ func (r *ProductRepository) getChildrenByParentID(ctx context.Context, q querier
 			is_default_variant, price_min, price_max,
 			stock_total, variant_options_index, etw_store_type,
 			etw_mini_app_type, created_at, updated_at
-		FROM admin_products WHERE parent_id = $1 ORDER BY display_order, created_at`
+		FROM admin_product WHERE parent_id = $1 ORDER BY display_order, created_at`
 
 	rows, err := q.Query(ctx, query, parentID)
 	if err != nil {
@@ -595,7 +640,7 @@ func (r *ProductRepository) updateParentAggregates(ctx context.Context, q querie
 	}
 
 	query := `
-		UPDATE admin_products SET 
+		UPDATE admin_product SET 
 			price_min = $1,
 			price_max = $2,
 			stock_total = $3,
@@ -610,7 +655,7 @@ func (r *ProductRepository) updateParentAggregates(ctx context.Context, q querie
 // CountByStore returns the number of products in a store.
 func (r *ProductRepository) CountByStore(ctx context.Context, storeID int32) (int64, error) {
 	var count int64
-	err := r.pool.QueryRow(ctx, "SELECT COUNT(*) FROM admin_products WHERE store_id = $1", storeID).Scan(&count)
+	err := r.pool.QueryRow(ctx, "SELECT COUNT(*) FROM admin_product WHERE store_id = $1", storeID).Scan(&count)
 	return count, err
 }
 
@@ -626,12 +671,12 @@ func (r *ProductRepository) SetDefaultVariantTx(ctx context.Context, tx pgx.Tx, 
 
 func (r *ProductRepository) setDefaultVariant(ctx context.Context, q querier, parentID int32, childID int32) error {
 	// Unset current default
-	_, err := q.Exec(ctx, "UPDATE admin_products SET is_default_variant = false WHERE parent_id = $1", parentID)
+	_, err := q.Exec(ctx, "UPDATE admin_product SET is_default_variant = false WHERE parent_id = $1", parentID)
 	if err != nil {
 		return err
 	}
 
 	// Set new default
-	_, err = q.Exec(ctx, "UPDATE admin_products SET is_default_variant = true WHERE product_id = $1 AND parent_id = $2", childID, parentID)
+	_, err = q.Exec(ctx, "UPDATE admin_product SET is_default_variant = true WHERE product_id = $1 AND parent_id = $2", childID, parentID)
 	return err
 }

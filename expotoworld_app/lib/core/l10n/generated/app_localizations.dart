@@ -1443,6 +1443,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'If you wish to delete your account, please contact our support team through the \"Contact Us\" button below. Note that account deletion is permanent and all your data will be removed from our servers.'**
   String get faqDeleteAccountAnswer;
+
+  /// Title for the collections screen
+  ///
+  /// In en, this message translates to:
+  /// **'Collections'**
+  String get collections;
+
+  /// Empty state message when no collections exist for a subcategory
+  ///
+  /// In en, this message translates to:
+  /// **'No collections available'**
+  String get noCollectionsAvailable;
+
+  /// Error message when collections API call fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load collections'**
+  String get failedToLoadCollections;
+
+  /// Singular label for breadcrumb node - tier 1
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get category;
+
+  /// Singular label for breadcrumb node - tier 2
+  ///
+  /// In en, this message translates to:
+  /// **'Subcategory'**
+  String get subcategory;
+
+  /// Singular label for breadcrumb node - tier 3
+  ///
+  /// In en, this message translates to:
+  /// **'Collection'**
+  String get collection;
+
+  /// Empty state message when no categories exist
+  ///
+  /// In en, this message translates to:
+  /// **'No categories available'**
+  String get noCategoriesAvailable;
+
+  /// Error message when categories API call fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load categories'**
+  String get failedToLoadCategories;
+
+  /// Empty state message when no subcategories exist for a category
+  ///
+  /// In en, this message translates to:
+  /// **'No subcategories available'**
+  String get noSubcategoriesAvailable;
+
+  /// Error message when subcategories API call fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load subcategories'**
+  String get failedToLoadSubcategories;
 }
 
 class _AppLocalizationsDelegate

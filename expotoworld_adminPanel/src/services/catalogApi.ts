@@ -129,6 +129,38 @@ catalogApi.interceptors.response.use(
 );
 
 // ============================================
+// S3 ORPHAN CLEANUP HELPER
+// ============================================
+
+/**
+ * Attempts to clean up an orphaned S3 object after a DB operation fails.
+ * This is a best-effort cleanup — failures are logged but not re-thrown.
+ * @param objectKey The S3 object key to delete (e.g., "admin-panel/products/1/images/uuid.jpg")
+ */
+async function cleanupOrphanedS3Object(objectKey: string): Promise<void> {
+  try {
+    await catalogApi.delete('/s3-cleanup', { params: { object_key: objectKey } });
+    console.info(`[S3 Cleanup] Successfully deleted orphaned S3 object: ${objectKey}`);
+  } catch (cleanupError) {
+    console.error(
+      `[S3 Cleanup] Failed to clean up orphaned S3 object: ${objectKey}`,
+      cleanupError
+    );
+  }
+}
+
+/**
+ * Extracts the S3 object key from a public URL.
+ * Handles both CloudFront and direct S3 URL formats.
+ */
+export function extractObjectKeyFromUrl(publicUrl: string): string | null {
+  const marker = 'admin-panel/';
+  const idx = publicUrl.indexOf(marker);
+  if (idx === -1) return null;
+  return publicUrl.substring(idx);
+}
+
+// ============================================
 // API RESPONSE TYPES (from catalog service)
 // ============================================
 
@@ -216,6 +248,7 @@ export interface ApiProduct {
   images?: ApiProductImage[];
   category_ids?: number[];
   subcategory_ids?: number[];
+  collection_ids?: number[];
 }
 
 export interface ApiProductAttribute {
@@ -249,7 +282,6 @@ export interface ApiProductImage {
 export interface ApiCategory {
   category_id: number;
   name: string;
-  description: string | null;
   image_url: string | null;
   display_order: number;
   is_active: boolean;
@@ -257,6 +289,7 @@ export interface ApiCategory {
   etw_store_type: string | null;
   etw_mini_app_type: string | null;
   subcategory_count?: number;
+  product_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -264,11 +297,23 @@ export interface ApiCategory {
 export interface ApiSubcategory {
   subcategory_id: number;
   name: string;
-  description: string | null;
   image_url: string | null;
   category_id: number;
   display_order: number;
   is_active: boolean;
+  product_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiCollection {
+  collection_id: number;
+  subcategory_id: number;
+  name: string;
+  image_url: string | null;
+  display_order: number;
+  is_active: boolean;
+  product_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -293,7 +338,6 @@ export interface ApiRegion {
   region_id: number;
   name: string;
   description: string | null;
-  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -353,6 +397,7 @@ export interface Product {
   images?: ProductImage[];
   categoryIds?: number[];
   subcategoryIds?: number[];
+  collectionIds?: number[];
 }
 
 export interface ProductAttribute {
@@ -428,6 +473,7 @@ export interface CreateProductData {
   images?: CreateImageData[];
   categoryIds?: number[];
   subcategoryIds?: number[];
+  collectionIds?: number[];
 }
 
 export interface CreateAttributeData {
@@ -448,7 +494,6 @@ export interface Category {
   name: string;
   iconUrl?: string;
   imageUrl?: string;
-  description?: string;
   isActive: boolean;
   productCount: number;
   subcategoryCount?: number;
@@ -466,7 +511,18 @@ export interface Subcategory {
   categoryId: string;
   iconUrl?: string;
   imageUrl?: string;
-  description?: string;
+  productCount: number;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Collection {
+  id: string;
+  name: string;
+  subcategoryId: string;
+  imageUrl?: string;
   productCount: number;
   isActive: boolean;
   displayOrder: number;
@@ -477,6 +533,16 @@ export interface Subcategory {
 // Category with nested subcategories for tree view
 export interface CategoryWithSubcategories extends Category {
   subcategories: Subcategory[];
+}
+
+// Subcategory with nested collections for tree view
+export interface SubcategoryWithCollections extends Subcategory {
+  collections: Collection[];
+}
+
+// Category with full 3-tier hierarchy
+export interface CategoryWithFullHierarchy extends Category {
+  subcategories: SubcategoryWithCollections[];
 }
 
 export interface Store {
@@ -500,7 +566,6 @@ export interface Region {
   id: string;
   name: string;
   description?: string;
-  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -560,6 +625,7 @@ function mapApiProduct(api: ApiProduct): Product {
     images: api.images?.map(mapApiImage),
     categoryIds: api.category_ids,
     subcategoryIds: api.subcategory_ids,
+    collectionIds: api.collection_ids,
   };
 }
 
@@ -649,6 +715,7 @@ function mapProductToApi(data: CreateProductData): Record<string, unknown> {
     })),
     category_ids: data.categoryIds,
     subcategory_ids: data.subcategoryIds,
+    collection_ids: data.collectionIds,
   };
 }
 
@@ -656,10 +723,9 @@ function mapApiCategory(api: ApiCategory): Category {
   return {
     id: String(api.category_id),
     name: api.name,
-    description: api.description || undefined,
     imageUrl: api.image_url || undefined,
     isActive: api.is_active,
-    productCount: 0, // Not provided by API yet
+    productCount: api.product_count ?? 0,
     subcategoryCount: api.subcategory_count ?? 0,
     storeId: api.store_id ? String(api.store_id) : undefined,
     displayOrder: api.display_order,
@@ -675,9 +741,22 @@ function mapApiSubcategory(api: ApiSubcategory): Subcategory {
     id: String(api.subcategory_id),
     name: api.name,
     categoryId: String(api.category_id),
-    description: api.description || undefined,
     imageUrl: api.image_url || undefined,
-    productCount: 0, // Not provided by API yet
+    productCount: api.product_count ?? 0,
+    isActive: api.is_active,
+    displayOrder: api.display_order,
+    createdAt: api.created_at,
+    updatedAt: api.updated_at,
+  };
+}
+
+function mapApiCollection(api: ApiCollection): Collection {
+  return {
+    id: String(api.collection_id),
+    name: api.name,
+    subcategoryId: String(api.subcategory_id),
+    imageUrl: api.image_url || undefined,
+    productCount: api.product_count ?? 0,
     isActive: api.is_active,
     displayOrder: api.display_order,
     createdAt: api.created_at,
@@ -709,7 +788,6 @@ function mapApiRegion(api: ApiRegion): Region {
     id: String(api.region_id),
     name: api.name,
     description: api.description || undefined,
-    isActive: api.is_active,
     createdAt: api.created_at,
     updatedAt: api.updated_at,
   };
@@ -758,11 +836,8 @@ export const productApi = {
    * Get all products with optional filtering and pagination
    */
   getProducts: async (params: ProductQueryParams = {}): Promise<{ items: Product[]; pagination: PaginationInfo }> => {
-    const response = await catalogApi.get<PaginatedResponse<ApiProduct>>('/products', { params });
-    return {
-      items: response.data.items.map(mapApiProduct),
-      pagination: response.data.pagination,
-    };
+    const response = await catalogApi.get<BackendPaginatedResponse<ApiProduct>>('/products', { params });
+    return mapBackendPagination(response.data, mapApiProduct);
   },
 
   /**
@@ -774,46 +849,25 @@ export const productApi = {
   },
 
   /**
-   * Create a new product
+   * Create a new product.
+   * Uses the complete CreateProductData type and mapProductToApi() to ensure
+   * all backend fields (sku, product_type, cost_price, tax_rate, logistics, etc.)
+   * are correctly mapped to the Go backend's CreateProductRequest.
    */
-  createProduct: async (data: Partial<Product>): Promise<Product> => {
-    // Map admin panel data back to API format
-    const apiData = {
-      title: data.name,
-      description: data.description,
-      main_price: data.currentPrice,
-      strikethrough_price: data.originalPrice,
-      stock_left: data.stockLeft,
-      minimum_order_quantity: data.minimumOrderQuantity,
-      shelf_code: data.shelfCode,
-      store_id: data.storeId ? Number(data.storeId) : null,
-      is_featured: data.isFeatured,
-      is_active: data.isActive,
-      category_ids: data.categoryId ? [Number(data.categoryId)] : [],
-      subcategory_ids: data.subcategoryId ? [Number(data.subcategoryId)] : [],
-    };
+  createProduct: async (data: CreateProductData): Promise<Product> => {
+    const apiData = mapProductToApi(data);
     const response = await catalogApi.post<ApiProduct>('/products', apiData);
     return mapApiProduct(response.data);
   },
 
   /**
-   * Update an existing product
+   * Update an existing product.
+   * Uses the complete CreateProductData type and mapProductToApi() to ensure
+   * all backend fields are correctly mapped. Undefined fields are omitted
+   * from the JSON payload, allowing partial updates.
    */
-  updateProduct: async (id: string, data: Partial<Product>): Promise<Product> => {
-    const apiData = {
-      title: data.name,
-      description: data.description,
-      main_price: data.currentPrice,
-      strikethrough_price: data.originalPrice,
-      stock_left: data.stockLeft,
-      minimum_order_quantity: data.minimumOrderQuantity,
-      shelf_code: data.shelfCode,
-      store_id: data.storeId ? Number(data.storeId) : null,
-      is_featured: data.isFeatured,
-      is_active: data.isActive,
-      category_ids: data.categoryId ? [Number(data.categoryId)] : [],
-      subcategory_ids: data.subcategoryId ? [Number(data.subcategoryId)] : [],
-    };
+  updateProduct: async (id: string, data: CreateProductData): Promise<Product> => {
+    const apiData = mapProductToApi(data);
     const response = await catalogApi.put<ApiProduct>(`/products/${id}`, apiData);
     return mapApiProduct(response.data);
   },
@@ -1032,7 +1086,7 @@ export const productApi = {
   ): Promise<string> => {
     // Step 1: Get presigned upload URL
     onProgress?.(10);
-    const { uploadUrl, publicUrl } = await productApi.getImageUploadUrl(
+    const { uploadUrl, objectKey, publicUrl } = await productApi.getImageUploadUrl(
       productId,
       file.name,
       file.type
@@ -1069,11 +1123,24 @@ export const productApi = {
     onProgress?.(90);
 
     // Step 3: Create image record in database
-    await productApi.createImage(productId, {
-      imageUrl: publicUrl,
-      displayOrder,
-      isPrimary,
-    });
+    try {
+      await productApi.createImage(productId, {
+        imageUrl: publicUrl,
+        displayOrder,
+        isPrimary,
+      });
+    } catch (dbError) {
+      // S3 upload succeeded but DB record creation failed — clean up orphaned S3 object
+      console.error(
+        `[S3 Recovery] Image uploaded to S3 but DB record creation failed. Orphaned key: ${objectKey}`,
+        dbError
+      );
+      await cleanupOrphanedS3Object(objectKey);
+      throw new Error(
+        `Image was uploaded to storage but failed to save the record. ` +
+        `Original error: ${dbError instanceof Error ? dbError.message : String(dbError)}`
+      );
+    }
 
     onProgress?.(100);
     return publicUrl;
@@ -1222,32 +1289,34 @@ export const categoryApi = {
   },
 
   /**
-   * Create a new category
+   * Create a new category.
    */
   createCategory: async (data: Partial<Category>): Promise<Category> => {
     const apiData = {
       name: data.name,
-      description: data.description,
       image_url: data.imageUrl,
       display_order: data.displayOrder,
       is_active: data.isActive,
       store_id: data.storeId ? Number(data.storeId) : null,
+      etw_store_type: data.etwStoreType || undefined,
+      etw_mini_app_type: data.etwMiniAppType || undefined,
     };
     const response = await catalogApi.post<ApiCategory>('/categories', apiData);
     return mapApiCategory(response.data);
   },
 
   /**
-   * Update an existing category
+   * Update an existing category.
    */
   updateCategory: async (id: string, data: Partial<Category>): Promise<Category> => {
     const apiData = {
       name: data.name,
-      description: data.description,
       image_url: data.imageUrl,
       display_order: data.displayOrder,
       is_active: data.isActive,
       store_id: data.storeId ? Number(data.storeId) : null,
+      etw_store_type: data.etwStoreType || undefined,
+      etw_mini_app_type: data.etwMiniAppType || undefined,
     };
     const response = await catalogApi.put<ApiCategory>(`/categories/${id}`, apiData);
     return mapApiCategory(response.data);
@@ -1269,12 +1338,11 @@ export const categoryApi = {
   },
 
   /**
-   * Create a subcategory
+   * Create a subcategory.
    */
   createSubcategory: async (categoryId: string, data: Partial<Subcategory>): Promise<Subcategory> => {
     const apiData = {
       name: data.name,
-      description: data.description,
       image_url: data.imageUrl,
       display_order: data.displayOrder,
       is_active: data.isActive,
@@ -1284,12 +1352,11 @@ export const categoryApi = {
   },
 
   /**
-   * Update a subcategory
+   * Update a subcategory.
    */
   updateSubcategory: async (id: string, data: Partial<Subcategory>): Promise<Subcategory> => {
     const apiData = {
       name: data.name,
-      description: data.description,
       image_url: data.imageUrl,
       display_order: data.displayOrder,
       is_active: data.isActive,
@@ -1376,7 +1443,7 @@ export const categoryApi = {
   ): Promise<string> => {
     // Step 1: Get presigned upload URL
     onProgress?.(10);
-    const { uploadUrl, publicUrl } = await categoryApi.getCategoryImageUploadUrl(
+    const { uploadUrl, objectKey, publicUrl } = await categoryApi.getCategoryImageUploadUrl(
       categoryId,
       file.name,
       file.type
@@ -1389,7 +1456,7 @@ export const categoryApi = {
       
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
-          const uploadProgress = (event.loaded / event.total) * 60;
+          const uploadProgress = (event.loaded / event.total) * 50;
           onProgress?.(30 + uploadProgress);
         }
       };
@@ -1408,6 +1475,22 @@ export const categoryApi = {
       xhr.setRequestHeader('Content-Type', file.type);
       xhr.send(file);
     });
+
+    // Step 3: Persist the image URL in the database
+    onProgress?.(90);
+    try {
+      await categoryApi.updateCategory(categoryId, { imageUrl: publicUrl });
+    } catch (dbError) {
+      console.error(
+        `[S3 Recovery] Category image uploaded to S3 but DB update failed. Orphaned key: ${objectKey}`,
+        dbError
+      );
+      await cleanupOrphanedS3Object(objectKey);
+      throw new Error(
+        `Image was uploaded to storage but failed to update the category record. ` +
+        `Original error: ${dbError instanceof Error ? dbError.message : String(dbError)}`
+      );
+    }
 
     onProgress?.(100);
     return publicUrl;
@@ -1452,7 +1535,7 @@ export const categoryApi = {
   ): Promise<string> => {
     // Step 1: Get presigned upload URL
     onProgress?.(10);
-    const { uploadUrl, publicUrl } = await categoryApi.getSubcategoryImageUploadUrl(
+    const { uploadUrl, objectKey, publicUrl } = await categoryApi.getSubcategoryImageUploadUrl(
       subcategoryId,
       file.name,
       file.type
@@ -1465,7 +1548,7 @@ export const categoryApi = {
       
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
-          const uploadProgress = (event.loaded / event.total) * 60;
+          const uploadProgress = (event.loaded / event.total) * 50;
           onProgress?.(30 + uploadProgress);
         }
       };
@@ -1484,6 +1567,184 @@ export const categoryApi = {
       xhr.setRequestHeader('Content-Type', file.type);
       xhr.send(file);
     });
+
+    // Step 3: Persist the image URL in the database
+    onProgress?.(90);
+    try {
+      await categoryApi.updateSubcategory(subcategoryId, { imageUrl: publicUrl });
+    } catch (dbError) {
+      console.error(
+        `[S3 Recovery] Subcategory image uploaded to S3 but DB update failed. Orphaned key: ${objectKey}`,
+        dbError
+      );
+      await cleanupOrphanedS3Object(objectKey);
+      throw new Error(
+        `Image was uploaded to storage but failed to update the subcategory record. ` +
+        `Original error: ${dbError instanceof Error ? dbError.message : String(dbError)}`
+      );
+    }
+
+    onProgress?.(100);
+    return publicUrl;
+  },
+
+  // ---- Collection Methods ----
+
+  /**
+   * Get category tree with full 3-tier hierarchy (categories -> subcategories -> collections)
+   */
+  getCategoryTreeFull: async (): Promise<CategoryWithFullHierarchy[]> => {
+    const response = await catalogApi.get<Array<ApiCategory & { subcategories: Array<ApiSubcategory & { collections: ApiCollection[] }> }>>('/categories/tree/full');
+    return response.data.map((cat) => ({
+      ...mapApiCategory(cat),
+      subcategories: (cat.subcategories || []).map((sub) => ({
+        ...mapApiSubcategory(sub),
+        collections: (sub.collections || []).map(mapApiCollection),
+      })),
+    }));
+  },
+
+  /**
+   * Get collections for a subcategory
+   */
+  getCollections: async (subcategoryId: string): Promise<Collection[]> => {
+    const response = await catalogApi.get<ApiCollection[]>(`/subcategories/${subcategoryId}/collections`);
+    return response.data.map(mapApiCollection);
+  },
+
+  /**
+   * Create a collection under a subcategory
+   */
+  createCollection: async (subcategoryId: string, data: Partial<Collection>): Promise<Collection> => {
+    const apiData = {
+      name: data.name,
+      image_url: data.imageUrl,
+      display_order: data.displayOrder,
+      is_active: data.isActive,
+    };
+    const response = await catalogApi.post<ApiCollection>(`/subcategories/${subcategoryId}/collections`, apiData);
+    return mapApiCollection(response.data);
+  },
+
+  /**
+   * Update a collection
+   */
+  updateCollection: async (id: string, data: Partial<Collection>): Promise<Collection> => {
+    const apiData = {
+      name: data.name,
+      image_url: data.imageUrl,
+      display_order: data.displayOrder,
+      is_active: data.isActive,
+    };
+    const response = await catalogApi.put<ApiCollection>(`/collections/${id}`, apiData);
+    return mapApiCollection(response.data);
+  },
+
+  /**
+   * Delete a collection
+   */
+  deleteCollection: async (id: string): Promise<void> => {
+    await catalogApi.delete(`/collections/${id}`);
+  },
+
+  /**
+   * Reorder collections within a subcategory
+   */
+  reorderCollections: async (subcategoryId: string, orderedIds: number[]): Promise<void> => {
+    await catalogApi.put(`/subcategories/${subcategoryId}/collections/reorder`, { ordered_ids: orderedIds });
+  },
+
+  /**
+   * Move a collection to a different subcategory
+   */
+  moveCollection: async (collectionId: string, targetSubcategoryId: string): Promise<void> => {
+    await catalogApi.put(`/collections/${collectionId}/move`, { target_subcategory_id: Number(targetSubcategoryId) });
+  },
+
+  /**
+   * Get a presigned URL for uploading a collection image to S3
+   */
+  getCollectionImageUploadUrl: async (
+    collectionId: string,
+    fileName: string,
+    contentType: string
+  ): Promise<{
+    uploadUrl: string;
+    objectKey: string;
+    publicUrl: string;
+    expiresIn: number;
+  }> => {
+    const response = await catalogApi.get<{
+      upload_url: string;
+      object_key: string;
+      public_url: string;
+      expires_in: number;
+    }>(`/collections/${collectionId}/image/upload-url`, {
+      params: { file_name: fileName, content_type: contentType },
+    });
+    return {
+      uploadUrl: response.data.upload_url,
+      objectKey: response.data.object_key,
+      publicUrl: response.data.public_url,
+      expiresIn: response.data.expires_in,
+    };
+  },
+
+  /**
+   * Upload a collection image and update the collection
+   */
+  uploadCollectionImage: async (
+    collectionId: string,
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<string> => {
+    onProgress?.(10);
+    const { uploadUrl, objectKey, publicUrl } = await categoryApi.getCollectionImageUploadUrl(
+      collectionId,
+      file.name,
+      file.type
+    );
+
+    onProgress?.(30);
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const uploadProgress = (event.loaded / event.total) * 50;
+          onProgress?.(30 + uploadProgress);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('Upload failed'));
+
+      xhr.open('PUT', uploadUrl);
+      xhr.setRequestHeader('Content-Type', file.type);
+      xhr.send(file);
+    });
+
+    onProgress?.(90);
+    try {
+      await categoryApi.updateCollection(collectionId, { imageUrl: publicUrl });
+    } catch (dbError) {
+      console.error(
+        `[S3 Recovery] Collection image uploaded to S3 but DB update failed. Orphaned key: ${objectKey}`,
+        dbError
+      );
+      await cleanupOrphanedS3Object(objectKey);
+      throw new Error(
+        `Image was uploaded to storage but failed to update the collection record. ` +
+        `Original error: ${dbError instanceof Error ? dbError.message : String(dbError)}`
+      );
+    }
 
     onProgress?.(100);
     return publicUrl;
@@ -1614,7 +1875,7 @@ export const storeApi = {
   ): Promise<string> => {
     // Step 1: Get presigned upload URL
     onProgress?.(10);
-    const { uploadUrl, publicUrl } = await storeApi.getImageUploadUrl(
+    const { uploadUrl, objectKey, publicUrl } = await storeApi.getImageUploadUrl(
       storeId,
       file.name,
       file.type
@@ -1627,8 +1888,7 @@ export const storeApi = {
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
-          // Map upload progress from 30% to 90%
-          const uploadProgress = 30 + (event.loaded / event.total) * 60;
+          const uploadProgress = 30 + (event.loaded / event.total) * 50;
           onProgress?.(Math.round(uploadProgress));
         }
       };
@@ -1648,6 +1908,22 @@ export const storeApi = {
       xhr.send(file);
     });
 
+    // Step 3: Persist the image URL in the database
+    onProgress?.(90);
+    try {
+      await storeApi.updateStore(storeId, { imageUrl: publicUrl });
+    } catch (dbError) {
+      console.error(
+        `[S3 Recovery] Store image uploaded to S3 but DB update failed. Orphaned key: ${objectKey}`,
+        dbError
+      );
+      await cleanupOrphanedS3Object(objectKey);
+      throw new Error(
+        `Image was uploaded to storage but failed to update the store record. ` +
+        `Original error: ${dbError instanceof Error ? dbError.message : String(dbError)}`
+      );
+    }
+
     onProgress?.(100);
     return publicUrl;
   },
@@ -1659,13 +1935,38 @@ export const storeApi = {
 
 export const regionApi = {
   /**
-   * Get all regions
+   * Get regions with server-side pagination.
    */
-  getRegions: async (): Promise<{ items: Region[]; pagination: PaginationInfo }> => {
-    const response = await catalogApi.get<PaginatedResponse<ApiRegion>>('/regions');
+  getRegions: async (params?: {
+    page?: number;
+    page_size?: number;
+    search?: string;
+    store_id?: number;
+  }): Promise<{ items: Region[]; pagination: PaginationInfo }> => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set('page', String(params.page));
+    if (params?.page_size) queryParams.set('page_size', String(params.page_size));
+    if (params?.search) queryParams.set('search', params.search);
+    if (params?.store_id) queryParams.set('store_id', String(params.store_id));
+
+    const url = `/regions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await catalogApi.get<{
+      items: ApiRegion[];
+      total_count: number;
+      page: number;
+      page_size: number;
+      total_pages: number;
+    }>(url);
+
+    const data = response.data;
     return {
-      items: response.data.items.map(mapApiRegion),
-      pagination: response.data.pagination,
+      items: (data.items || []).map(mapApiRegion),
+      pagination: {
+        page: data.page,
+        page_size: data.page_size,
+        total: data.total_count,
+        total_pages: data.total_pages,
+      },
     };
   },
 
@@ -1684,7 +1985,6 @@ export const regionApi = {
     const apiData = {
       name: data.name,
       description: data.description,
-      is_active: data.isActive,
     };
     const response = await catalogApi.post<ApiRegion>('/regions', apiData);
     return mapApiRegion(response.data);
@@ -1697,7 +1997,6 @@ export const regionApi = {
     const apiData = {
       name: data.name,
       description: data.description,
-      is_active: data.isActive,
     };
     const response = await catalogApi.put<ApiRegion>(`/regions/${id}`, apiData);
     return mapApiRegion(response.data);

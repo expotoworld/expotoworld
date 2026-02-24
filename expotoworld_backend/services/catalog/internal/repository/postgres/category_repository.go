@@ -69,7 +69,7 @@ func (r *CategoryRepository) GetWithSubcategories(ctx context.Context, id int32)
 	result := &domain.CategoryWithSubcategories{Category: *cat}
 
 	subQuery := `SELECT subcategory_id, parent_category_id, name, image_url, display_order, is_active, created_at, updated_at
-		FROM admin_subcategories WHERE parent_category_id = $1 ORDER BY display_order`
+		FROM admin_product_subcategory WHERE parent_category_id = $1 ORDER BY display_order`
 
 	rows, err := r.pool.Query(ctx, subQuery, id)
 	if err != nil {
@@ -115,6 +115,11 @@ func (r *CategoryRepository) List(ctx context.Context, filter *domain.CategoryFi
 			args = append(args, *filter.ETWStoreType)
 			argIdx++
 		}
+		if filter.ETWMiniAppType != nil && *filter.ETWMiniAppType != "" {
+			conditions = append(conditions, fmt.Sprintf("c.etw_mini_app_type = $%d", argIdx))
+			args = append(args, *filter.ETWMiniAppType)
+			argIdx++
+		}
 	}
 
 	whereClause := ""
@@ -133,7 +138,8 @@ func (r *CategoryRepository) List(ctx context.Context, filter *domain.CategoryFi
 	offset := (pagination.Page - 1) * pagination.PageSize
 	query := fmt.Sprintf(`
 		SELECT c.category_id, c.name, c.image_url, c.display_order, c.is_active, c.store_id, c.etw_store_type, c.etw_mini_app_type, c.created_at, c.updated_at,
-			COALESCE((SELECT COUNT(*) FROM admin_subcategories s WHERE s.parent_category_id = c.category_id), 0) as subcategory_count
+			COALESCE((SELECT COUNT(*) FROM admin_product_subcategory s WHERE s.parent_category_id = c.category_id), 0) as subcategory_count,
+			COALESCE((SELECT COUNT(*) FROM admin_product_category_mapping pcm WHERE pcm.category_id = c.category_id), 0) as product_count
 		FROM admin_product_categories c %s
 		ORDER BY c.display_order
 		LIMIT $%d OFFSET $%d`, whereClause, argIdx, argIdx+1)
@@ -148,7 +154,7 @@ func (r *CategoryRepository) List(ctx context.Context, filter *domain.CategoryFi
 	var categories []domain.Category
 	for rows.Next() {
 		var c domain.Category
-		if err := rows.Scan(&c.CategoryID, &c.Name, &c.ImageURL, &c.DisplayOrder, &c.IsActive, &c.StoreID, &c.ETWStoreType, &c.ETWMiniAppType, &c.CreatedAt, &c.UpdatedAt, &c.SubcategoryCount); err != nil {
+		if err := rows.Scan(&c.CategoryID, &c.Name, &c.ImageURL, &c.DisplayOrder, &c.IsActive, &c.StoreID, &c.ETWStoreType, &c.ETWMiniAppType, &c.CreatedAt, &c.UpdatedAt, &c.SubcategoryCount, &c.ProductCount); err != nil {
 			return nil, err
 		}
 		categories = append(categories, c)

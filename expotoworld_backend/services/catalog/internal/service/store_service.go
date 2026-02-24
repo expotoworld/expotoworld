@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/expotoworld/expotoworld_backend/services/catalog/internal/domain"
 	"github.com/expotoworld/expotoworld_backend/services/catalog/internal/repository"
@@ -53,6 +54,11 @@ func (s *StoreService) ListStores(ctx context.Context, page, pageSize int) (*rep
 	return s.storeRepo.List(ctx, nil, pagination)
 }
 
+// ListStoresFiltered lists stores with filter and pagination.
+func (s *StoreService) ListStoresFiltered(ctx context.Context, filter *domain.StoreFilter, pagination repository.Pagination) (*repository.PaginatedResult[domain.Store], error) {
+	return s.storeRepo.List(ctx, filter, pagination)
+}
+
 // UpdateStore updates a store.
 func (s *StoreService) UpdateStore(ctx context.Context, id int32, params *domain.UpdateStoreParams) (*domain.Store, error) {
 	if err := s.storeRepo.Update(ctx, id, params); err != nil {
@@ -61,8 +67,31 @@ func (s *StoreService) UpdateStore(ctx context.Context, id int32, params *domain
 	return s.storeRepo.GetByID(ctx, id)
 }
 
-// DeleteStore deletes a store.
+// DeleteStore deletes a store after validating no associated products or categories exist.
 func (s *StoreService) DeleteStore(ctx context.Context, id int32) error {
+	// Verify store exists
+	if _, err := s.storeRepo.GetByID(ctx, id); err != nil {
+		return err
+	}
+
+	// Check for associated products
+	productCount, err := s.storeRepo.CountProducts(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to check store products: %w", err)
+	}
+	if productCount > 0 {
+		return domain.ErrStoreHasProducts
+	}
+
+	// Check for associated categories
+	categoryCount, err := s.storeRepo.CountCategories(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to check store categories: %w", err)
+	}
+	if categoryCount > 0 {
+		return domain.ErrStoreHasCategories
+	}
+
 	return s.storeRepo.Delete(ctx, id)
 }
 
@@ -112,24 +141,14 @@ func (s *StoreService) DeleteRegion(ctx context.Context, id int32) error {
 	return s.regionRepo.Delete(ctx, id)
 }
 
-// ListRegions lists all regions for all stores.
-// Note: This fetches all stores and their regions since there's no global region list.
+// ListRegions lists all regions using direct database query.
 func (s *StoreService) ListRegions(ctx context.Context) ([]domain.Region, error) {
-	// Get all stores first
-	stores, err := s.storeRepo.List(ctx, nil, repository.Pagination{Page: 1, PageSize: 1000})
-	if err != nil {
-		return nil, err
-	}
+	return s.regionRepo.ListAll(ctx)
+}
 
-	var allRegions []domain.Region
-	for _, store := range stores.Items {
-		regions, err := s.regionRepo.GetByStoreID(ctx, store.StoreID)
-		if err != nil {
-			return nil, err
-		}
-		allRegions = append(allRegions, regions...)
-	}
-	return allRegions, nil
+// ListRegionsPaginated lists regions with pagination and filtering.
+func (s *StoreService) ListRegionsPaginated(ctx context.Context, filter *domain.RegionFilter, pagination repository.Pagination) (*repository.PaginatedResult[domain.Region], error) {
+	return s.regionRepo.List(ctx, filter, pagination)
 }
 
 // ListRegionsByStore lists all regions for a store.

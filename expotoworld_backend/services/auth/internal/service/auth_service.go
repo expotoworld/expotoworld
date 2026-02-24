@@ -465,6 +465,7 @@ func (s *AuthService) generateAccessToken(ctx context.Context, user *domain.User
 	// Create access token claims
 	accessClaims := jwt.MapClaims{
 		"sub":  user.ID,
+		"uid":  user.ID,
 		"role": string(user.Role),
 		"iss":  s.config.JWTIssuer,
 		"iat":  now.Unix(),

@@ -258,7 +258,7 @@ function DataTable<T extends Record<string, any>>({
                     },
                   },
                 },
-              },
+              } as Record<string, unknown>,
             },
           },
         }}

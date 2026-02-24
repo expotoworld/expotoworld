@@ -1179,5 +1179,55 @@
   "faqDeleteAccountAnswer": "If you wish to delete your account, please contact our support team through the \"Contact Us\" button below. Note that account deletion is permanent and all your data will be removed from our servers.",
   "@faqDeleteAccountAnswer": {
     "description": "FAQ answer about account deletion"
+  },
+
+  "collections": "Collections",
+  "@collections": {
+    "description": "Title for the collections screen"
+  },
+
+  "noCollectionsAvailable": "No collections available",
+  "@noCollectionsAvailable": {
+    "description": "Empty state message when no collections exist for a subcategory"
+  },
+
+  "failedToLoadCollections": "Failed to load collections",
+  "@failedToLoadCollections": {
+    "description": "Error message when collections API call fails"
+  },
+
+  "category": "Category",
+  "@category": {
+    "description": "Singular label for breadcrumb node - tier 1"
+  },
+
+  "subcategory": "Subcategory",
+  "@subcategory": {
+    "description": "Singular label for breadcrumb node - tier 2"
+  },
+
+  "collection": "Collection",
+  "@collection": {
+    "description": "Singular label for breadcrumb node - tier 3"
+  },
+
+  "noCategoriesAvailable": "No categories available",
+  "@noCategoriesAvailable": {
+    "description": "Empty state message when no categories exist"
+  },
+
+  "failedToLoadCategories": "Failed to load categories",
+  "@failedToLoadCategories": {
+    "description": "Error message when categories API call fails"
+  },
+
+  "noSubcategoriesAvailable": "No subcategories available",
+  "@noSubcategoriesAvailable": {
+    "description": "Empty state message when no subcategories exist for a category"
+  },
+
+  "failedToLoadSubcategories": "Failed to load subcategories",
+  "@failedToLoadSubcategories": {
+    "description": "Error message when subcategories API call fails"
   }
 }

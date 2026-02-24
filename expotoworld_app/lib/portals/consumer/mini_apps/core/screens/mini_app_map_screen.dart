@@ -20,10 +20,7 @@ import '../providers/mini_app_providers.dart';
 class MiniAppMapScreen extends ConsumerStatefulWidget {
   final MiniAppType miniAppType;
 
-  const MiniAppMapScreen({
-    super.key,
-    required this.miniAppType,
-  });
+  const MiniAppMapScreen({super.key, required this.miniAppType});
 
   @override
   ConsumerState<MiniAppMapScreen> createState() => _MiniAppMapScreenState();
@@ -84,7 +81,7 @@ class _MiniAppMapScreenState extends ConsumerState<MiniAppMapScreen> {
     // SVG original aspect ratio is 145.9 x 208.39 ≈ 0.7
     const double aspectRatio = 145.9 / 208.39;
     final double targetWidth = targetHeight * aspectRatio;
-    
+
     // Use 3x scale for high DPI displays (covers most modern devices)
     const double devicePixelRatio = 3.0;
     final int renderWidth = (targetWidth * devicePixelRatio).ceil();
@@ -184,8 +181,9 @@ class _MiniAppMapScreenState extends ConsumerState<MiniAppMapScreen> {
   }
 
   void _buildMarkers() {
-    final stores = ref.read(miniAppStoresProvider(widget.miniAppType));
-    
+    final stores =
+        ref.read(miniAppStoresProvider(widget.miniAppType)).value ?? [];
+
     setState(() {
       _markers = stores.map((store) {
         // Use custom marker if loaded, fallback to default with hue
@@ -230,7 +228,8 @@ class _MiniAppMapScreenState extends ConsumerState<MiniAppMapScreen> {
         miniAppType: widget.miniAppType,
         onSelectStore: () {
           // Set as selected store and navigate to home
-          ref.read(selectedStoreProvider(widget.miniAppType).notifier).state = store;
+          ref.read(selectedStoreProvider(widget.miniAppType).notifier).state =
+              store;
           Navigator.pop(context);
           context.go('/mini-app/${widget.miniAppType.name}/home');
         },
@@ -363,7 +362,8 @@ class _MiniAppMapScreenState extends ConsumerState<MiniAppMapScreen> {
 
   /// Returns stores that are within the visible map bounds
   List<MiniAppStore> _getVisibleStores() {
-    final stores = ref.read(miniAppStoresProvider(widget.miniAppType));
+    final stores =
+        ref.read(miniAppStoresProvider(widget.miniAppType)).value ?? [];
     if (_visibleBounds == null) return stores;
 
     return stores.where((store) {
@@ -402,7 +402,8 @@ class _MiniAppMapScreenState extends ConsumerState<MiniAppMapScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final statusBarHeight = MediaQuery.of(context).padding.top;
-    final stores = ref.watch(miniAppStoresProvider(widget.miniAppType));
+    final storesAsync = ref.watch(miniAppStoresProvider(widget.miniAppType));
+    final stores = storesAsync.value ?? [];
     final selectedStore = ref.watch(selectedStoreProvider(widget.miniAppType));
     final visibleStores = _getVisibleStores();
 
@@ -566,7 +567,11 @@ class _MiniAppMapScreenState extends ConsumerState<MiniAppMapScreen> {
     );
   }
 
-  Widget _buildStoreListButton(BuildContext context, bool isDark, List<MiniAppStore> stores) {
+  Widget _buildStoreListButton(
+    BuildContext context,
+    bool isDark,
+    List<MiniAppStore> stores,
+  ) {
     return GestureDetector(
       onTap: () => _showStoreList(stores),
       child: Container(
@@ -595,9 +600,13 @@ class _MiniAppMapScreenState extends ConsumerState<MiniAppMapScreen> {
     );
   }
 
-  Widget _buildNearbyStoresSheet(BuildContext context, bool isDark, List<MiniAppStore> visibleStores) {
+  Widget _buildNearbyStoresSheet(
+    BuildContext context,
+    bool isDark,
+    List<MiniAppStore> visibleStores,
+  ) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    
+
     // Don't show if no stores
     if (visibleStores.isEmpty) {
       return const SizedBox.shrink();
@@ -800,6 +809,7 @@ class _StoreCard extends StatelessWidget {
     );
   }
 }
+
 /// Store details bottom sheet matching super-app style
 class _StoreDetailsSheet extends StatefulWidget {
   final MiniAppStore store;
@@ -829,9 +839,7 @@ class _StoreDetailsSheetState extends State<_StoreDetailsSheet> {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.only(
         left: AppSpacing.lg,
@@ -1035,15 +1043,15 @@ class _StoreDetailsSheetState extends State<_StoreDetailsSheet> {
                     color: isFavorite
                         ? AppColors.themeRed.withValues(alpha: 0.15)
                         : (isDark
-                            ? Colors.white.withValues(alpha: 0.1)
-                            : Colors.black.withValues(alpha: 0.05)),
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.black.withValues(alpha: 0.05)),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isFavorite
                           ? AppColors.themeRed.withValues(alpha: 0.3)
                           : (isDark
-                              ? Colors.white.withValues(alpha: 0.1)
-                              : Colors.black.withValues(alpha: 0.08)),
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : Colors.black.withValues(alpha: 0.08)),
                     ),
                   ),
                   child: Icon(
@@ -1070,10 +1078,7 @@ class _StoreListSheet extends StatelessWidget {
   final List<MiniAppStore> stores;
   final ValueChanged<MiniAppStore> onStoreTap;
 
-  const _StoreListSheet({
-    required this.stores,
-    required this.onStoreTap,
-  });
+  const _StoreListSheet({required this.stores, required this.onStoreTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1086,9 +1091,7 @@ class _StoreListSheet extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1106,7 +1109,7 @@ class _StoreListSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          
+
           // Title
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -1130,7 +1133,7 @@ class _StoreListSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          
+
           // Store list
           Flexible(
             child: ListView.builder(
@@ -1161,10 +1164,7 @@ class _StoreListItem extends StatelessWidget {
   final MiniAppStore store;
   final VoidCallback onTap;
 
-  const _StoreListItem({
-    required this.store,
-    required this.onTap,
-  });
+  const _StoreListItem({required this.store, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1198,7 +1198,7 @@ class _StoreListItem extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.md),
-            
+
             // Store info
             Expanded(
               child: Column(
@@ -1225,7 +1225,7 @@ class _StoreListItem extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Distance
             Text(
               store.formattedDistance,
