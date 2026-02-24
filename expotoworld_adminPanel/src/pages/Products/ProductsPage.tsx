@@ -279,7 +279,7 @@ const ProductsPage: React.FC = () => {
     
     setDeleting(true);
     try {
-      await productApi.archiveProduct(selectedProduct.id);
+      await productApi.deleteProduct(selectedProduct.id);
       // Refresh the products list after deletion
       await fetchProducts();
     } catch (err) {

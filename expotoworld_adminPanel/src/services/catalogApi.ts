@@ -880,6 +880,15 @@ export const productApi = {
   },
 
   /**
+   * Permanently delete a product and all associated data.
+   * This removes the product, its images, attributes, and category mappings from the database.
+   * This action cannot be undone — prefer archiveProduct for soft delete.
+   */
+  deleteProduct: async (id: string): Promise<void> => {
+    await catalogApi.delete(`/products/${id}/permanent`);
+  },
+
+  /**
    * Unarchive a product
    */
   unarchiveProduct: async (id: string): Promise<Product> => {

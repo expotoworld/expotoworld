@@ -38,6 +38,7 @@ import {
   CheckCircle as DefaultIcon,
   Restore as RestoreIcon,
   Close as CloseIcon,
+  Archive as ArchiveIcon,
 } from '@mui/icons-material';
 import { ConfirmDialog } from '@components/common';
 import {
@@ -80,6 +81,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   // Dialogs
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   // Fetch reference data
@@ -191,6 +193,23 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     }
   };
 
+  const handleDelete = async () => {
+    if (!product) return;
+
+    setActionLoading(true);
+    try {
+      await productApi.deleteProduct(product.id);
+      setDeleteDialogOpen(false);
+      onClose();
+      onRefresh();
+    } catch (err) {
+      console.error('Failed to permanently delete product:', err);
+      setError(t('products.deleteError') || 'Failed to delete product');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleSyncAggregates = async () => {
     if (!product) return;
 
@@ -253,9 +272,18 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <IconButton
                     onClick={() => setArchiveDialogOpen(true)}
                     size="small"
-                    color={product.isArchived ? 'primary' : 'error'}
+                    color={product.isArchived ? 'primary' : 'warning'}
                   >
-                    {product.isArchived ? <RestoreIcon /> : <DeleteIcon />}
+                    {product.isArchived ? <RestoreIcon /> : <ArchiveIcon />}
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title={t('common.delete')}>
+                  <IconButton
+                    onClick={() => setDeleteDialogOpen(true)}
+                    size="small"
+                    color="error"
+                  >
+                    <DeleteIcon />
                   </IconButton>
                 </Tooltip>
               </>
@@ -616,6 +644,18 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         confirmColor={product?.isArchived ? 'primary' : 'error'}
         onConfirm={handleArchive}
         onCancel={() => setArchiveDialogOpen(false)}
+        loading={actionLoading}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        title={t('products.deleteTitle')}
+        message={t('products.deleteMessage', { name: product?.name })}
+        confirmText={t('common.delete')}
+        confirmColor="error"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteDialogOpen(false)}
         loading={actionLoading}
       />
     </>

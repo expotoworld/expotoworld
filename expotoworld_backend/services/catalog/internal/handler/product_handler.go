@@ -31,6 +31,7 @@ func (h *ProductHandler) RegisterRoutes(r *gin.RouterGroup) {
 		products.GET("/:id", h.GetProduct)
 		products.PUT("/:id", h.UpdateProduct)
 		products.DELETE("/:id", h.ArchiveProduct)
+		products.DELETE("/:id/permanent", h.DeleteProduct)
 		products.POST("/:id/unarchive", h.UnarchiveProduct)
 
 		// Variant-specific endpoints
@@ -151,6 +152,27 @@ func (h *ProductHandler) ArchiveProduct(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "product archived successfully"})
+}
+
+// DeleteProduct handles DELETE /products/:id/permanent
+// Permanently deletes a product and all associated data (images, attributes, category mappings, etc.).
+func (h *ProductHandler) DeleteProduct(c *gin.Context) {
+	id, err := parseID(c, "id")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid product id"})
+		return
+	}
+
+	if err := h.productService.DeleteProduct(c.Request.Context(), id); err != nil {
+		if err == domain.ErrProductNotFound {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "product not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "product permanently deleted"})
 }
 
 // UnarchiveProduct handles POST /products/:id/unarchive
