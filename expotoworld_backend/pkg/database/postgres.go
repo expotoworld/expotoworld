@@ -40,8 +40,8 @@ func DefaultPoolConfig(databaseURL string) *PoolConfig {
 		URL:             databaseURL,
 		MaxConns:        10,
 		MinConns:        0,
-		MaxConnLifetime: 30 * time.Minute,
-		MaxConnIdleTime: 5 * time.Minute,
+		MaxConnLifetime: 5 * time.Minute,
+		MaxConnIdleTime: 30 * time.Second,
 	}
 }
 
@@ -83,16 +83,19 @@ func NewPool(ctx context.Context, cfg *PoolConfig) (*Pool, error) {
 		return true
 	}
 
-	// Create the pool
+	// Aggressive health check period so stale connections from container
+	// freeze/unfreeze cycles are cleaned up quickly.
+	poolConfig.HealthCheckPeriod = 15 * time.Second
+
+	// Create the pool — we intentionally skip pool.Ping() here.
+	// On Neon serverless the compute may be suspended at startup;
+	// the first real request will establish a connection on demand.
+	// Avoiding Ping prevents creating a long-lived idle connection
+	// that keeps the Neon compute awake through App Runner container
+	// freeze/unfreeze cycles.
 	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create connection pool: %w", err)
-	}
-
-	// Verify connectivity
-	if err := pool.Ping(ctx); err != nil {
-		pool.Close()
-		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	logger.Info("database connection pool established",
@@ -108,11 +111,13 @@ func configureForNeon(cfg *pgxpool.Config) {
 	// Use simple protocol for better compatibility with Neon's connection pooler
 	cfg.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
-	// Prefer IPv4 to avoid IPv6 connection issues
+	// Prefer IPv4 to avoid IPv6 connection issues.
+	// TCP KeepAlive is disabled (-1) so that frozen App Runner containers
+	// don't send keepalive probes that wake Neon's compute.
 	cfg.ConnConfig.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
 		d := &net.Dialer{
 			Timeout:   10 * time.Second,
-			KeepAlive: 30 * time.Second,
+			KeepAlive: -1,
 		}
 		// Try IPv4 first
 		conn, err := d.DialContext(ctx, "tcp4", addr)
