@@ -300,10 +300,13 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("SERVER_IDLE_TIMEOUT", "60s")
 
 	// Database
+	// Neon serverless optimizations: MinConns=0 prevents background connection
+	// cycling that wakes the compute. Short idle/lifetime ensures connections
+	// are cleaned up quickly so the compute can suspend when not in use.
 	v.SetDefault("DATABASE_MAX_CONNS", 10)
-	v.SetDefault("DATABASE_MIN_CONNS", 2)
-	v.SetDefault("DATABASE_MAX_CONN_LIFETIME", "30m")
-	v.SetDefault("DATABASE_MAX_CONN_IDLE_TIME", "5m")
+	v.SetDefault("DATABASE_MIN_CONNS", 0)
+	v.SetDefault("DATABASE_MAX_CONN_LIFETIME", "5m")
+	v.SetDefault("DATABASE_MAX_CONN_IDLE_TIME", "30s")
 
 	// JWT
 	v.SetDefault("JWT_ISSUER", "expotoworld") // Must match across all services
