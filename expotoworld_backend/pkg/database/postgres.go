@@ -33,11 +33,13 @@ type PoolConfig struct {
 }
 
 // DefaultPoolConfig returns sensible defaults for Neon serverless.
+// MinConns is 0 to avoid connection cycling that keeps Neon compute awake.
+// Connections are created on-demand and closed after MaxConnIdleTime.
 func DefaultPoolConfig(databaseURL string) *PoolConfig {
 	return &PoolConfig{
 		URL:             databaseURL,
 		MaxConns:        10,
-		MinConns:        2,
+		MinConns:        0,
 		MaxConnLifetime: 30 * time.Minute,
 		MaxConnIdleTime: 5 * time.Minute,
 	}
