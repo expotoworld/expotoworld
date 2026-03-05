@@ -14,11 +14,11 @@ const double _kLabelMaxWidth = 72.0;
 /// Visual state for a single breadcrumb node.
 enum _NodeState { empty, active, filled }
 
-/// Persistent predictive breadcrumbs for the 3-tier catalog hierarchy.
+/// Persistent predictive breadcrumbs for the catalog hierarchy.
 ///
-/// Displays three nodes (Category → Subcategory → Collection) connected by
-/// short indicator lines.  Node appearance changes according to the browsing
-/// progress:
+/// Displays three or four nodes (Category → Subcategory → Collection
+/// [→ Subcollection]) connected by short indicator lines.  Node appearance
+/// changes according to the browsing progress:
 ///
 /// * **Active** – red outline; the tier the user is currently browsing.
 ///   The tier-type label appears beneath the node.
@@ -26,14 +26,22 @@ enum _NodeState { empty, active, filled }
 ///   the selected item's name appears beneath the node; fully clickable.
 /// * **Empty**  – grey dashed outline; not interactive.
 class CatalogBreadcrumbs extends StatelessWidget {
-  /// Current tier being browsed (1 = category, 2 = subcategory, 3 = collection).
+  /// Current tier being browsed (1 = category, 2 = subcategory, 3 = collection,
+  /// optionally 4 = subcollection).
   final int currentTier;
+
+  /// Total number of tiers to render (3 or 4).
+  /// When 4, a subcollection node is appended after collection.
+  final int totalTiers;
 
   /// The category selected at tier 1 (null when tier == 1).
   final MiniAppCategory? selectedCategory;
 
   /// The subcategory selected at tier 2 (null when tier <= 2).
   final MiniAppSubcategory? selectedSubcategory;
+
+  /// The collection selected at tier 3 (null when tier <= 3 or totalTiers == 3).
+  final MiniAppCollection? selectedCollection;
 
   /// Called when the user taps a filled (past) breadcrumb node.
   /// The [int] parameter is the tier number that was tapped.
@@ -43,16 +51,20 @@ class CatalogBreadcrumbs extends StatelessWidget {
   final String categoryLabel;
   final String subcategoryLabel;
   final String collectionLabel;
+  final String subcollectionLabel;
 
   const CatalogBreadcrumbs({
     super.key,
     required this.currentTier,
+    this.totalTiers = 3,
     this.selectedCategory,
     this.selectedSubcategory,
+    this.selectedCollection,
     required this.onTierTap,
     required this.categoryLabel,
     required this.subcategoryLabel,
     required this.collectionLabel,
+    this.subcollectionLabel = '',
   });
 
   _NodeState _stateFor(int tier) {
@@ -101,10 +113,30 @@ class CatalogBreadcrumbs extends StatelessWidget {
           // ── Tier 3: Collection ──
           _BreadcrumbNode(
             nodeState: _stateFor(3),
-            label: collectionLabel,
-            imageUrl: null,
-            onTap: null, // tier 3 is always current or empty in home
+            label: (totalTiers == 4 && currentTier > 3)
+                ? (selectedCollection?.name ?? collectionLabel)
+                : collectionLabel,
+            imageUrl: (totalTiers == 4 && currentTier > 3)
+                ? selectedCollection?.imageUrl
+                : null,
+            onTap:
+                (totalTiers == 4 &&
+                    selectedCollection != null &&
+                    currentTier != 3)
+                ? () => onTierTap(3)
+                : null,
           ),
+
+          // ── Tier 4: Subcollection (only when totalTiers == 4) ──
+          if (totalTiers >= 4) ...[
+            Expanded(child: _Connector(reached: currentTier > 3)),
+            _BreadcrumbNode(
+              nodeState: _stateFor(4),
+              label: subcollectionLabel,
+              imageUrl: null,
+              onTap: null,
+            ),
+          ],
         ],
       ),
     );

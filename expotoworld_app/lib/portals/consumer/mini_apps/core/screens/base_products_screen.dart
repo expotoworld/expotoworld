@@ -21,12 +21,14 @@ abstract class BaseProductsScreen extends ConsumerStatefulWidget {
   final MiniAppType miniAppType;
   final String subcategoryId;
   final String? collectionId;
+  final String? subcollectionId;
 
   const BaseProductsScreen({
     super.key,
     required this.miniAppType,
     required this.subcategoryId,
     this.collectionId,
+    this.subcollectionId,
   });
 }
 
@@ -183,10 +185,19 @@ abstract class BaseProductsScreenState<T extends BaseProductsScreen>
     final subcategory = getSubcategory();
     final selectedStore = ref.watch(selectedStoreProvider(widget.miniAppType));
 
-    // Choose the right provider depending on whether a collection filter
-    // was supplied (3rd‑tier navigation).
+    // Choose the right provider depending on whether a collection or
+    // subcollection filter was supplied (3rd/4th-tier navigation).
     final AsyncValue<List<MiniAppProduct>> productsAsync;
-    if (widget.collectionId != null) {
+    if (widget.subcollectionId != null) {
+      productsAsync = ref.watch(
+        miniAppSubcollectionProductsProvider((
+          miniAppType: widget.miniAppType,
+          storeId: selectedStore?.id,
+          subcategoryId: widget.subcategoryId,
+          subcollectionId: widget.subcollectionId!,
+        )),
+      );
+    } else if (widget.collectionId != null) {
       productsAsync = ref.watch(
         miniAppCollectionProductsProvider((
           miniAppType: widget.miniAppType,

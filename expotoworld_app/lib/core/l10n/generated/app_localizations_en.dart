@@ -738,6 +738,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collection => 'Collection';
 
   @override
+  String get subcollection => 'Subcollection';
+
+  @override
   String get noCategoriesAvailable => 'No categories available';
 
   @override
@@ -748,4 +751,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get failedToLoadSubcategories => 'Failed to load subcategories';
+
+  @override
+  String get noSubcollectionsAvailable => 'No subcollections available';
+
+  @override
+  String get failedToLoadSubcollections => 'Failed to load subcollections';
 }

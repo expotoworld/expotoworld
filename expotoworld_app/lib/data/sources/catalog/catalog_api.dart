@@ -139,6 +139,19 @@ class CatalogApi {
     return response.data!;
   }
 
+  // ───────────────────────── Subcollections ─────────────────────────
+
+  /// List subcollections under a collection.
+  ///
+  /// The public backend returns a plain JSON array of active subcollections,
+  /// consistent with the bounded nature of subcollections per collection.
+  Future<List<dynamic>> listSubcollections(int collectionId) async {
+    final response = await _client.get<List<dynamic>>(
+      CatalogEndpoints.subcollections(collectionId),
+    );
+    return response.data!;
+  }
+
   // ───────────────────────── Products ─────────────────────────
 
   /// List products with optional filters.
@@ -151,6 +164,7 @@ class CatalogApi {
     int? categoryId,
     int? subcategoryId,
     int? collectionId,
+    int? subcollectionId,
     String? etwStoreType,
     String? etwMiniAppType,
     String? search,
@@ -167,6 +181,7 @@ class CatalogApi {
       if (categoryId != null) 'category_id': categoryId,
       if (subcategoryId != null) 'subcategory_id': subcategoryId,
       if (collectionId != null) 'collection_id': collectionId,
+      if (subcollectionId != null) 'subcollection_id': subcollectionId,
       if (etwStoreType != null) 'etw_store_type': etwStoreType,
       if (etwMiniAppType != null) 'etw_mini_app_type': etwMiniAppType,
       if (search != null && search.isNotEmpty) 'search': search,

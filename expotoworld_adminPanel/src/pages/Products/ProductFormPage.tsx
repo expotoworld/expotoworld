@@ -54,6 +54,8 @@ import {
   storeApi,
   type Category,
   type Subcategory,
+  type Collection,
+  type Subcollection,
   type Store,
   type CreateProductData,
 } from '@/services/catalogApi';
@@ -80,6 +82,8 @@ interface FormData {
   etwMiniAppType: string;
   categoryIds: number[];
   subcategoryIds: number[];
+  collectionIds: number[];
+  subcollectionIds: number[];
 }
 
 interface AttributeFormData {
@@ -118,6 +122,8 @@ const initialFormData: FormData = {
   etwMiniAppType: '',
   categoryIds: [],
   subcategoryIds: [],
+  collectionIds: [],
+  subcollectionIds: [],
 };
 
 const ProductFormPage: React.FC = () => {
@@ -134,6 +140,8 @@ const ProductFormPage: React.FC = () => {
   // Reference data
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [subcollections, setSubcollections] = useState<Subcollection[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
 
   // UI state
@@ -171,6 +179,36 @@ const ProductFormPage: React.FC = () => {
     }
   }, []);
 
+  // Fetch collections when subcategory changes
+  const fetchCollections = useCallback(async (subcategoryId: string) => {
+    if (!subcategoryId) {
+      setCollections([]);
+      return;
+    }
+    try {
+      const collectionsRes = await categoryApi.getCollections(subcategoryId);
+      setCollections(collectionsRes);
+    } catch (err) {
+      console.error('Failed to fetch collections:', err);
+      setCollections([]);
+    }
+  }, []);
+
+  // Fetch subcollections when collection changes
+  const fetchSubcollections = useCallback(async (collectionId: string) => {
+    if (!collectionId) {
+      setSubcollections([]);
+      return;
+    }
+    try {
+      const subcollectionsRes = await categoryApi.getSubcollections(collectionId);
+      setSubcollections(subcollectionsRes);
+    } catch (err) {
+      console.error('Failed to fetch subcollections:', err);
+      setSubcollections([]);
+    }
+  }, []);
+
   // Fetch product data if editing
   const fetchProduct = useCallback(async () => {
     if (!isEditing || !id) return;
@@ -203,6 +241,8 @@ const ProductFormPage: React.FC = () => {
         etwMiniAppType: product.etwMiniAppType || '',
         categoryIds: product.categoryIds || [],
         subcategoryIds: product.subcategoryIds || [],
+        collectionIds: product.collectionIds || [],
+        subcollectionIds: product.subcollectionIds || [],
       });
 
       // Map attributes
@@ -229,13 +269,21 @@ const ProductFormPage: React.FC = () => {
       if (product.categoryIds && product.categoryIds.length > 0) {
         fetchSubcategories(String(product.categoryIds[0]));
       }
+      // Fetch collections for the selected subcategory
+      if (product.subcategoryIds && product.subcategoryIds.length > 0) {
+        fetchCollections(String(product.subcategoryIds[0]));
+      }
+      // Fetch subcollections for the selected collection
+      if (product.collectionIds && product.collectionIds.length > 0) {
+        fetchSubcollections(String(product.collectionIds[0]));
+      }
     } catch (err) {
       console.error('Failed to fetch product:', err);
       setError(t('products.fetchError'));
     } finally {
       setLoading(false);
     }
-  }, [id, isEditing, t, fetchSubcategories]);
+  }, [id, isEditing, t, fetchSubcategories, fetchCollections, fetchSubcollections]);
 
   useEffect(() => {
     fetchReferenceData();
@@ -255,9 +303,35 @@ const ProductFormPage: React.FC = () => {
     setFormData((prev) => ({
       ...prev,
       categoryIds: categoryId ? [categoryId] : [],
-      subcategoryIds: [], // Reset subcategory when category changes
+      subcategoryIds: [],
+      collectionIds: [],
+      subcollectionIds: [],
     }));
+    setCollections([]);
+    setSubcollections([]);
     fetchSubcategories(String(categoryId));
+  };
+
+  // Handle subcategory change
+  const handleSubcategoryChange = (subcategoryId: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      subcategoryIds: subcategoryId ? [subcategoryId] : [],
+      collectionIds: [],
+      subcollectionIds: [],
+    }));
+    setSubcollections([]);
+    fetchCollections(String(subcategoryId));
+  };
+
+  // Handle collection change
+  const handleCollectionChange = (collectionId: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      collectionIds: collectionId ? [collectionId] : [],
+      subcollectionIds: [],
+    }));
+    fetchSubcollections(String(collectionId));
   };
 
   // Attribute management
@@ -498,6 +572,8 @@ const ProductFormPage: React.FC = () => {
         etwMiniAppType: formData.etwMiniAppType || undefined,
         categoryIds: formData.categoryIds,
         subcategoryIds: formData.subcategoryIds,
+        collectionIds: formData.collectionIds,
+        subcollectionIds: formData.subcollectionIds,
         attributes: attributes.filter((a) => a.attributeName && a.attributeValue).map((a) => ({
           attributeName: a.attributeName,
           attributeValue: a.attributeValue,
@@ -915,7 +991,7 @@ const ProductFormPage: React.FC = () => {
                       <Select
                         value={formData.subcategoryIds[0] || ''}
                         label={t('products.subcategory')}
-                        onChange={(e) => handleChange('subcategoryIds', e.target.value ? [Number(e.target.value)] : [])}
+                        onChange={(e) => handleSubcategoryChange(Number(e.target.value))}
                       >
                         <MenuItem value="">
                           <em>{t('common.none')}</em>
@@ -923,6 +999,48 @@ const ProductFormPage: React.FC = () => {
                         {subcategories.map((subcat) => (
                           <MenuItem key={subcat.id} value={subcat.id}>
                             {subcat.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                )}
+                {collections.length > 0 && (
+                  <Grid item xs={12}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>{t('products.collection')}</InputLabel>
+                      <Select
+                        value={formData.collectionIds[0] || ''}
+                        label={t('products.collection')}
+                        onChange={(e) => handleCollectionChange(Number(e.target.value))}
+                      >
+                        <MenuItem value="">
+                          <em>{t('common.none')}</em>
+                        </MenuItem>
+                        {collections.map((col) => (
+                          <MenuItem key={col.id} value={col.id}>
+                            {col.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                )}
+                {subcollections.length > 0 && (
+                  <Grid item xs={12}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>{t('products.subcollection')}</InputLabel>
+                      <Select
+                        value={formData.subcollectionIds[0] || ''}
+                        label={t('products.subcollection')}
+                        onChange={(e) => handleChange('subcollectionIds', e.target.value ? [Number(e.target.value)] : [])}
+                      >
+                        <MenuItem value="">
+                          <em>{t('common.none')}</em>
+                        </MenuItem>
+                        {subcollections.map((subcol) => (
+                          <MenuItem key={subcol.id} value={subcol.id}>
+                            {subcol.name}
                           </MenuItem>
                         ))}
                       </Select>

@@ -169,3 +169,34 @@ class MiniAppCollection {
     );
   }
 }
+
+/// Subcollection model for the optional 4th tier under collections.
+class MiniAppSubcollection {
+  final String id;
+  final String name;
+  final String collectionId; // Parent collection ID
+  final String? imageUrl;
+  final int productCount;
+
+  const MiniAppSubcollection({
+    required this.id,
+    required this.name,
+    required this.collectionId,
+    this.imageUrl,
+    this.productCount = 0,
+  });
+
+  /// Deserialize from backend `SubcollectionResponse` JSON.
+  ///
+  /// Backend fields: subcollection_id, collection_id, name, image_url,
+  /// display_order, is_active, product_count, created_at, updated_at.
+  factory MiniAppSubcollection.fromJson(Map<String, dynamic> json) {
+    return MiniAppSubcollection(
+      id: json['subcollection_id'].toString(),
+      name: json['name'] as String? ?? '',
+      collectionId: json['collection_id'].toString(),
+      imageUrl: json['image_url'] as String?,
+      productCount: (json['product_count'] as num?)?.toInt() ?? 0,
+    );
+  }
+}

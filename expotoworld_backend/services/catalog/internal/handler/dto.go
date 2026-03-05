@@ -52,6 +52,7 @@ type CreateProductRequest struct {
 	CategoryIDs             []int32          `json:"category_ids"`
 	SubcategoryIDs          []int32          `json:"subcategory_ids"`
 	CollectionIDs           []int32          `json:"collection_ids"`
+	SubcollectionIDs        []int32          `json:"subcollection_ids"`
 }
 
 // AttributeInput represents an attribute input.
@@ -180,6 +181,7 @@ type UpdateProductRequest struct {
 	CategoryIDs             *[]int32          `json:"category_ids"`
 	SubcategoryIDs          *[]int32          `json:"subcategory_ids"`
 	CollectionIDs           *[]int32          `json:"collection_ids"`
+	SubcollectionIDs        *[]int32          `json:"subcollection_ids"`
 }
 
 func (r *UpdateProductRequest) toInput(productID int32) *service.UpdateProductInput {
@@ -212,9 +214,10 @@ func (r *UpdateProductRequest) toInput(productID int32) *service.UpdateProductIn
 			IsMiniAppRecommendation: r.IsMiniAppRecommendation,
 			IsDefaultVariant:        r.IsDefaultVariant,
 		},
-		CategoryIDs:   r.CategoryIDs,
-		SubcatIDs:     r.SubcategoryIDs,
-		CollectionIDs: r.CollectionIDs,
+		CategoryIDs:      r.CategoryIDs,
+		SubcatIDs:        r.SubcategoryIDs,
+		CollectionIDs:    r.CollectionIDs,
+		SubcollectionIDs: r.SubcollectionIDs,
 	}
 
 	if r.Visibility != nil {
@@ -817,6 +820,85 @@ type MoveCollectionRequest struct {
 	TargetSubcategoryID int32 `json:"target_subcategory_id" binding:"required"`
 }
 
+// --------------------------------
+// Subcollection DTOs
+// --------------------------------
+
+// CreateSubcollectionRequest represents a request to create a subcollection.
+type CreateSubcollectionRequest struct {
+	Name         string  `json:"name" binding:"required"`
+	ImageURL     *string `json:"image_url"`
+	DisplayOrder int32   `json:"display_order"`
+	IsActive     bool    `json:"is_active"`
+}
+
+func (r *CreateSubcollectionRequest) toParams(collectionID int32) *domain.CreateSubcollectionParams {
+	return &domain.CreateSubcollectionParams{
+		CollectionID: collectionID,
+		Name:         r.Name,
+		ImageURL:     r.ImageURL,
+		DisplayOrder: r.DisplayOrder,
+		IsActive:     r.IsActive,
+	}
+}
+
+// UpdateSubcollectionRequest represents a request to update a subcollection.
+type UpdateSubcollectionRequest struct {
+	Name         *string `json:"name"`
+	ImageURL     *string `json:"image_url"`
+	DisplayOrder *int32  `json:"display_order"`
+	IsActive     *bool   `json:"is_active"`
+}
+
+func (r *UpdateSubcollectionRequest) toParams() *domain.UpdateSubcollectionParams {
+	return &domain.UpdateSubcollectionParams{
+		Name:         r.Name,
+		ImageURL:     r.ImageURL,
+		DisplayOrder: r.DisplayOrder,
+		IsActive:     r.IsActive,
+	}
+}
+
+// MoveSubcollectionRequest represents a request to move a subcollection.
+type MoveSubcollectionRequest struct {
+	TargetCollectionID int32 `json:"target_collection_id" binding:"required"`
+}
+
+// SubcollectionResponse represents a subcollection in API responses.
+type SubcollectionResponse struct {
+	SubcollectionID int32   `json:"subcollection_id"`
+	CollectionID    int32   `json:"collection_id"`
+	Name            string  `json:"name"`
+	ImageURL        *string `json:"image_url"`
+	DisplayOrder    int32   `json:"display_order"`
+	IsActive        bool    `json:"is_active"`
+	ProductCount    int     `json:"product_count"`
+	CreatedAt       string  `json:"created_at"`
+	UpdatedAt       string  `json:"updated_at"`
+}
+
+func toSubcollectionResponse(s *domain.Subcollection) *SubcollectionResponse {
+	return &SubcollectionResponse{
+		SubcollectionID: s.SubcollectionID,
+		CollectionID:    s.CollectionID,
+		Name:            s.Name,
+		ImageURL:        s.ImageURL,
+		DisplayOrder:    s.DisplayOrder,
+		IsActive:        s.IsActive,
+		ProductCount:    s.ProductCount,
+		CreatedAt:       s.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:       s.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	}
+}
+
+func toSubcollectionsResponse(subcollections []domain.Subcollection) []SubcollectionResponse {
+	resp := make([]SubcollectionResponse, 0, len(subcollections))
+	for _, s := range subcollections {
+		resp = append(resp, *toSubcollectionResponse(&s))
+	}
+	return resp
+}
+
 // CollectionResponse represents a collection in API responses.
 type CollectionResponse struct {
 	CollectionID  int32   `json:"collection_id"`
@@ -830,16 +912,16 @@ type CollectionResponse struct {
 	UpdatedAt     string  `json:"updated_at"`
 }
 
-// CollectionWithCountsResponse includes product count.
-type CollectionWithCountsResponse struct {
+// CollectionWithSubcollectionsResponse includes nested subcollections.
+type CollectionWithSubcollectionsResponse struct {
 	CollectionResponse
-	ProductCount int `json:"product_count"`
+	Subcollections []SubcollectionResponse `json:"subcollections"`
 }
 
 // SubcategoryWithCollectionsResponse includes nested collections.
 type SubcategoryWithCollectionsResponse struct {
 	SubcategoryResponse
-	Collections []CollectionResponse `json:"collections"`
+	Collections []CollectionWithSubcollectionsResponse `json:"collections"`
 }
 
 // CategoryWithFullHierarchyResponse includes subcategories with their collections.
@@ -862,13 +944,6 @@ func toCollectionResponse(c *domain.Collection) *CollectionResponse {
 	}
 }
 
-func toCollectionWithCountsResponse(c *domain.Collection) *CollectionWithCountsResponse {
-	return &CollectionWithCountsResponse{
-		CollectionResponse: *toCollectionResponse(c),
-		ProductCount:       c.ProductCount,
-	}
-}
-
 func toCollectionsResponse(collections []domain.Collection) []CollectionResponse {
 	resp := make([]CollectionResponse, 0, len(collections))
 	for _, c := range collections {
@@ -887,7 +962,13 @@ func toCategoryTreeFullResponse(categories []domain.CategoryWithFullHierarchy) [
 			subResp := SubcategoryWithCollectionsResponse{
 				SubcategoryResponse: *toSubcategoryResponse(&sub.Subcategory),
 			}
-			subResp.Collections = toCollectionsResponse(sub.Collections)
+			for _, col := range sub.Collections {
+				colResp := CollectionWithSubcollectionsResponse{
+					CollectionResponse: *toCollectionResponse(&col.Collection),
+					Subcollections:     toSubcollectionsResponse(col.Subcollections),
+				}
+				subResp.Collections = append(subResp.Collections, colResp)
+			}
 			catResp.Subcategories = append(catResp.Subcategories, subResp)
 		}
 		resp = append(resp, catResp)

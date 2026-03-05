@@ -416,6 +416,7 @@ final GoRouter appRouter = GoRouter(
         final typeString = state.pathParameters['type'] ?? 'toB';
         final subcategoryId = state.pathParameters['subcategoryId'] ?? '';
         final collectionId = state.uri.queryParameters['collectionId'];
+        final subcollectionId = state.uri.queryParameters['subcollectionId'];
         final miniAppType = MiniAppType.values.firstWhere(
           (e) => e.name == typeString,
           orElse: () => MiniAppType.toB,
@@ -432,6 +433,7 @@ final GoRouter appRouter = GoRouter(
                 miniAppType,
                 subcategoryId,
                 collectionId: collectionId,
+                subcollectionId: subcollectionId,
               ),
             ),
           ),
@@ -505,22 +507,26 @@ Widget _buildProductsScreen(
   MiniAppType miniAppType,
   String subcategoryId, {
   String? collectionId,
+  String? subcollectionId,
 }) {
   switch (miniAppType) {
     case MiniAppType.toB:
       return ToBProductsScreen(
         subcategoryId: subcategoryId,
         collectionId: collectionId,
+        subcollectionId: subcollectionId,
       );
     case MiniAppType.toC:
       return ToCProductsScreen(
         subcategoryId: subcategoryId,
         collectionId: collectionId,
+        subcollectionId: subcollectionId,
       );
     case MiniAppType.toU:
       return ToUProductsScreen(
         subcategoryId: subcategoryId,
         collectionId: collectionId,
+        subcollectionId: subcollectionId,
       );
     case MiniAppType.toX:
       // toX doesn't have products, only services

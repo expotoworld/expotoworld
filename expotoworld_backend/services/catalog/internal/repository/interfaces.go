@@ -197,6 +197,34 @@ type CollectionMappingRepository interface {
 	SetCollectionsTx(ctx context.Context, tx pgx.Tx, productID int32, collectionIDs []int32) error
 }
 
+// SubcollectionRepository defines the interface for subcollection data access.
+type SubcollectionRepository interface {
+	Create(ctx context.Context, params *domain.CreateSubcollectionParams) (*domain.Subcollection, error)
+	GetByID(ctx context.Context, id int32) (*domain.Subcollection, error)
+	GetByCollectionID(ctx context.Context, collectionID int32) ([]domain.Subcollection, error)
+	List(ctx context.Context, filter *domain.SubcollectionFilter, pagination Pagination) (*PaginatedResult[domain.Subcollection], error)
+	Update(ctx context.Context, id int32, params *domain.UpdateSubcollectionParams) error
+	Delete(ctx context.Context, id int32) error
+	Move(ctx context.Context, subcollectionID int32, targetCollectionID int32) error
+	Reorder(ctx context.Context, collectionID int32, orderedIDs []int32) error
+}
+
+// SubcollectionMappingRepository defines the interface for product-subcollection mapping data access.
+type SubcollectionMappingRepository interface {
+	Create(ctx context.Context, productID int32, subcollectionID int32) (*domain.SubcollectionMapping, error)
+	CreateTx(ctx context.Context, tx pgx.Tx, productID int32, subcollectionID int32) (*domain.SubcollectionMapping, error)
+	GetByProductID(ctx context.Context, productID int32) ([]domain.SubcollectionMapping, error)
+	GetByProductIDTx(ctx context.Context, tx pgx.Tx, productID int32) ([]domain.SubcollectionMapping, error)
+	GetBySubcollectionID(ctx context.Context, subcollectionID int32) ([]domain.SubcollectionMapping, error)
+	Delete(ctx context.Context, productID int32, subcollectionID int32) error
+	DeleteTx(ctx context.Context, tx pgx.Tx, productID int32, subcollectionID int32) error
+	DeleteByProductID(ctx context.Context, productID int32) error
+	DeleteByProductIDTx(ctx context.Context, tx pgx.Tx, productID int32) error
+	DeleteBySubcollectionID(ctx context.Context, subcollectionID int32) error
+	SetSubcollections(ctx context.Context, productID int32, subcollectionIDs []int32) error
+	SetSubcollectionsTx(ctx context.Context, tx pgx.Tx, productID int32, subcollectionIDs []int32) error
+}
+
 // SpecificationRepository defines the interface for product specification data access.
 // Specifications are Amazon-style product details (Brand, Material, etc.) that are
 // purely informational and NOT used for variant generation.

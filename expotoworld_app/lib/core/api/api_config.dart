@@ -98,6 +98,10 @@ class CatalogEndpoints {
   static String collections(int subcategoryId) =>
       '$basePath/subcategories/$subcategoryId/collections';
 
+  // -- Subcollections --
+  static String subcollections(int collectionId) =>
+      '$basePath/collections/$collectionId/subcollections';
+
   // -- Products --
   static String get products => '$basePath/products';
   static String product(int id) => '$basePath/products/$id';

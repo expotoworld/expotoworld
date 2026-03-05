@@ -118,6 +118,8 @@
     "minOrderQty": "Min Order Qty",
     "category": "Category",
     "subcategory": "Subcategory",
+    "collection": "Collection",
+    "subcollection": "Subcollection",
     "store": "Store",
     "shelfCode": "Shelf Code",
     "unit": "Unit",

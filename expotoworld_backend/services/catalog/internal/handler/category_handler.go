@@ -74,6 +74,21 @@ func (h *CategoryHandler) RegisterRoutes(r *gin.RouterGroup) {
 		collections.DELETE("/:id", h.DeleteCollection)
 		collections.PUT("/:id/move", h.MoveCollection)
 		collections.GET("/:id/image/upload-url", h.GetCollectionImageUploadURL)
+
+		// Subcollection routes under collection
+		collections.GET("/:id/subcollections", h.GetSubcollections)
+		collections.POST("/:id/subcollections", h.CreateSubcollection)
+		collections.PUT("/:id/subcollections/reorder", h.ReorderSubcollections)
+	}
+
+	// Direct subcollection routes
+	subcollectionsGroup := r.Group("/subcollections")
+	{
+		subcollectionsGroup.GET("/:id", h.GetSubcollection)
+		subcollectionsGroup.PUT("/:id", h.UpdateSubcollection)
+		subcollectionsGroup.DELETE("/:id", h.DeleteSubcollection)
+		subcollectionsGroup.PUT("/:id/move", h.MoveSubcollection)
+		subcollectionsGroup.GET("/:id/image/upload-url", h.GetSubcollectionImageUploadURL)
 	}
 }
 
@@ -481,7 +496,7 @@ func (h *CategoryHandler) GetCollection(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toCollectionWithCountsResponse(result))
+	c.JSON(http.StatusOK, toCollectionResponse(result))
 }
 
 // UpdateCollection handles PUT /collections/:id
@@ -558,7 +573,7 @@ func (h *CategoryHandler) MoveCollection(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toCollectionWithCountsResponse(result))
+	c.JSON(http.StatusOK, toCollectionResponse(result))
 }
 
 // GetCollectionImageUploadURL handles GET /collections/:id/image/upload-url
@@ -747,6 +762,212 @@ func (h *CategoryHandler) GetSubcategoryImageUploadURL(c *gin.Context) {
 	objectKey := fmt.Sprintf("admin-panel/subcategories/%d/image/%s%s", subcategoryID, uniqueID, ext)
 
 	// Generate presigned URL (valid for 15 minutes)
+	expiresIn := 15 * time.Minute
+	uploadURL, err := h.s3Client.GeneratePresignedUploadURL(c.Request.Context(), objectKey, req.ContentType, expiresIn)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to generate upload URL"})
+		return
+	}
+
+	c.JSON(http.StatusOK, ImageUploadURLResponse{
+		UploadURL: uploadURL,
+		ObjectKey: objectKey,
+		PublicURL: h.s3Client.GetPublicURL(objectKey),
+		ExpiresIn: int(expiresIn.Seconds()),
+	})
+}
+
+// --------------------------------
+// Subcollection Handlers
+// --------------------------------
+
+// GetSubcollections handles GET /collections/:id/subcollections
+func (h *CategoryHandler) GetSubcollections(c *gin.Context) {
+	collectionID, err := parseID(c, "id")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid collection id"})
+		return
+	}
+
+	result, err := h.categoryService.GetSubcollectionsByCollection(c.Request.Context(), collectionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, toSubcollectionsResponse(result))
+}
+
+// CreateSubcollection handles POST /collections/:id/subcollections
+func (h *CategoryHandler) CreateSubcollection(c *gin.Context) {
+	collectionID, err := parseID(c, "id")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid collection id"})
+		return
+	}
+
+	var req CreateSubcollectionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	params := req.toParams(collectionID)
+	result, err := h.categoryService.CreateSubcollection(c.Request.Context(), params)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, toSubcollectionResponse(result))
+}
+
+// ReorderSubcollections handles PUT /collections/:id/subcollections/reorder
+func (h *CategoryHandler) ReorderSubcollections(c *gin.Context) {
+	collectionID, err := parseID(c, "id")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid collection id"})
+		return
+	}
+
+	var req ReorderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	if err := h.categoryService.ReorderSubcollections(c.Request.Context(), collectionID, req.OrderedIDs); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "subcollections reordered successfully"})
+}
+
+// GetSubcollection handles GET /subcollections/:id
+func (h *CategoryHandler) GetSubcollection(c *gin.Context) {
+	id, err := parseID(c, "id")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid subcollection id"})
+		return
+	}
+
+	result, err := h.categoryService.GetSubcollection(c.Request.Context(), id)
+	if err != nil {
+		if err == domain.ErrSubcollectionNotFound {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "subcollection not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, toSubcollectionResponse(result))
+}
+
+// UpdateSubcollection handles PUT /subcollections/:id
+func (h *CategoryHandler) UpdateSubcollection(c *gin.Context) {
+	id, err := parseID(c, "id")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid subcollection id"})
+		return
+	}
+
+	var req UpdateSubcollectionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	params := req.toParams()
+	result, err := h.categoryService.UpdateSubcollection(c.Request.Context(), id, params)
+	if err != nil {
+		if err == domain.ErrSubcollectionNotFound {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "subcollection not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, toSubcollectionResponse(result))
+}
+
+// DeleteSubcollection handles DELETE /subcollections/:id
+func (h *CategoryHandler) DeleteSubcollection(c *gin.Context) {
+	id, err := parseID(c, "id")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid subcollection id"})
+		return
+	}
+
+	if err := h.categoryService.DeleteSubcollection(c.Request.Context(), id); err != nil {
+		if err == domain.ErrSubcollectionNotFound {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "subcollection not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "subcollection deleted successfully"})
+}
+
+// MoveSubcollection handles PUT /subcollections/:id/move
+func (h *CategoryHandler) MoveSubcollection(c *gin.Context) {
+	id, err := parseID(c, "id")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid subcollection id"})
+		return
+	}
+
+	var req MoveSubcollectionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	if err := h.categoryService.MoveSubcollection(c.Request.Context(), id, req.TargetCollectionID); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	// Fetch the updated subcollection
+	result, err := h.categoryService.GetSubcollection(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, toSubcollectionResponse(result))
+}
+
+// GetSubcollectionImageUploadURL handles GET /subcollections/:id/image/upload-url
+func (h *CategoryHandler) GetSubcollectionImageUploadURL(c *gin.Context) {
+	subcollectionID, err := strconv.ParseInt(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid subcollection id"})
+		return
+	}
+
+	var req ImageUploadURLRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	if !isValidImageContentType(req.ContentType) {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid content type, must be image/jpeg, image/png, image/gif, or image/webp"})
+		return
+	}
+
+	ext := filepath.Ext(req.FileName)
+	if ext == "" {
+		ext = getExtensionFromContentType(req.ContentType)
+	}
+	uniqueID := uuid.New().String()
+	objectKey := fmt.Sprintf("admin-panel/subcollections/%d/image/%s%s", subcollectionID, uniqueID, ext)
+
 	expiresIn := 15 * time.Minute
 	uploadURL, err := h.s3Client.GeneratePresignedUploadURL(c.Request.Context(), objectKey, req.ContentType, expiresIn)
 	if err != nil {

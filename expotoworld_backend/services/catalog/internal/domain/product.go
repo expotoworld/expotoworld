@@ -221,22 +221,23 @@ type UpdateParentAggregatesParams struct {
 
 // ProductFilter contains filter options for listing products.
 type ProductFilter struct {
-	StoreID        *int32
-	OwnerOrgID     *string
-	CategoryID     *int32
-	SubcategoryID  *int32
-	CollectionID   *int32
-	ProductType    *ProductType
-	Visibility     *ProductVisibility
-	IsActive       *bool
-	IsFeatured     *bool
-	IsArchived     *bool
-	ParentID       *int32
-	ETWStoreType   *ETWStoreType
-	ETWMiniAppType *ETWMiniAppType
-	Search         *string // Search in title, description, SKU
-	MinPrice       *float64
-	MaxPrice       *float64
+	StoreID         *int32
+	OwnerOrgID      *string
+	CategoryID      *int32
+	SubcategoryID   *int32
+	CollectionID    *int32
+	SubcollectionID *int32
+	ProductType     *ProductType
+	Visibility      *ProductVisibility
+	IsActive        *bool
+	IsFeatured      *bool
+	IsArchived      *bool
+	ParentID        *int32
+	ETWStoreType    *ETWStoreType
+	ETWMiniAppType  *ETWMiniAppType
+	Search          *string // Search in title, description, SKU
+	MinPrice        *float64
+	MaxPrice        *float64
 }
 
 // ProductSort defines sorting options for product listings.

@@ -1480,6 +1480,12 @@ abstract class AppLocalizations {
   /// **'Collection'**
   String get collection;
 
+  /// Singular label for breadcrumb node - tier 4
+  ///
+  /// In en, this message translates to:
+  /// **'Subcollection'**
+  String get subcollection;
+
   /// Empty state message when no categories exist
   ///
   /// In en, this message translates to:
@@ -1503,6 +1509,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load subcategories'**
   String get failedToLoadSubcategories;
+
+  /// Empty state message when no subcollections exist for a collection
+  ///
+  /// In en, this message translates to:
+  /// **'No subcollections available'**
+  String get noSubcollectionsAvailable;
+
+  /// Error message when subcollections API call fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load subcollections'**
+  String get failedToLoadSubcollections;
 }
 
 class _AppLocalizationsDelegate

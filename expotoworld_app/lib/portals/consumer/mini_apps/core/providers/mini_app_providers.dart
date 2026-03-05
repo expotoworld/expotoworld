@@ -72,6 +72,16 @@ final miniAppCollectionsProvider =
       return repo.getCollections(int.parse(params.subcategoryId));
     });
 
+/// Provider for subcollections based on selected collection (async — API)
+final miniAppSubcollectionsProvider =
+    FutureProvider.family<
+      List<MiniAppSubcollection>,
+      ({MiniAppType miniAppType, String collectionId})
+    >((ref, params) async {
+      final repo = ref.watch(catalogRepositoryProvider);
+      return repo.getSubcollections(int.parse(params.collectionId));
+    });
+
 /// Provider for products based on mini-app type, store, and subcategory (async — API)
 final miniAppProductsProvider =
     FutureProvider.family<
@@ -108,6 +118,29 @@ final miniAppCollectionProductsProvider =
             ? int.tryParse(params.subcategoryId!)
             : null,
         collectionId: int.tryParse(params.collectionId),
+      );
+      return paginated.items;
+    });
+
+/// Provider for products filtered by subcollection (async — API)
+final miniAppSubcollectionProductsProvider =
+    FutureProvider.family<
+      List<MiniAppProduct>,
+      ({
+        MiniAppType miniAppType,
+        String? storeId,
+        String? subcategoryId,
+        String subcollectionId,
+      })
+    >((ref, params) async {
+      final repo = ref.watch(catalogRepositoryProvider);
+      final paginated = await repo.getProducts(
+        miniAppType: params.miniAppType,
+        storeId: params.storeId != null ? int.tryParse(params.storeId!) : null,
+        subcategoryId: params.subcategoryId != null
+            ? int.tryParse(params.subcategoryId!)
+            : null,
+        subcollectionId: int.tryParse(params.subcollectionId),
       );
       return paginated.items;
     });

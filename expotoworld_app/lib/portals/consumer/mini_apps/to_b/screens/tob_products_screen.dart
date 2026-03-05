@@ -16,6 +16,7 @@ class ToBProductsScreen extends BaseProductsScreen {
     super.key,
     required super.subcategoryId,
     super.collectionId,
+    super.subcollectionId,
   }) : super(miniAppType: MiniAppType.toB);
 
   @override

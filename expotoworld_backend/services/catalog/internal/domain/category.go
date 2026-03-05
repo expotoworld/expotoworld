@@ -176,13 +176,70 @@ type CollectionFilter struct {
 	Search              *string
 }
 
+// Subcollection represents a product subcollection belonging to a parent collection.
+type Subcollection struct {
+	SubcollectionID int32
+	CollectionID    int32 // FK to admin_product_collection
+	Name            string
+	ImageURL        *string
+	DisplayOrder    int32
+	IsActive        bool
+	ProductCount    int // Number of products mapped to this subcollection (computed)
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+}
+
+// SubcollectionWithCounts extends Subcollection with computed counts.
+type SubcollectionWithCounts struct {
+	SubcollectionID int32
+	CollectionID    int32
+	Name            string
+	ImageURL        *string
+	DisplayOrder    int32
+	IsActive        bool
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	ProductCount    int
+}
+
+// CreateSubcollectionParams contains the parameters for creating a new subcollection.
+type CreateSubcollectionParams struct {
+	CollectionID int32
+	Name         string
+	ImageURL     *string
+	DisplayOrder int32
+	IsActive     bool
+}
+
+// UpdateSubcollectionParams contains the parameters for updating an existing subcollection.
+type UpdateSubcollectionParams struct {
+	CollectionID *int32
+	Name         *string
+	ImageURL     *string
+	DisplayOrder *int32
+	IsActive     *bool
+}
+
+// SubcollectionFilter contains filter options for listing subcollections.
+type SubcollectionFilter struct {
+	ParentCollectionID *int32
+	IsActive           *bool
+	Search             *string
+}
+
+// CollectionWithSubcollections extends Collection with its subcollections.
+type CollectionWithSubcollections struct {
+	Collection
+	Subcollections []Subcollection
+}
+
 // SubcategoryWithCollections extends Subcategory with its collections.
 type SubcategoryWithCollections struct {
 	Subcategory
-	Collections []Collection
+	Collections []CollectionWithSubcollections
 }
 
-// CategoryWithFullHierarchy extends Category with subcategories and their collections.
+// CategoryWithFullHierarchy extends Category with the full 4-tier hierarchy.
 type CategoryWithFullHierarchy struct {
 	Category
 	Subcategories []SubcategoryWithCollections
@@ -209,4 +266,10 @@ type SubcategoryMapping struct {
 type CollectionMapping struct {
 	ProductID    int32
 	CollectionID int32
+}
+
+// SubcollectionMapping represents the association between a product and a subcollection.
+type SubcollectionMapping struct {
+	ProductID       int32
+	SubcollectionID int32
 }
