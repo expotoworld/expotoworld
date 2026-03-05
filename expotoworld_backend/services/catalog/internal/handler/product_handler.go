@@ -487,6 +487,13 @@ func parseProductFilter(c *gin.Context) *domain.ProductFilter {
 		}
 	}
 
+	if subcollectionID := c.Query("subcollection_id"); subcollectionID != "" {
+		if id, err := strconv.ParseInt(subcollectionID, 10, 32); err == nil {
+			scid := int32(id)
+			filter.SubcollectionID = &scid
+		}
+	}
+
 	if etwStoreType := c.Query("etw_store_type"); etwStoreType != "" {
 		st := domain.ETWStoreType(etwStoreType)
 		filter.ETWStoreType = &st

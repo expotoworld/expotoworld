@@ -101,6 +101,8 @@ func run() error {
 	subcategoryMappingRepo := postgres.NewSubcategoryMappingRepository(pgPool)
 	collectionRepo := postgres.NewCollectionRepository(pgPool)
 	collectionMappingRepo := postgres.NewCollectionMappingRepository(pgPool)
+	subcollectionRepo := postgres.NewSubcollectionRepository(pgPool)
+	subcollectionMappingRepo := postgres.NewSubcollectionMappingRepository(pgPool)
 	regionRepo := postgres.NewRegionRepository(pgPool)
 	specificationRepo := postgres.NewSpecificationRepository(pgPool)
 
@@ -114,15 +116,18 @@ func run() error {
 		categoryMappingRepo,
 		subcategoryMappingRepo,
 		collectionMappingRepo,
+		subcollectionMappingRepo,
 	)
 	categoryService := service.NewCategoryService(
 		pgPool,
 		categoryRepo,
 		subcategoryRepo,
 		collectionRepo,
+		subcollectionRepo,
 		categoryMappingRepo,
 		subcategoryMappingRepo,
 		collectionMappingRepo,
+		subcollectionMappingRepo,
 	)
 	storeService := service.NewStoreService(storeRepo, regionRepo)
 

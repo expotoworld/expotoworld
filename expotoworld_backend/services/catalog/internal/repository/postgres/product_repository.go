@@ -320,6 +320,11 @@ func (r *ProductRepository) List(ctx context.Context, filter *domain.ProductFilt
 			args = append(args, *filter.CollectionID)
 			argIdx++
 		}
+		if filter.SubcollectionID != nil {
+			conditions = append(conditions, fmt.Sprintf("p.product_id IN (SELECT pscm.product_id FROM admin_product_subcollection_mapping pscm WHERE pscm.subcollection_id = $%d)", argIdx))
+			args = append(args, *filter.SubcollectionID)
+			argIdx++
+		}
 		if filter.MinPrice != nil {
 			conditions = append(conditions, fmt.Sprintf("p.main_price >= $%d", argIdx))
 			args = append(args, *filter.MinPrice)

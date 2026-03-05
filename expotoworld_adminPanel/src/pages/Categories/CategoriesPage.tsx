@@ -54,10 +54,11 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ConfirmDialog, ActionMenu, PageTitle, FilterDropdown } from '@components/common';
-import { categoryApi, storeApi, type Category, type Subcategory, type Collection, type Store } from '@/services/catalogApi';
+import { categoryApi, storeApi, type Category, type Subcategory, type Collection, type Subcollection, type Store } from '@/services/catalogApi';
 import CategoryFormModal from './CategoryFormModal';
 import SubcategoryFormModal from './SubcategoryFormModal';
 import CollectionFormModal from './CollectionFormModal';
+import SubcollectionFormModal from './SubcollectionFormModal';
 
 // ETW Store Types from domain/types.go
 const ETW_STORE_TYPES = [
@@ -100,8 +101,14 @@ const getMiniAppTypeStyle = (miniAppType: string) => ({
   borderColor: MINI_APP_TYPE_COLORS[miniAppType] || undefined,
 });
 
+interface ExpandedCollection extends Collection {
+  subcollections: Subcollection[];
+  isExpanded: boolean;
+  loadingSubcollections: boolean;
+}
+
 interface ExpandedSubcategory extends Subcategory {
-  collections: Collection[];
+  collections: ExpandedCollection[];
   isExpanded: boolean;
   loadingCollections: boolean;
 }
@@ -141,7 +148,7 @@ const CategoriesPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<{ subcategory: Subcategory; category: Category } | null>(null);
-  const [deleteType, setDeleteType] = useState<'category' | 'subcategory' | 'collection'>('category');
+  const [deleteType, setDeleteType] = useState<'category' | 'subcategory' | 'collection' | 'subcollection'>('category');
 
   // State for modals
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
@@ -155,6 +162,12 @@ const CategoriesPage: React.FC = () => {
   const [editingCollectionId, setEditingCollectionId] = useState<string | undefined>();
   const [collectionParentSubcategory, setCollectionParentSubcategory] = useState<{ id: string; name: string } | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<{ collection: Collection; subcategory: Subcategory; categoryId: string } | null>(null);
+
+  // State for subcollection modals & delete
+  const [subcollectionModalOpen, setSubcollectionModalOpen] = useState(false);
+  const [editingSubcollectionId, setEditingSubcollectionId] = useState<string | undefined>();
+  const [subcollectionParentCollection, setSubcollectionParentCollection] = useState<{ id: string; name: string; categoryId: string; subcategoryId: string } | null>(null);
+  const [selectedSubcollection, setSelectedSubcollection] = useState<{ subcollection: Subcollection; collection: Collection; subcategoryId: string; categoryId: string } | null>(null);
 
   // Fetch all stores for lookup (to display store name in table)
   const fetchAllStoresForLookup = useCallback(async () => {
@@ -325,13 +338,61 @@ const CategoriesPage: React.FC = () => {
         updateSubcategory(s => ({ ...s, loadingCollections: true }));
         try {
           const collections = await categoryApi.getCollections(subcategoryId);
-          updateSubcategory(s => ({ ...s, collections, isExpanded: true, loadingCollections: false }));
+          const expandedCols: ExpandedCollection[] = collections.map(col => ({
+            ...col,
+            subcollections: [],
+            isExpanded: false,
+            loadingSubcollections: false,
+          }));
+          updateSubcategory(s => ({ ...s, collections: expandedCols, isExpanded: true, loadingCollections: false }));
         } catch (err) {
           console.error('Failed to fetch collections:', err);
           updateSubcategory(s => ({ ...s, loadingCollections: false }));
         }
       } else {
         updateSubcategory(s => ({ ...s, isExpanded: true }));
+      }
+    }
+  };
+
+  // Toggle collection expansion to show/hide subcollections (4th tier)
+  const toggleCollectionExpand = async (categoryId: string, subcategoryId: string, collectionId: string) => {
+    const updateCollection = (updater: (col: ExpandedCollection) => ExpandedCollection) => {
+      setCategories(prev => prev.map(c =>
+        c.id === categoryId
+          ? {
+              ...c,
+              subcategories: c.subcategories.map(s =>
+                s.id === subcategoryId
+                  ? { ...s, collections: s.collections.map(col => col.id === collectionId ? updater(col) : col) }
+                  : s
+              ),
+            }
+          : c
+      ));
+    };
+
+    const category = categories.find(c => c.id === categoryId);
+    if (!category) return;
+    const subcategory = category.subcategories.find(s => s.id === subcategoryId);
+    if (!subcategory) return;
+    const collection = subcategory.collections.find(col => col.id === collectionId);
+    if (!collection) return;
+
+    if (collection.isExpanded) {
+      updateCollection(col => ({ ...col, isExpanded: false }));
+    } else {
+      if (collection.subcollections.length === 0) {
+        updateCollection(col => ({ ...col, loadingSubcollections: true }));
+        try {
+          const subcollections = await categoryApi.getSubcollections(collectionId);
+          updateCollection(col => ({ ...col, subcollections, isExpanded: true, loadingSubcollections: false }));
+        } catch (err) {
+          console.error('Failed to fetch subcollections:', err);
+          updateCollection(col => ({ ...col, loadingSubcollections: false }));
+        }
+      } else {
+        updateCollection(col => ({ ...col, isExpanded: true }));
       }
     }
   };
@@ -409,12 +470,18 @@ const CategoriesPage: React.FC = () => {
       const parentSubId = selectedCollection.subcategory.id;
       const parentCatId = selectedCollection.categoryId;
       const collections = await categoryApi.getCollections(parentSubId);
+      const expandedCollections: ExpandedCollection[] = collections.map(col => ({
+        ...col,
+        subcollections: [],
+        isExpanded: false,
+        loadingSubcollections: false,
+      }));
       setCategories(prev => prev.map(c =>
         c.id === parentCatId
           ? {
               ...c,
               subcategories: c.subcategories.map(s =>
-                s.id === parentSubId ? { ...s, collections } : s
+                s.id === parentSubId ? { ...s, collections: expandedCollections } : s
               ),
             }
           : c
@@ -434,8 +501,51 @@ const CategoriesPage: React.FC = () => {
       await handleDeleteCategory();
     } else if (deleteType === 'subcategory') {
       await handleDeleteSubcategory();
-    } else {
+    } else if (deleteType === 'collection') {
       await handleDeleteCollection();
+    } else {
+      await handleDeleteSubcollection();
+    }
+  };
+
+  // Handle subcollection deletion
+  const handleDeleteSubcollection = async () => {
+    if (!selectedSubcollection) return;
+
+    setDeleting(true);
+    try {
+      await categoryApi.deleteSubcollection(selectedSubcollection.subcollection.id);
+      setDeleteDialogOpen(false);
+
+      // Refresh subcollections for the parent collection
+      const parentColId = selectedSubcollection.collection.id;
+      const parentSubId = selectedSubcollection.subcategoryId;
+      const parentCatId = selectedSubcollection.categoryId;
+      const subcollections = await categoryApi.getSubcollections(parentColId);
+      setCategories(prev => prev.map(c =>
+        c.id === parentCatId
+          ? {
+              ...c,
+              subcategories: c.subcategories.map(s =>
+                s.id === parentSubId
+                  ? {
+                      ...s,
+                      collections: s.collections.map(col =>
+                        col.id === parentColId ? { ...col, subcollections } : col
+                      ),
+                    }
+                  : s
+              ),
+            }
+          : c
+      ));
+
+      setSelectedSubcollection(null);
+    } catch (err) {
+      console.error('Failed to delete subcollection:', err);
+      setError(t('categories.subcollectionDeleteError') || 'Failed to delete subcollection');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -504,12 +614,57 @@ const CategoriesPage: React.FC = () => {
     if (collectionParentSubcategory) {
       // Refresh collections for the parent subcategory
       const collections = await categoryApi.getCollections(collectionParentSubcategory.id);
+      const expandedCols: ExpandedCollection[] = collections.map(col => ({
+        ...col,
+        subcollections: [],
+        isExpanded: false,
+        loadingSubcollections: false,
+      }));
       setCategories(prev => prev.map(c => ({
         ...c,
         subcategories: c.subcategories.map(s =>
-          s.id === collectionParentSubcategory.id ? { ...s, collections, isExpanded: true } : s
+          s.id === collectionParentSubcategory.id ? { ...s, collections: expandedCols, isExpanded: true } : s
         ),
       })));
+    }
+  };
+
+  // Open subcollection modal for create
+  const openCreateSubcollectionModal = (collection: Collection, categoryId: string, subcategoryId: string) => {
+    setEditingSubcollectionId(undefined);
+    setSubcollectionParentCollection({ id: collection.id, name: collection.name, categoryId, subcategoryId });
+    setSubcollectionModalOpen(true);
+  };
+
+  // Open subcollection modal for edit
+  const openEditSubcollectionModal = (subcollectionId: string, collection: Collection, categoryId: string, subcategoryId: string) => {
+    setEditingSubcollectionId(subcollectionId);
+    setSubcollectionParentCollection({ id: collection.id, name: collection.name, categoryId, subcategoryId });
+    setSubcollectionModalOpen(true);
+  };
+
+  const handleSubcollectionModalSuccess = async () => {
+    if (subcollectionParentCollection) {
+      const subcollections = await categoryApi.getSubcollections(subcollectionParentCollection.id);
+      setCategories(prev => prev.map(c =>
+        c.id === subcollectionParentCollection.categoryId
+          ? {
+              ...c,
+              subcategories: c.subcategories.map(s =>
+                s.id === subcollectionParentCollection.subcategoryId
+                  ? {
+                      ...s,
+                      collections: s.collections.map(col =>
+                        col.id === subcollectionParentCollection.id
+                          ? { ...col, subcollections, isExpanded: true }
+                          : col
+                      ),
+                    }
+                  : s
+              ),
+            }
+          : c
+      ));
     }
   };
 
@@ -615,12 +770,83 @@ const CategoriesPage: React.FC = () => {
       setError('Failed to reorder collections');
       // Rollback
       const refreshed = await categoryApi.getCollections(subcategoryId);
+      const expandedRefreshed: ExpandedCollection[] = refreshed.map(col => ({
+        ...col,
+        subcollections: [],
+        isExpanded: false,
+        loadingSubcollections: false,
+      }));
       setCategories(prev => prev.map(c =>
         c.id === categoryId
           ? {
               ...c,
               subcategories: c.subcategories.map(s =>
-                s.id === subcategoryId ? { ...s, collections: refreshed } : s
+                s.id === subcategoryId ? { ...s, collections: expandedRefreshed } : s
+              ),
+            }
+          : c
+      ));
+    } finally {
+      setReordering(false);
+    }
+  }, [categories]);
+
+  const handleSubcollectionDragEnd = useCallback(async (categoryId: string, subcategoryId: string, collectionId: string, event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const category = categories.find(c => c.id === categoryId);
+    if (!category) return;
+    const subcategory = category.subcategories.find(s => s.id === subcategoryId);
+    if (!subcategory) return;
+    const collection = subcategory.collections.find(col => col.id === collectionId);
+    if (!collection) return;
+
+    const oldIndex = collection.subcollections.findIndex(sc => sc.id === String(active.id));
+    const newIndex = collection.subcollections.findIndex(sc => sc.id === String(over.id));
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reorderedSubcols = arrayMove(collection.subcollections, oldIndex, newIndex);
+    // Optimistic update
+    setCategories(prev => prev.map(c =>
+      c.id === categoryId
+        ? {
+            ...c,
+            subcategories: c.subcategories.map(s =>
+              s.id === subcategoryId
+                ? {
+                    ...s,
+                    collections: s.collections.map(col =>
+                      col.id === collectionId ? { ...col, subcollections: reorderedSubcols } : col
+                    ),
+                  }
+                : s
+            ),
+          }
+        : c
+    ));
+
+    setReordering(true);
+    try {
+      await categoryApi.reorderSubcollections(collectionId, reorderedSubcols.map(sc => Number(sc.id)));
+    } catch (err) {
+      console.error('Failed to reorder subcollections:', err);
+      setError('Failed to reorder subcollections');
+      // Rollback
+      const refreshed = await categoryApi.getSubcollections(collectionId);
+      setCategories(prev => prev.map(c =>
+        c.id === categoryId
+          ? {
+              ...c,
+              subcategories: c.subcategories.map(s =>
+                s.id === subcategoryId
+                  ? {
+                      ...s,
+                      collections: s.collections.map(col =>
+                        col.id === collectionId ? { ...col, subcollections: refreshed } : col
+                      ),
+                    }
+                  : s
               ),
             }
           : c
@@ -656,8 +882,8 @@ const CategoriesPage: React.FC = () => {
     return <>{children(sortableProps)}</>;
   };
 
-  // Sortable collection row
-  const SortableCollectionRow = ({ collection, subcategory, categoryId }: { collection: Collection; subcategory: ExpandedSubcategory; categoryId: string }) => {
+  // Sortable subcollection row (4th tier)
+  const SortableSubcollectionRow = ({ subcollection, collection, subcategoryId, categoryId }: { subcollection: Subcollection; collection: ExpandedCollection; subcategoryId: string; categoryId: string }) => {
     const {
       attributes,
       listeners,
@@ -665,7 +891,7 @@ const CategoriesPage: React.FC = () => {
       transform,
       transition,
       isDragging,
-    } = useSortable({ id: collection.id });
+    } = useSortable({ id: subcollection.id });
 
     return (
       <TableRow
@@ -689,37 +915,37 @@ const CategoriesPage: React.FC = () => {
             </IconButton>
             <Avatar
               variant="rounded"
-              src={collection.imageUrl}
-              sx={{ width: 28, height: 28, bgcolor: 'info.main' }}
+              src={subcollection.imageUrl}
+              sx={{ width: 24, height: 24, bgcolor: 'warning.main' }}
             >
-              <CollectionIcon sx={{ fontSize: 14 }} />
+              <CollectionIcon sx={{ fontSize: 12 }} />
             </Avatar>
-            <Typography variant="body2">{collection.name}</Typography>
+            <Typography variant="body2">{subcollection.name}</Typography>
           </Box>
         </TableCell>
         <TableCell align="center">
           <Chip
-            label={collection.productCount ?? 0}
+            label={subcollection.productCount ?? 0}
             size="small"
             variant="outlined"
           />
         </TableCell>
         <TableCell align="center">
           <Typography variant="body2" color="text.secondary">
-            {collection.displayOrder ?? 0}
+            {subcollection.displayOrder ?? 0}
           </Typography>
         </TableCell>
         <TableCell align="center">
           <Chip
-            label={collection.isActive ? t('common.active') : t('common.inactive')}
+            label={subcollection.isActive ? t('common.active') : t('common.inactive')}
             size="small"
-            color={collection.isActive ? 'success' : 'default'}
+            color={subcollection.isActive ? 'success' : 'default'}
           />
         </TableCell>
         <TableCell>
           <Box sx={{ display: 'flex', gap: 0.5 }}>
             <Tooltip title={t('common.edit')}>
-              <IconButton size="small" onClick={() => openEditCollectionModal(collection.id, subcategory)}>
+              <IconButton size="small" onClick={() => openEditSubcollectionModal(subcollection.id, collection, categoryId, subcategoryId)}>
                 <EditIcon fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -728,8 +954,8 @@ const CategoriesPage: React.FC = () => {
                 size="small"
                 color="error"
                 onClick={() => {
-                  setDeleteType('collection');
-                  setSelectedCollection({ collection, subcategory, categoryId });
+                  setDeleteType('subcollection');
+                  setSelectedSubcollection({ subcollection, collection, subcategoryId, categoryId });
                   setDeleteDialogOpen(true);
                 }}
               >
@@ -739,6 +965,178 @@ const CategoriesPage: React.FC = () => {
           </Box>
         </TableCell>
       </TableRow>
+    );
+  };
+
+  // Sortable collection row (expandable to show subcollections)
+  const SortableCollectionRow = ({ collection, subcategory, categoryId }: { collection: ExpandedCollection; subcategory: ExpandedSubcategory; categoryId: string }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: collection.id });
+
+    return (
+      <>
+        <TableRow
+          ref={setNodeRef}
+          hover
+          style={{
+            transform: CSS.Transform.toString(transform),
+            transition,
+          }}
+          sx={{
+            opacity: isDragging ? 0.5 : 1,
+            cursor: 'pointer',
+            '& > *': { borderBottom: collection.isExpanded ? 'none' : undefined },
+          }}
+          onClick={() => toggleCollectionExpand(categoryId, subcategory.id, collection.id)}
+        >
+          <TableCell>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <IconButton
+                size="small"
+                sx={{ cursor: 'grab', touchAction: 'none', mr: 0.5 }}
+                onClick={(e) => e.stopPropagation()}
+                {...attributes}
+                {...listeners}
+              >
+                <DragIndicatorIcon fontSize="small" color="action" />
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={(e) => { e.stopPropagation(); toggleCollectionExpand(categoryId, subcategory.id, collection.id); }}
+              >
+                {collection.loadingSubcollections ? (
+                  <CircularProgress size={14} />
+                ) : (
+                  <ChevronRightIcon
+                    sx={{
+                      fontSize: 16,
+                      transform: collection.isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease-in-out',
+                    }}
+                  />
+                )}
+              </IconButton>
+              <Avatar
+                variant="rounded"
+                src={collection.imageUrl}
+                sx={{ width: 28, height: 28, bgcolor: 'info.main' }}
+              >
+                <CollectionIcon sx={{ fontSize: 14 }} />
+              </Avatar>
+              <Typography variant="body2">{collection.name}</Typography>
+            </Box>
+          </TableCell>
+          <TableCell align="center">
+            <Chip
+              label={collection.productCount ?? 0}
+              size="small"
+              variant="outlined"
+            />
+          </TableCell>
+          <TableCell align="center">
+            <Typography variant="body2" color="text.secondary">
+              {collection.displayOrder ?? 0}
+            </Typography>
+          </TableCell>
+          <TableCell align="center">
+            <Chip
+              label={collection.isActive ? t('common.active') : t('common.inactive')}
+              size="small"
+              color={collection.isActive ? 'success' : 'default'}
+            />
+          </TableCell>
+          <TableCell>
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <Tooltip title={t('categories.addSubcollection') || 'Add Subcollection'}>
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openCreateSubcollectionModal(collection, categoryId, subcategory.id);
+                  }}
+                >
+                  <AddIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={t('common.edit')}>
+                <IconButton size="small" onClick={(e) => { e.stopPropagation(); openEditCollectionModal(collection.id, subcategory); }}>
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={t('common.delete')}>
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteType('collection');
+                    setSelectedCollection({ collection, subcategory, categoryId });
+                    setDeleteDialogOpen(true);
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </TableCell>
+        </TableRow>
+
+        {/* Subcollections Collapse Row (4th tier) */}
+        <TableRow>
+          <TableCell colSpan={5} sx={{ py: 0, px: 0 }}>
+            <Collapse in={collection.isExpanded} timeout="auto" unmountOnExit>
+              <Box sx={{ pl: 6, pr: 2, py: 1.5, bgcolor: 'action.focus', borderRadius: 1 }}>
+                {collection.subcollections.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
+                    {t('categories.noSubcollections') || 'No subcollections'}
+                  </Typography>
+                ) : (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={(event) => handleSubcollectionDragEnd(categoryId, subcategory.id, collection.id, event)}
+                  >
+                    <SortableContext
+                      items={collection.subcollections.map(sc => sc.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>{t('categories.subcollectionName') || 'Subcollection'}</TableCell>
+                            <TableCell align="center">{t('categories.products') || 'Products'}</TableCell>
+                            <TableCell align="center">{t('common.displayOrder') || 'Order'}</TableCell>
+                            <TableCell align="center">{t('common.status')}</TableCell>
+                            <TableCell>{t('common.actions')}</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {collection.subcollections.map((subcollection) => (
+                            <SortableSubcollectionRow
+                              key={subcollection.id}
+                              subcollection={subcollection}
+                              collection={collection}
+                              subcategoryId={subcategory.id}
+                              categoryId={categoryId}
+                            />
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </SortableContext>
+                  </DndContext>
+                )}
+              </Box>
+            </Collapse>
+          </TableCell>
+        </TableRow>
+      </>
     );
   };
 
@@ -1281,14 +1679,18 @@ const CategoriesPage: React.FC = () => {
             ? (t('categories.deleteTitle') || 'Delete Category')
             : deleteType === 'subcategory'
               ? (t('categories.deleteSubcategoryTitle') || 'Delete Subcategory')
-              : (t('categories.deleteCollectionTitle') || 'Delete Collection')
+              : deleteType === 'collection'
+                ? (t('categories.deleteCollectionTitle') || 'Delete Collection')
+                : (t('categories.deleteSubcollectionTitle') || 'Delete Subcollection')
         }
         message={
           deleteType === 'category'
             ? (t('categories.deleteMessage', { name: selectedCategory?.name }) || `Are you sure you want to delete "${selectedCategory?.name}"?`)
             : deleteType === 'subcategory'
               ? (t('categories.deleteSubcategoryMessage', { name: selectedSubcategory?.subcategory.name }) || `Are you sure you want to delete "${selectedSubcategory?.subcategory.name}"?`)
-              : (t('categories.deleteCollectionMessage', { name: selectedCollection?.collection.name }) || `Are you sure you want to delete "${selectedCollection?.collection.name}"?`)
+              : deleteType === 'collection'
+                ? (t('categories.deleteCollectionMessage', { name: selectedCollection?.collection.name }) || `Are you sure you want to delete "${selectedCollection?.collection.name}"?`)
+                : (t('categories.deleteSubcollectionMessage', { name: selectedSubcollection?.subcollection.name }) || `Are you sure you want to delete "${selectedSubcollection?.subcollection.name}"?`)
         }
         confirmText={t('common.delete')}
         confirmColor="error"
@@ -1298,6 +1700,7 @@ const CategoriesPage: React.FC = () => {
           setSelectedCategory(null);
           setSelectedSubcategory(null);
           setSelectedCollection(null);
+          setSelectedSubcollection(null);
         }}
         loading={deleting}
       />
@@ -1344,6 +1747,22 @@ const CategoriesPage: React.FC = () => {
             setCollectionParentSubcategory(null);
           }}
           onSuccess={handleCollectionModalSuccess}
+        />
+      )}
+
+      {/* Subcollection Form Modal */}
+      {subcollectionParentCollection && (
+        <SubcollectionFormModal
+          open={subcollectionModalOpen}
+          collectionId={subcollectionParentCollection.id}
+          collectionName={subcollectionParentCollection.name}
+          subcollectionId={editingSubcollectionId}
+          onClose={() => {
+            setSubcollectionModalOpen(false);
+            setEditingSubcollectionId(undefined);
+            setSubcollectionParentCollection(null);
+          }}
+          onSuccess={handleSubcollectionModalSuccess}
         />
       )}
     </Box>

@@ -36,13 +36,16 @@ abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
   static const double _scrollThreshold = 50.0;
 
   // ── Tier navigation state ────────────────────────────────────────────────
-  int _currentTier = 1; // 1 = category, 2 = subcategory, 3 = collection
+  int _currentTier =
+      1; // 1 = category, 2 = subcategory, 3 = collection, 4 = subcollection
   bool _goingForward = true; // animation direction flag
   MiniAppCategory? _selectedCategory;
   MiniAppSubcategory? _selectedSubcategory;
+  MiniAppCollection? _selectedCollection;
 
-  // Track whether we've already scheduled a redirect for empty collections.
+  // Track whether we've already scheduled a redirect for empty tiers.
   bool _emptyCollectionsRedirectScheduled = false;
+  bool _emptySubcollectionsRedirectScheduled = false;
 
   //
   // CUSTOMIZATION SLOTS ───────────────────────────────────────────────────
@@ -83,15 +86,20 @@ abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
     setState(() {
       _goingForward = tier > _currentTier;
       _emptyCollectionsRedirectScheduled = false;
+      _emptySubcollectionsRedirectScheduled = false;
       if (tier <= 1) {
         _selectedCategory = null;
         _selectedSubcategory = null;
+        _selectedCollection = null;
         ref
                 .read(selectedCategoryIdProvider(widget.miniAppType).notifier)
                 .state =
             null;
       } else if (tier <= 2) {
         _selectedSubcategory = null;
+        _selectedCollection = null;
+      } else if (tier <= 3) {
+        _selectedCollection = null;
       }
       _currentTier = tier;
       _borderRadius = _maxRadius;
@@ -123,11 +131,25 @@ abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
     });
   }
 
-  /// Called when the user taps a collection card → navigate to products.
+  /// Called when the user taps a collection card → advance to subcollections tier.
+  /// If the collection has no subcollections, the subcollections grid will
+  /// auto-redirect to the products screen (same pattern as empty collections).
   void _handleCollectionTap(MiniAppCollection collection) {
+    setState(() {
+      _selectedCollection = collection;
+      _goingForward = true;
+      _currentTier = 4;
+      _borderRadius = _maxRadius;
+      _emptySubcollectionsRedirectScheduled = false;
+    });
+  }
+
+  /// Called when the user taps a subcollection card → navigate to products.
+  void _handleSubcollectionTap(MiniAppSubcollection subcollection) {
     context.push(
       '/mini-app/${widget.miniAppType.name}/products/${_selectedSubcategory!.id}'
-      '?collectionId=${collection.id}',
+      '?collectionId=${_selectedCollection!.id}'
+      '&subcollectionId=${subcollection.id}',
     );
   }
 
@@ -148,6 +170,7 @@ abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
         1 => _buildCategoriesGrid(),
         2 => _buildSubcategoriesGrid(),
         3 => _buildCollectionsGrid(),
+        4 => _buildSubcollectionsGrid(),
         _ => const SizedBox.shrink(),
       },
     );
@@ -260,6 +283,55 @@ abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
               name: col.name,
               imageUrl: col.imageUrl,
               onTap: () => _handleCollectionTap(col),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSubcollectionsGrid() {
+    final subcollectionsAsync = ref.watch(
+      miniAppSubcollectionsProvider((
+        miniAppType: widget.miniAppType,
+        collectionId: _selectedCollection!.id,
+      )),
+    );
+
+    // If zero subcollections, redirect to products under the collection directly.
+    if (subcollectionsAsync.hasValue &&
+        subcollectionsAsync.value!.isEmpty &&
+        !_emptySubcollectionsRedirectScheduled) {
+      _emptySubcollectionsRedirectScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.push(
+            '/mini-app/${widget.miniAppType.name}/products/${_selectedSubcategory!.id}'
+            '?collectionId=${_selectedCollection!.id}',
+          );
+        }
+      });
+      return _buildTierLoading();
+    }
+
+    return subcollectionsAsync.when(
+      loading: () => _buildTierLoading(),
+      error: (_, __) => _buildTierError(
+        AppLocalizations.of(context)!.failedToLoadSubcollections,
+      ),
+      data: (subcollections) {
+        if (subcollections.isEmpty) {
+          // Already handled above – show loading while redirecting.
+          return _buildTierLoading();
+        }
+        return _buildItemGrid(
+          itemCount: subcollections.length,
+          itemBuilder: (context, index) {
+            final sc = subcollections[index];
+            return _TierItemCard(
+              name: sc.name,
+              imageUrl: sc.imageUrl,
+              onTap: () => _handleSubcollectionTap(sc),
             );
           },
         );
@@ -426,12 +498,15 @@ abstract class BaseMiniAppHomeState<T extends BaseMiniAppHome>
                     // ── Persistent Breadcrumbs (fixed at top) ──
                     CatalogBreadcrumbs(
                       currentTier: _currentTier,
+                      totalTiers: _currentTier >= 4 ? 4 : 3,
                       selectedCategory: _selectedCategory,
                       selectedSubcategory: _selectedSubcategory,
+                      selectedCollection: _selectedCollection,
                       onTierTap: _handleBreadcrumbTap,
                       categoryLabel: l10n.category,
                       subcategoryLabel: l10n.subcategory,
                       collectionLabel: l10n.collection,
+                      subcollectionLabel: l10n.subcollection,
                     ),
 
                     // ── Tier content with slide animation ──

@@ -159,6 +159,31 @@ class CatalogRepository {
     }
   }
 
+  // ───────────────────────── Subcollections ─────────────────────────
+
+  /// Fetch subcollections for a specific [collectionId].
+  ///
+  /// The public API returns a plain array of active subcollections,
+  /// so we deserialize directly without pagination wrapping.
+  Future<List<MiniAppSubcollection>> getSubcollections(int collectionId) async {
+    try {
+      final json = await _api.listSubcollections(collectionId);
+
+      return json
+          .cast<Map<String, dynamic>>()
+          .map((item) => MiniAppSubcollection.fromJson(item))
+          .toList();
+    } catch (e, st) {
+      developer.log(
+        'Failed to fetch subcollections for collection $collectionId',
+        name: 'CatalogRepository',
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
+    }
+  }
+
   // ───────────────────────── Products ─────────────────────────
 
   /// Fetch products with flexible filtering.
@@ -171,6 +196,7 @@ class CatalogRepository {
     int? categoryId,
     int? subcategoryId,
     int? collectionId,
+    int? subcollectionId,
     String? search,
     bool? isFeatured,
     int page = 1,
@@ -183,6 +209,7 @@ class CatalogRepository {
         categoryId: categoryId,
         subcategoryId: subcategoryId,
         collectionId: collectionId,
+        subcollectionId: subcollectionId,
         search: search,
         isFeatured: isFeatured,
         page: page,

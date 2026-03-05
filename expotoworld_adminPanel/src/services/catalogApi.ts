@@ -249,6 +249,7 @@ export interface ApiProduct {
   category_ids?: number[];
   subcategory_ids?: number[];
   collection_ids?: number[];
+  subcollection_ids?: number[];
 }
 
 export interface ApiProductAttribute {
@@ -309,6 +310,18 @@ export interface ApiSubcategory {
 export interface ApiCollection {
   collection_id: number;
   subcategory_id: number;
+  name: string;
+  image_url: string | null;
+  display_order: number;
+  is_active: boolean;
+  product_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiSubcollection {
+  subcollection_id: number;
+  collection_id: number;
   name: string;
   image_url: string | null;
   display_order: number;
@@ -398,6 +411,7 @@ export interface Product {
   categoryIds?: number[];
   subcategoryIds?: number[];
   collectionIds?: number[];
+  subcollectionIds?: number[];
 }
 
 export interface ProductAttribute {
@@ -474,6 +488,7 @@ export interface CreateProductData {
   categoryIds?: number[];
   subcategoryIds?: number[];
   collectionIds?: number[];
+  subcollectionIds?: number[];
 }
 
 export interface CreateAttributeData {
@@ -530,6 +545,23 @@ export interface Collection {
   updatedAt: string;
 }
 
+export interface Subcollection {
+  id: string;
+  name: string;
+  collectionId: string;
+  imageUrl?: string;
+  productCount: number;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Collection with nested subcollections for tree view
+export interface CollectionWithSubcollections extends Collection {
+  subcollections: Subcollection[];
+}
+
 // Category with nested subcategories for tree view
 export interface CategoryWithSubcategories extends Category {
   subcategories: Subcategory[];
@@ -537,10 +569,10 @@ export interface CategoryWithSubcategories extends Category {
 
 // Subcategory with nested collections for tree view
 export interface SubcategoryWithCollections extends Subcategory {
-  collections: Collection[];
+  collections: CollectionWithSubcollections[];
 }
 
-// Category with full 3-tier hierarchy
+// Category with full 4-tier hierarchy
 export interface CategoryWithFullHierarchy extends Category {
   subcategories: SubcategoryWithCollections[];
 }
@@ -626,6 +658,7 @@ function mapApiProduct(api: ApiProduct): Product {
     categoryIds: api.category_ids,
     subcategoryIds: api.subcategory_ids,
     collectionIds: api.collection_ids,
+    subcollectionIds: api.subcollection_ids,
   };
 }
 
@@ -716,6 +749,7 @@ function mapProductToApi(data: CreateProductData): Record<string, unknown> {
     category_ids: data.categoryIds,
     subcategory_ids: data.subcategoryIds,
     collection_ids: data.collectionIds,
+    subcollection_ids: data.subcollectionIds,
   };
 }
 
@@ -755,6 +789,20 @@ function mapApiCollection(api: ApiCollection): Collection {
     id: String(api.collection_id),
     name: api.name,
     subcategoryId: String(api.subcategory_id),
+    imageUrl: api.image_url || undefined,
+    productCount: api.product_count ?? 0,
+    isActive: api.is_active,
+    displayOrder: api.display_order,
+    createdAt: api.created_at,
+    updatedAt: api.updated_at,
+  };
+}
+
+function mapApiSubcollection(api: ApiSubcollection): Subcollection {
+  return {
+    id: String(api.subcollection_id),
+    name: api.name,
+    collectionId: String(api.collection_id),
     imageUrl: api.image_url || undefined,
     productCount: api.product_count ?? 0,
     isActive: api.is_active,
@@ -1600,15 +1648,18 @@ export const categoryApi = {
   // ---- Collection Methods ----
 
   /**
-   * Get category tree with full 3-tier hierarchy (categories -> subcategories -> collections)
+   * Get category tree with full 4-tier hierarchy (categories -> subcategories -> collections -> subcollections)
    */
   getCategoryTreeFull: async (): Promise<CategoryWithFullHierarchy[]> => {
-    const response = await catalogApi.get<Array<ApiCategory & { subcategories: Array<ApiSubcategory & { collections: ApiCollection[] }> }>>('/categories/tree/full');
+    const response = await catalogApi.get<Array<ApiCategory & { subcategories: Array<ApiSubcategory & { collections: Array<ApiCollection & { subcollections?: ApiSubcollection[] }> }> }>>('/categories/tree/full');
     return response.data.map((cat) => ({
       ...mapApiCategory(cat),
       subcategories: (cat.subcategories || []).map((sub) => ({
         ...mapApiSubcategory(sub),
-        collections: (sub.collections || []).map(mapApiCollection),
+        collections: (sub.collections || []).map((col) => ({
+          ...mapApiCollection(col),
+          subcollections: (col.subcollections || []).map(mapApiSubcollection),
+        })),
       })),
     }));
   },
@@ -1751,6 +1802,152 @@ export const categoryApi = {
       await cleanupOrphanedS3Object(objectKey);
       throw new Error(
         `Image was uploaded to storage but failed to update the collection record. ` +
+        `Original error: ${dbError instanceof Error ? dbError.message : String(dbError)}`
+      );
+    }
+
+    onProgress?.(100);
+    return publicUrl;
+  },
+
+  // ---- Subcollection Methods ----
+
+  /**
+   * Get subcollections for a collection
+   */
+  getSubcollections: async (collectionId: string): Promise<Subcollection[]> => {
+    const response = await catalogApi.get<ApiSubcollection[]>(`/collections/${collectionId}/subcollections`);
+    return response.data.map(mapApiSubcollection);
+  },
+
+  /**
+   * Create a new subcollection within a collection
+   */
+  createSubcollection: async (
+    collectionId: string,
+    data: { name: string; imageUrl?: string; displayOrder?: number; isActive?: boolean }
+  ): Promise<Subcollection> => {
+    const response = await catalogApi.post<ApiSubcollection>(`/collections/${collectionId}/subcollections`, {
+      name: data.name,
+      image_url: data.imageUrl,
+      display_order: data.displayOrder,
+      is_active: data.isActive,
+    });
+    return mapApiSubcollection(response.data);
+  },
+
+  /**
+   * Update an existing subcollection
+   */
+  updateSubcollection: async (
+    subcollectionId: string,
+    data: { name?: string; imageUrl?: string; displayOrder?: number; isActive?: boolean }
+  ): Promise<Subcollection> => {
+    const response = await catalogApi.put<ApiSubcollection>(`/subcollections/${subcollectionId}`, {
+      name: data.name,
+      image_url: data.imageUrl,
+      display_order: data.displayOrder,
+      is_active: data.isActive,
+    });
+    return mapApiSubcollection(response.data);
+  },
+
+  /**
+   * Delete a subcollection
+   */
+  deleteSubcollection: async (subcollectionId: string): Promise<void> => {
+    await catalogApi.delete(`/subcollections/${subcollectionId}`);
+  },
+
+  /**
+   * Reorder subcollections within a collection
+   */
+  reorderSubcollections: async (collectionId: string, orderedIds: number[]): Promise<void> => {
+    await catalogApi.put(`/collections/${collectionId}/subcollections/reorder`, {
+      ordered_ids: orderedIds,
+    });
+  },
+
+  /**
+   * Move a subcollection to a different collection
+   */
+  moveSubcollection: async (subcollectionId: string, targetCollectionId: number): Promise<void> => {
+    await catalogApi.put(`/subcollections/${subcollectionId}/move`, {
+      target_collection_id: targetCollectionId,
+    });
+  },
+
+  /**
+   * Get a presigned URL for subcollection image upload
+   */
+  getSubcollectionImageUploadUrl: async (
+    subcollectionId: string,
+    fileName: string,
+    contentType: string
+  ): Promise<{ uploadUrl: string; objectKey: string; publicUrl: string }> => {
+    const response = await catalogApi.get<{ upload_url: string; object_key: string; public_url: string }>(
+      `/subcollections/${subcollectionId}/image/upload-url`,
+      { params: { file_name: fileName, content_type: contentType } }
+    );
+    return {
+      uploadUrl: response.data.upload_url,
+      objectKey: response.data.object_key,
+      publicUrl: response.data.public_url,
+    };
+  },
+
+  /**
+   * Upload a subcollection image (presigned URL + DB update)
+   */
+  uploadSubcollectionImage: async (
+    subcollectionId: string,
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<string> => {
+    onProgress?.(10);
+    const { uploadUrl, objectKey, publicUrl } = await categoryApi.getSubcollectionImageUploadUrl(
+      subcollectionId,
+      file.name,
+      file.type
+    );
+
+    onProgress?.(30);
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const uploadProgress = (event.loaded / event.total) * 50;
+          onProgress?.(30 + uploadProgress);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('Upload failed'));
+
+      xhr.open('PUT', uploadUrl);
+      xhr.setRequestHeader('Content-Type', file.type);
+      xhr.send(file);
+    });
+
+    onProgress?.(90);
+    try {
+      await categoryApi.updateSubcollection(subcollectionId, { imageUrl: publicUrl });
+    } catch (dbError) {
+      console.error(
+        `[S3 Recovery] Subcollection image uploaded to S3 but DB update failed. Orphaned key: ${objectKey}`,
+        dbError
+      );
+      await cleanupOrphanedS3Object(objectKey);
+      throw new Error(
+        `Image was uploaded to storage but failed to update the subcollection record. ` +
         `Original error: ${dbError instanceof Error ? dbError.message : String(dbError)}`
       );
     }

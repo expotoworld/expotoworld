@@ -465,3 +465,145 @@ func (r *CollectionMappingRepository) setCollectionsWithQuerier(ctx context.Cont
 	}
 	return nil
 }
+
+// SubcollectionMappingRepository is a PostgreSQL implementation of SubcollectionMappingRepository.
+type SubcollectionMappingRepository struct {
+	pool *pgxpool.Pool
+}
+
+// NewSubcollectionMappingRepository creates a new PostgreSQL subcollection mapping repository.
+func NewSubcollectionMappingRepository(pool *pgxpool.Pool) *SubcollectionMappingRepository {
+	return &SubcollectionMappingRepository{pool: pool}
+}
+
+// Create creates a new product-subcollection mapping.
+func (r *SubcollectionMappingRepository) Create(ctx context.Context, productID int32, subcollectionID int32) (*domain.SubcollectionMapping, error) {
+	return r.createWithQuerier(ctx, r.pool, productID, subcollectionID)
+}
+
+// CreateTx creates a new product-subcollection mapping within a transaction.
+func (r *SubcollectionMappingRepository) CreateTx(ctx context.Context, tx pgx.Tx, productID int32, subcollectionID int32) (*domain.SubcollectionMapping, error) {
+	return r.createWithQuerier(ctx, tx, productID, subcollectionID)
+}
+
+func (r *SubcollectionMappingRepository) createWithQuerier(ctx context.Context, q mappingQuerier, productID int32, subcollectionID int32) (*domain.SubcollectionMapping, error) {
+	query := `INSERT INTO admin_product_subcollection_mapping (product_id, subcollection_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING product_id, subcollection_id`
+	var m domain.SubcollectionMapping
+	err := q.QueryRow(ctx, query, productID, subcollectionID).Scan(&m.ProductID, &m.SubcollectionID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return &domain.SubcollectionMapping{ProductID: productID, SubcollectionID: subcollectionID}, nil
+		}
+		return nil, fmt.Errorf("failed to create subcollection mapping: %w", err)
+	}
+	return &m, nil
+}
+
+// GetByProductID retrieves all subcollection mappings for a product.
+func (r *SubcollectionMappingRepository) GetByProductID(ctx context.Context, productID int32) ([]domain.SubcollectionMapping, error) {
+	return r.getByProductIDWithQuerier(ctx, r.pool, productID)
+}
+
+// GetByProductIDTx retrieves all subcollection mappings within a transaction.
+func (r *SubcollectionMappingRepository) GetByProductIDTx(ctx context.Context, tx pgx.Tx, productID int32) ([]domain.SubcollectionMapping, error) {
+	return r.getByProductIDWithQuerier(ctx, tx, productID)
+}
+
+func (r *SubcollectionMappingRepository) getByProductIDWithQuerier(ctx context.Context, q mappingQuerier, productID int32) ([]domain.SubcollectionMapping, error) {
+	rows, err := q.Query(ctx, "SELECT product_id, subcollection_id FROM admin_product_subcollection_mapping WHERE product_id = $1", productID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var mappings []domain.SubcollectionMapping
+	for rows.Next() {
+		var m domain.SubcollectionMapping
+		if err := rows.Scan(&m.ProductID, &m.SubcollectionID); err != nil {
+			return nil, err
+		}
+		mappings = append(mappings, m)
+	}
+	return mappings, nil
+}
+
+// GetBySubcollectionID retrieves all mappings for a subcollection.
+func (r *SubcollectionMappingRepository) GetBySubcollectionID(ctx context.Context, subcollectionID int32) ([]domain.SubcollectionMapping, error) {
+	rows, err := r.pool.Query(ctx, "SELECT product_id, subcollection_id FROM admin_product_subcollection_mapping WHERE subcollection_id = $1", subcollectionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var mappings []domain.SubcollectionMapping
+	for rows.Next() {
+		var m domain.SubcollectionMapping
+		if err := rows.Scan(&m.ProductID, &m.SubcollectionID); err != nil {
+			return nil, err
+		}
+		mappings = append(mappings, m)
+	}
+	return mappings, nil
+}
+
+// Delete deletes a specific product-subcollection mapping.
+func (r *SubcollectionMappingRepository) Delete(ctx context.Context, productID int32, subcollectionID int32) error {
+	return r.deleteWithQuerier(ctx, r.pool, productID, subcollectionID)
+}
+
+// DeleteTx deletes a mapping within a transaction.
+func (r *SubcollectionMappingRepository) DeleteTx(ctx context.Context, tx pgx.Tx, productID int32, subcollectionID int32) error {
+	return r.deleteWithQuerier(ctx, tx, productID, subcollectionID)
+}
+
+func (r *SubcollectionMappingRepository) deleteWithQuerier(ctx context.Context, q mappingQuerier, productID int32, subcollectionID int32) error {
+	_, err := q.Exec(ctx, "DELETE FROM admin_product_subcollection_mapping WHERE product_id = $1 AND subcollection_id = $2", productID, subcollectionID)
+	return err
+}
+
+// DeleteByProductID deletes all subcollection mappings for a product.
+func (r *SubcollectionMappingRepository) DeleteByProductID(ctx context.Context, productID int32) error {
+	return r.deleteByProductIDWithQuerier(ctx, r.pool, productID)
+}
+
+// DeleteByProductIDTx deletes all subcollection mappings within a transaction.
+func (r *SubcollectionMappingRepository) DeleteByProductIDTx(ctx context.Context, tx pgx.Tx, productID int32) error {
+	return r.deleteByProductIDWithQuerier(ctx, tx, productID)
+}
+
+func (r *SubcollectionMappingRepository) deleteByProductIDWithQuerier(ctx context.Context, q mappingQuerier, productID int32) error {
+	_, err := q.Exec(ctx, "DELETE FROM admin_product_subcollection_mapping WHERE product_id = $1", productID)
+	return err
+}
+
+// DeleteBySubcollectionID deletes all mappings for a subcollection.
+func (r *SubcollectionMappingRepository) DeleteBySubcollectionID(ctx context.Context, subcollectionID int32) error {
+	_, err := r.pool.Exec(ctx, "DELETE FROM admin_product_subcollection_mapping WHERE subcollection_id = $1", subcollectionID)
+	return err
+}
+
+// SetSubcollections replaces all subcollections for a product with the new list.
+func (r *SubcollectionMappingRepository) SetSubcollections(ctx context.Context, productID int32, subcollectionIDs []int32) error {
+	return r.setSubcollectionsWithQuerier(ctx, r.pool, productID, subcollectionIDs)
+}
+
+// SetSubcollectionsTx replaces all subcollections within a transaction.
+func (r *SubcollectionMappingRepository) SetSubcollectionsTx(ctx context.Context, tx pgx.Tx, productID int32, subcollectionIDs []int32) error {
+	return r.setSubcollectionsWithQuerier(ctx, tx, productID, subcollectionIDs)
+}
+
+func (r *SubcollectionMappingRepository) setSubcollectionsWithQuerier(ctx context.Context, q mappingQuerier, productID int32, subcollectionIDs []int32) error {
+	// Delete all existing mappings
+	if err := r.deleteByProductIDWithQuerier(ctx, q, productID); err != nil {
+		return err
+	}
+
+	// Create new mappings
+	for _, subcollectionID := range subcollectionIDs {
+		_, err := r.createWithQuerier(ctx, q, productID, subcollectionID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

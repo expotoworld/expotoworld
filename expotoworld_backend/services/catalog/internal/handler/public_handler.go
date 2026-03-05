@@ -51,6 +51,9 @@ func (h *PublicHandler) RegisterRoutes(r *gin.RouterGroup) {
 	// Collection endpoints
 	r.GET("/subcategories/:id/collections", h.ListCollections)
 
+	// Subcollection endpoints
+	r.GET("/collections/:id/subcollections", h.ListSubcollections)
+
 	// Product endpoints
 	r.GET("/products", h.ListProducts)
 	r.GET("/products/:id", h.GetProduct)
@@ -516,15 +519,22 @@ func (h *PublicHandler) GetCategoryTreeFull(c *gin.Context) {
 		return
 	}
 
-	// Filter out inactive subcategories and inactive collections
+	// Filter out inactive subcategories, collections, and subcollections
 	var filtered []domain.CategoryWithFullHierarchy
 	for _, cat := range tree {
 		var activeSubs []domain.SubcategoryWithCollections
 		for _, sub := range cat.Subcategories {
 			if sub.IsActive {
-				var activeColls []domain.Collection
+				var activeColls []domain.CollectionWithSubcollections
 				for _, coll := range sub.Collections {
 					if coll.IsActive {
+						var activeSubcolls []domain.Subcollection
+						for _, sc := range coll.Subcollections {
+							if sc.IsActive {
+								activeSubcolls = append(activeSubcolls, sc)
+							}
+						}
+						coll.Subcollections = activeSubcolls
 						activeColls = append(activeColls, coll)
 					}
 				}
@@ -563,6 +573,32 @@ func (h *PublicHandler) ListCollections(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, toCollectionsResponse(active))
+}
+
+// ListSubcollections handles GET /public/collections/:id/subcollections
+// Returns only active subcollections for a collection.
+func (h *PublicHandler) ListSubcollections(c *gin.Context) {
+	collectionID, err := strconv.ParseInt(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid collection id"})
+		return
+	}
+
+	subcollections, err := h.categoryService.GetSubcollectionsByCollection(c.Request.Context(), int32(collectionID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to list subcollections"})
+		return
+	}
+
+	// Filter to active only
+	var active []domain.Subcollection
+	for _, sc := range subcollections {
+		if sc.IsActive {
+			active = append(active, sc)
+		}
+	}
+
+	c.JSON(http.StatusOK, toSubcollectionsResponse(active))
 }
 
 // ============================================================

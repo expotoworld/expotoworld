@@ -1211,6 +1211,11 @@
     "description": "Singular label for breadcrumb node - tier 3"
   },
 
+  "subcollection": "Subcollection",
+  "@subcollection": {
+    "description": "Singular label for breadcrumb node - tier 4"
+  },
+
   "noCategoriesAvailable": "No categories available",
   "@noCategoriesAvailable": {
     "description": "Empty state message when no categories exist"
@@ -1229,5 +1234,15 @@
   "failedToLoadSubcategories": "Failed to load subcategories",
   "@failedToLoadSubcategories": {
     "description": "Error message when subcategories API call fails"
+  },
+
+  "noSubcollectionsAvailable": "No subcollections available",
+  "@noSubcollectionsAvailable": {
+    "description": "Empty state message when no subcollections exist for a collection"
+  },
+
+  "failedToLoadSubcollections": "Failed to load subcollections",
+  "@failedToLoadSubcollections": {
+    "description": "Error message when subcollections API call fails"
   }
 }
